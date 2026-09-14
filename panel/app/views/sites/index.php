@@ -30,6 +30,8 @@
         <tr data-id="<?= (int) $s['id'] ?>">
             <td><?= (int) $s['id'] ?></td>
             <td>
+                <?php $isNode = ($s['type'] ?? 'php') === 'node'; ?>
+                <?= $isNode ? '<span class="layui-badge layui-bg-cyan">Node</span>' : '<span class="layui-badge layui-bg-green">PHP</span>' ?>
                 <b><?= e($s['domain']) ?></b>
                 <?php foreach (array_filter(explode(',', (string) $s['aliases'])) as $a): ?>
                     <span class="layui-badge-rim tag-alias"><?= e($a) ?></span>
@@ -40,9 +42,15 @@
                 </a>
             </td>
             <td>
-                <div class="mono">/www/wwwroot/<?= e($s['sysuser']) ?>/public</div>
+                <div class="mono">/www/wwwroot/<?= e($s['sysuser']) ?>/<?= $isNode ? 'app' : 'public' ?></div>
                 <div class="mono" style="color:#999">user: <?= e($s['sysuser']) ?></div>
             </td>
+            <?php if ($isNode): ?>
+            <td>
+                <div><span class="layui-badge-rim">端口 <?= (int) $s['app_port'] ?></span></div>
+                <div class="mono" style="color:#999;font-size:12px;margin-top:4px"><?= e($s['start_cmd'] ?? '') ?></div>
+            </td>
+            <?php else: ?>
             <td>
                 <select class="phpsel" lay-ignore data-id="<?= (int) $s['id'] ?>" style="height:30px">
                     <?php foreach ($phpVersions as $v => $label): ?>
@@ -50,6 +58,7 @@
                     <?php endforeach; ?>
                 </select>
             </td>
+            <?php endif; ?>
             <td>
                 <?php if ((int) $s['ssl'] === 1): ?>
                     <span class="layui-badge layui-bg-green">HTTPS</span>
@@ -62,7 +71,12 @@
                 <a class="layui-btn layui-btn-xs layui-btn-primary" href="/files?site=<?= (int) $s['id'] ?>">
                     <span class="layui-icon layui-icon-file"></span> 文件
                 </a>
+                <?php if (!($isNode ?? false)): ?>
                 <button class="layui-btn layui-btn-xs btn-wp"><span class="layui-icon layui-icon-template"></span> WP</button>
+                <?php else: ?>
+                <button class="layui-btn layui-btn-xs layui-btn-warm btn-npmi"><span class="layui-icon layui-icon-download"></span> npm i</button>
+                <button class="layui-btn layui-btn-xs btn-nrestart"><span class="layui-icon layui-icon-refresh"></span> 重启</button>
+                <?php endif; ?>
                 <a class="layui-btn layui-btn-xs layui-btn-normal" href="/ssl">
                     <span class="layui-icon layui-icon-auz"></span> SSL
                 </a>
@@ -90,24 +104,60 @@
         </div>
     </div>
     <div class="layui-form-item">
-        <label class="layui-form-label">PHP 版本</label>
-        <div class="layui-input-inline" style="width:190px">
-            <select name="php_version" lay-ignore class="layui-input">
-                <?php foreach ($phpVersions as $v => $label): ?>
-                <option value="<?= e($v) ?>" <?= $v === '82' ? 'selected' : '' ?>><?= e($label) ?></option>
-                <?php endforeach; ?>
-            </select>
+        <label class="layui-form-label">站点类型</label>
+        <div class="layui-input-block" style="padding-top:8px">
+            <input type="radio" name="type" value="php" checked lay-ignore id="tPhp" style="vertical-align:middle">
+            <label for="tPhp">PHP 网站（WordPress / WooCommerce）</label>
+            <input type="radio" name="type" value="node" lay-ignore id="tNode" style="vertical-align:middle;margin-left:18px">
+            <label for="tNode">Node.js 应用（反向代理）</label>
         </div>
-        <label class="layui-form-label" style="width:auto;padding:9px 8px">并发数</label>
-        <div class="layui-input-inline" style="width:90px">
-            <input name="max_children" class="layui-input" value="20">
+    </div>
+    <div id="phpFields">
+        <div class="layui-form-item">
+            <label class="layui-form-label">PHP 版本</label>
+            <div class="layui-input-inline" style="width:190px">
+                <select name="php_version" lay-ignore class="layui-input">
+                    <?php foreach ($phpVersions as $v => $label): ?>
+                    <option value="<?= e($v) ?>" <?= $v === '82' ? 'selected' : '' ?>><?= e($label) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <label class="layui-form-label" style="width:auto;padding:9px 8px">并发数</label>
+            <div class="layui-input-inline" style="width:90px">
+                <input name="max_children" class="layui-input" value="20">
+            </div>
+        </div>
+    </div>
+    <div id="nodeFields" style="display:none;background:#f0f9ff;padding:12px;border-radius:6px;margin-bottom:12px">
+        <div class="layui-form-item">
+            <label class="layui-form-label">应用端口</label>
+            <div class="layui-input-inline" style="width:120px">
+                <input name="app_port" class="layui-input" value="3000" placeholder="3000">
+            </div>
+            <label class="layui-form-label" style="width:auto;padding:9px 8px">启动命令</label>
+            <div class="layui-input-inline" style="width:220px">
+                <input name="start_cmd" class="layui-input" value="npm start" placeholder="npm start">
+            </div>
+        </div>
+        <div style="color:#666;font-size:12px;padding-left:110px">
+            代码放在 /www/wwwroot/&lt;站点用户&gt;/app（创建后用「文件」上传，或先上传 package.json 再点 npm i）；
+            应用只需监听 127.0.0.1:&lt;端口&gt;，Nginx 自动反代并支持 WebSocket。
         </div>
     </div>
     <div class="layui-form-item">
         <input type="checkbox" name="with_db" value="1" lay-ignore id="withDbChk" style="vertical-align:middle">
-        <label for="withDbChk">同时创建 MySQL 数据库（部署 WordPress 建议勾选）</label>
+        <label for="withDbChk">同时创建数据库（部署 WordPress 建议勾选）</label>
     </div>
     <div id="dbFields" style="display:none;background:#fafafa;padding:12px;border-radius:6px;margin-bottom:12px">
+        <div class="layui-form-item">
+            <label class="layui-form-label">数据库引擎</label>
+            <div class="layui-input-block">
+                <select name="db_engine" lay-ignore class="layui-input" style="width:220px">
+                    <option value="mysql">MySQL 8（WordPress 默认）</option>
+                    <option value="postgres">PostgreSQL 16</option>
+                </select>
+            </div>
+        </div>
         <div class="layui-form-item">
             <label class="layui-form-label">数据库名</label>
             <div class="layui-input-block"><input name="db_name" class="layui-input" placeholder="例如 wp_shop"></div>
@@ -172,24 +222,41 @@ layui.use(['layer', 'form'], function () {
     /* ---------- create site ---------- */
     $('#btnCreate').on('click', function () {
         layer.open({
-            type: 1, title: '创建网站', area: ['600px', '560px'],
+            type: 1, title: '创建网站', area: ['620px', '620px'],
             content: $('#tpl-create').html(),
             success: function () {
                 $(document).off('change.wpdb').on('change.wpdb', '#withDbChk', function () {
                     $('#dbFields').toggle(this.checked);
                 });
+                $(document).off('change.wptype').on('change.wptype', 'input[name=type]', function () {
+                    var isNode = this.value === 'node';
+                    if (this.checked) {
+                        $('#phpFields').toggle(!isNode);
+                        $('#nodeFields').toggle(isNode);
+                    }
+                });
                 $('#btnDoCreate').on('click', function () {
                     var f = $('#createForm')[0];
+                    var type = $('input[name=type]:checked').val();
                     var data = {
+                        type: type,
                         domain: f.domain.value.trim(),
                         aliases: f.aliases.value.trim(),
                         php_version: f.php_version.value,
                         max_children: f.max_children.value,
+                        app_port: f.app_port.value.trim(),
+                        start_cmd: f.start_cmd.value.trim(),
                         with_db: f.with_db.checked ? '1' : '',
+                        db_engine: f.db_engine.value,
                         db_name: f.db_name.value.trim(),
                         db_user: f.db_user.value.trim()
                     };
                     if (!data.domain) { layer.msg('请填写主域名', { icon: 2 }); return; }
+                    if (type === 'node') {
+                        var p = parseInt(data.app_port, 10);
+                        if (!p || p < 1024 || p > 65535) { layer.msg('应用端口需为 1024-65535', { icon: 2 }); return; }
+                        if (!data.start_cmd) { layer.msg('请填写启动命令', { icon: 2 }); return; }
+                    }
                     if (data.with_db && (!data.db_name || !data.db_user)) {
                         layer.msg('请填写数据库名和用户名', { icon: 2 }); return;
                     }
@@ -198,10 +265,13 @@ layui.use(['layer', 'form'], function () {
                         layer.close(load);
                         if (!res.ok) { layer.alert(res.error, { icon: 2, title: '创建失败' }); return; }
                         var html = '<div style="padding:10px 20px">'
-                            + '<p>站点 <b>' + layui.util.escape(data.domain) + '</b> 创建成功。</p>'
+                            + '<p>站点 <b>' + layui.util.escape(data.domain) + '</b> 创建成功'
+                            + (res.type === 'node' ? '（Node.js，端口 ' + layui.util.escape(String(res.port || data.app_port)) + '）' : '')
+                            + '</p>'
                             + '<p class="mono" style="color:#666">运行目录：' + layui.util.escape(res.docroot) + '</p>';
                         if (res.db_name) {
                             html += '<div class="secret-box">'
+                                + '<div>数据库引擎：<b>' + (res.db_engine === 'postgres' ? 'PostgreSQL' : 'MySQL') + '</b></div>'
                                 + '<div>数据库名：<b>' + layui.util.escape(res.db_name) + '</b></div>'
                                 + '<div>用户名：<b>' + layui.util.escape(res.db_user) + '</b></div>'
                                 + '<div>密码：<span class="v mono" id="secDbPw">' + layui.util.escape(res.db_password) + '</span></div>'
@@ -223,6 +293,33 @@ layui.use(['layer', 'form'], function () {
                     });
                 });
             }
+        });
+    });
+
+    /* ---------- node: restart / npm install ---------- */
+    $('.btn-nrestart').on('click', function () {
+        var id = $(this).closest('tr').data('id');
+        layer.confirm('重启该 Node.js 应用？', { title: '重启应用' }, function (idx) {
+            layer.close(idx);
+            var load = layer.load(2);
+            WP.post('/sites/node-svc', { id: id, action: 'restart' }).then(function (res) {
+                layer.close(load);
+                res.ok ? layer.msg('已重启', { icon: 1 }) : layer.msg(res.error, { icon: 2 });
+            });
+        });
+    });
+
+    $('.btn-npmi').on('click', function () {
+        var id = $(this).closest('tr').data('id');
+        layer.confirm('在应用目录执行 <b>npm install</b> 并重启应用？<br>请先通过「文件」上传 package.json。', {
+            title: 'npm install'
+        }, function (idx) {
+            layer.close(idx);
+            var load = layer.load(2, { time: 300000 });
+            WP.post('/sites/node-npmi', { id: id }).then(function (res) {
+                layer.close(load);
+                res.ok ? layer.msg('安装完成并已重启', { icon: 1 }) : layer.alert(res.error, { icon: 2 });
+            });
         });
     });
 

@@ -67,6 +67,15 @@ cmd_delete() {
     dr rm -f "$VHOST_DIR/$user.conf"
     local oldver
     oldver="$(remove_pool "$user")"
+
+    # node site: stop + remove its systemd unit
+    local unit="$NODE_UNIT_DIR/$(node_unit "$user")"
+    if [ -e "$unit" ]; then
+        dr systemctl disable --now "$(node_unit "$user")" 2>/dev/null
+        dr rm -f "$unit"
+        dr systemctl daemon-reload
+    fi
+
     reload_nginx
     [ -n "${oldver:-}" ] && dr systemctl restart "${PHP_SERVICE[$oldver]}"
 
@@ -93,10 +102,10 @@ cmd_php_set() {
 }
 
 cmd_render() {
-    [ $# -eq 4 ] || fail "usage: render <user> <domains_csv> <ssl> <hsts>"
-    local user="$1" domains="$2" ssl="$3" hsts="$4"
+    [ $# -ge 4 ] && [ $# -le 6 ] || fail "usage: render <user> <domains_csv> <ssl> <hsts> [type] [node_port]"
+    local user="$1" domains="$2" ssl="$3" hsts="$4" type="${5:-php}" port="${6:-}"
     [[ "$ssl" =~ ^[01]$ && "$hsts" =~ ^[01]$ ]] || fail "ssl/hsts must be 0 or 1"
-    render_vhost "$user" "$domains" "$ssl" "$hsts"
+    render_vhost "$user" "$domains" "$ssl" "$hsts" "$type" "$port"
     reload_nginx
     ok
 }

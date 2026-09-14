@@ -24,6 +24,8 @@ $router->get('/sites', [SiteController::class, 'index']);
 $router->post('/sites/create', [SiteController::class, 'create']);
 $router->post('/sites/delete', [SiteController::class, 'delete']);
 $router->post('/sites/php', [SiteController::class, 'setPhp']);
+$router->post('/sites/node-svc', [SiteController::class, 'nodeSvc']);
+$router->post('/sites/node-npmi', [SiteController::class, 'nodeNpmInstall']);
 $router->post('/sites/wp', [SiteController::class, 'installWordPress']);
 
 /* ---- SSL ----------------------------------------------------------------- */

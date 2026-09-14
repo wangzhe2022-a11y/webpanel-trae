@@ -51,10 +51,18 @@ JSON
     svcs="["
     svcs+="$(svc_json nginx nginx)"
     svcs+="$(svc_json mysql mysqld)"
+    svcs+="$(svc_json postgres postgresql-16)"
     svcs+="$(svc_json panel-php php-fpm)"
     for v in 74 80 81 82 83; do
         unit="php${v}-php-fpm"
         [ -d "/etc/opt/remi/php$v" ] && svcs+="$(svc_json "php$v-fpm" "$unit")"
+    done
+    # one service per node site
+    for nu in "$NODE_UNIT_DIR"/wp-node-*.service; do
+        [ -f "$nu" ] || continue
+        nuser="$(basename "$nu" .service)"
+        nuser="${nuser#wp-node-}"
+        svcs+="$(svc_json "node:$nuser" "$(basename "$nu" .service)")"
     done
     svcs="${svcs%,}]"
 
@@ -62,6 +70,12 @@ JSON
     databases=0
     if [ -f /root/.my.cnf ] && mysql_cmd -e "SELECT 1" >/dev/null 2>&1; then
         databases=$(mysql_cmd -e "SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name NOT IN ('information_schema','performance_schema','mysql','sys');" 2>/dev/null || echo 0)
+    fi
+    # + postgres user databases
+    if [ -x /usr/pgsql-16/bin/psql ] && runuser -u postgres -- /usr/pgsql-16/bin/psql -qAt -c "SELECT 1" >/dev/null 2>&1; then
+        databases=$((databases + $(runuser -u postgres -- /usr/pgsql-16/bin/psql -qAt -c "SELECT COUNT(*) FROM pg_database WHERE NOT datistemplate AND datname <> 'postgres';" 2>/dev/null || echo 0)))
+    elif command -v psql >/dev/null 2>&1 && runuser -u postgres -- psql -qAt -c "SELECT 1" >/dev/null 2>&1; then
+        databases=$((databases + $(runuser -u postgres -- psql -qAt -c "SELECT COUNT(*) FROM pg_database WHERE NOT datistemplate AND datname <> 'postgres';" 2>/dev/null || echo 0)))
     fi
 
     printf '{"ok":true,"hostname":"%s","os":"%s","kernel":"%s","uptime":"%s","cpu_cores":%s,"loadavg":"%s","mem_total_kb":%s,"mem_available_kb":%s,"disk":%s,"services":%s,"sites":%s,"databases":%s}\n' \
@@ -78,12 +92,18 @@ if [ "$action" = "svc" ]; then
     case "$svc" in
         nginx) unit=nginx ;;
         mysql) unit=mysqld ;;
+        postgres) unit=postgresql-16 ;;
         phpfpm) unit=php-fpm ;;
         php74fpm) unit=php74-php-fpm ;;
         php80fpm) unit=php80-php-fpm ;;
         php81fpm) unit=php81-php-fpm ;;
         php82fpm) unit=php82-php-fpm ;;
         php83fpm) unit=php83-php-fpm ;;
+        node-*)
+            nuser="${svc#node-}"
+            valid_user "$nuser" || fail "invalid node service"
+            unit="wp-node-$nuser"
+            ;;
         *) fail "unknown service" ;;
     esac
     dr systemctl "$act" "$unit"

@@ -60,6 +60,7 @@ abstract class Controller
     {
         $csrf = Csrf::token();
         $currentUser = Auth::user();
+        extract($data, EXTR_SKIP);
         $viewFile = PANEL_APP . '/views/' . $view . '.php';
         require PANEL_APP . '/views/header.php';
         require $viewFile;
@@ -69,6 +70,7 @@ abstract class Controller
     protected function renderLogin(string $view, array $data = []): void
     {
         $csrf = Csrf::token();
+        extract($data, EXTR_SKIP);
         require PANEL_APP . '/views/' . $view . '.php';
     }
 

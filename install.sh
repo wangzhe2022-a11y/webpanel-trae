@@ -5,7 +5,9 @@
 # 安装内容：
 #   - Nginx（官方仓库 module）
 #   - MySQL 8.0（Oracle 官方 community 仓库）
+#   - PostgreSQL 16（PGDG 官方仓库，仅监听 127.0.0.1，与 MySQL 并存可任选）
 #   - PHP 7.4 / 8.0 / 8.1 / 8.2 / 8.3（Remi SCL，各版本独立 FPM 可随时切换）
+#   - Node.js 22 LTS（NodeSource 官方仓库，Node 站点由 systemd 托管 + Nginx 反代）
 #   - 面板本体（PHP 8.2 + SQLite + Layui），HTTPS 端口 8888（自签证书）
 #   - acme.sh（Let's Encrypt 自动签发/续期）
 #   - WP-CLI（一键部署 WordPress / WooCommerce）
@@ -43,7 +45,7 @@ die()    { printf '\033[1;31m[ERR ]\033[0m %s\n' "$*" >&2; exit 1; }
 grep -Eq 'release 8' /etc/redhat-release || c_warn "未检测到 8.x 版本，继续但不保证兼容"
 [ -d "$SRC_DIR/panel" ] && [ -d "$SRC_DIR/bin" ] || die "源码目录结构不完整，请在仓库根目录执行"
 
-c_blue "==> [1/10] 基础工具与仓库（EPEL / Remi / MySQL 8.0）"
+c_blue "==> [1/12] 基础工具与仓库（EPEL / Remi / MySQL / PGDG / NodeSource）"
 dnf install -y epel-release dnf-utils curl wget tar unzip bash-completion \
     policycoreutils-python-utils cronie firewalld openssl which
 dnf install -y https://rpms.remirepo.net/enterprise/remi-release-8.rpm || \
@@ -51,13 +53,23 @@ dnf install -y https://rpms.remirepo.net/enterprise/remi-release-8.rpm || \
 if ! rpm -q mysql80-community-release >/dev/null 2>&1; then
     dnf install -y https://dev.mysql.com/get/mysql80-community-release-el8-9.noarch.rpm
 fi
+# PostgreSQL 16 官方仓库（可选组件，安装失败仅降级为无 PG 功能）
+if ! rpm -q pgdg-redhat-repo >/dev/null 2>&1; then
+    dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm \
+        || c_warn "PGDG 仓库安装失败，PostgreSQL 功能将不可用"
+fi
+# Node.js 22 LTS 官方仓库（可选组件）
+if ! rpm -q nodesource-release-el8 >/dev/null 2>&1; then
+    curl -fsSL https://rpm.nodesource.com/setup_22.x | bash - \
+        || c_warn "NodeSource 仓库安装失败，Node.js 功能将不可用"
+fi
 c_ok "软件仓库就绪"
 
-c_blue "==> [2/10] 安装 Nginx 与 MySQL 8.0"
+c_blue "==> [2/12] 安装 Nginx 与 MySQL 8.0"
 dnf install -y nginx mysql-community-server
 c_ok "Nginx / MySQL 软件包安装完成"
 
-c_blue "==> [3/10] 安装 PHP（面板运行于 8.2，站点支持多版本切换）"
+c_blue "==> [3/12] 安装 PHP（面板运行于 8.2，站点支持多版本切换）"
 # 面板自身使用系统模块 PHP 8.2
 dnf module reset -y php
 dnf module enable -y php:remi-8.2
@@ -75,7 +87,23 @@ for v in "${PHP_VERSIONS[@]}"; do
 done
 c_ok "PHP 安装完成"
 
-c_blue "==> [4/10] 初始化 MySQL 8.0"
+c_blue "==> [4/12] 安装 Node.js 22 LTS 与 PostgreSQL 16"
+# Node.js（NodeSource；仓库不可用时回退 AppStream 默认版本）
+dnf install -y nodejs || c_warn "Node.js 安装失败，Node 站点功能不可用"
+command -v node >/dev/null 2>&1 \
+    && c_ok "Node.js $(node -v) / npm $(npm -v)" \
+    || c_warn "Node.js 未安装成功"
+
+# PostgreSQL 16（PGDG；需先禁用 AppStream postgresql 模块避免冲突）
+if rpm -q pgdg-redhat-repo >/dev/null 2>&1; then
+    dnf -qy module disable postgresql || true
+    dnf install -y postgresql16-server postgresql16 \
+        || c_warn "PostgreSQL 16 安装失败，面板仅提供 MySQL 数据库"
+else
+    c_warn "跳过 PostgreSQL（PGDG 仓库未就绪）"
+fi
+
+c_blue "==> [5/12] 初始化 MySQL 8.0"
 systemctl enable --now mysqld
 for i in $(seq 1 30); do
     mysqladmin ping --silent 2>/dev/null && break
@@ -103,7 +131,30 @@ chmod 600 /root/.my.cnf
 mysql -e "SELECT VERSION()" >/dev/null || die "MySQL root 凭据写入失败"
 c_ok "MySQL 已启动，root 密码已保存到 /root/.my.cnf（0600）"
 
-c_blue "==> [5/10] 创建目录、系统用户与面板文件"
+c_blue "==> [6/12] 初始化 PostgreSQL 16（仅本机 127.0.0.1:5432，scram-sha-256）"
+if rpm -q postgresql16-server >/dev/null 2>&1; then
+    PGDATA=/var/lib/pgsql/16/data
+    [ -s "$PGDATA/PG_VERSION" ] || /usr/pgsql-16/bin/postgresql-16-setup initdb \
+        || die "PostgreSQL initdb 失败"
+
+    # 认证策略：本地套接字 peer，回环 TCP scram-sha-256（wp-pg.sh 依赖此策略）
+    cat > "$PGDATA/pg_hba.conf" <<'EOF'
+# managed by WebPanel - do not edit
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+local   all             all                                     peer
+host    all             all             127.0.0.1/32            scram-sha-256
+host    all             all             ::1/128                 scram-sha-256
+EOF
+    grep -q '^password_encryption' "$PGDATA/postgresql.conf" \
+        || echo "password_encryption = scram-sha-256" >> "$PGDATA/postgresql.conf"
+
+    systemctl enable --now postgresql-16
+    c_ok "PostgreSQL 16 已启动（数据库引擎选择：MySQL / PostgreSQL 均可用）"
+else
+    c_warn "PostgreSQL 16 未安装，面板数据库功能仅 MySQL 可用"
+fi
+
+c_blue "==> [7/12] 创建目录、系统用户与面板文件"
 id webpanel &>/dev/null || useradd --system --no-create-home --shell /sbin/nologin webpanel
 install -d -m 755 "$WWW_ROOT" "$LOG_ROOT" "$CERT_ROOT" "$VHOST_DIR" \
     "$ACME_HOME" "$INSTALL_DIR"
@@ -128,7 +179,7 @@ install -m 440 "$INSTALL_DIR/config/sudoers.d/webpanel" /etc/sudoers.d/webpanel
 visudo -cf /etc/sudoers.d/webpanel >/dev/null
 c_ok "特权脚本与 sudoers 白名单就位"
 
-c_blue "==> [6/10] 配置 Nginx 与 PHP-FPM"
+c_blue "==> [8/12] 配置 Nginx 与 PHP-FPM"
 # 关闭各 FPM 默认池（默认都抢 9000 端口）
 [ -f /etc/php-fpm.d/www.conf ] && mv -f /etc/php-fpm.d/www.conf /etc/php-fpm.d/www.conf.disabled
 for v in "${PHP_VERSIONS[@]}"; do
@@ -150,16 +201,20 @@ fi
 sed "s|{{PORT}}|$PANEL_PORT|g" "$INSTALL_DIR/config/nginx/panel.conf.tmpl" \
     > /etc/nginx/conf.d/00-webpanel.conf
 
-# 托管站点 vhost 总入口
+# 托管站点 vhost 总入口（含 Node.js 反代所需的 websocket upgrade 映射）
 cat >/etc/nginx/conf.d/zz-webpanel-sites.conf <<EOF
 # managed by WebPanel - do not edit
+map \$http_upgrade \$connection_upgrade {
+    default upgrade;
+    ''      close;
+}
 include $VHOST_DIR/*.conf;
 EOF
 
 nginx -t
 c_ok "Nginx 配置完成"
 
-c_blue "==> [7/10] 安装 acme.sh 与 WP-CLI"
+c_blue "==> [9/12] 安装 acme.sh 与 WP-CLI"
 if [ ! -x "$ACME_HOME/acme.sh" ]; then
     if [ -n "$ACME_EMAIL" ]; then
         curl -fsSL https://get.acme.sh | sh -s -- --home "$ACME_HOME" --nocron --accountemail "$ACME_EMAIL"
@@ -175,8 +230,9 @@ if [ ! -x /usr/local/bin/wp ]; then
 fi
 c_ok "acme.sh / WP-CLI 就绪"
 
-c_blue "==> [8/10] 启动全部服务"
+c_blue "==> [10/12] 启动全部服务"
 systemctl enable nginx php-fpm mysqld crond
+rpm -q postgresql16-server >/dev/null 2>&1 && systemctl enable postgresql-16
 for v in "${PHP_VERSIONS[@]}"; do
     systemctl enable "php${v}-php-fpm"
 done
@@ -187,12 +243,12 @@ done
 systemctl restart nginx
 
 # 创建面板管理员（密码生成并在末尾展示）
-c_blue "==> [9/10] 初始化面板账号"
+c_blue "==> [11/12] 初始化面板账号"
 /usr/bin/php "$INSTALL_DIR/panel/tools/admin.php" password "$PANEL_ADMIN" \
     | tee /root/.webpanel-admin.txt
 chmod 600 /root/.webpanel-admin.txt
 
-c_blue "==> [10/10] 防火墙 / SELinux / 时区"
+c_blue "==> [12/12] 防火墙 / SELinux / 时区"
 systemctl enable --now firewalld >/dev/null 2>&1 || true
 firewall-cmd --permanent --add-service=http  >/dev/null 2>&1 || true
 firewall-cmd --permanent --add-service=https >/dev/null 2>&1 || true
@@ -219,13 +275,14 @@ cat <<EOF
   面板地址 : https://${PUB_IP:-<服务器公网IP>}:${PANEL_PORT}/
              （自签证书，浏览器提示不安全属正常，选择继续即可）
   账号信息 : 已同时保存到 /root/.webpanel-admin.txt
+  运行栈   : Nginx / PHP 7.4-8.3 多版本 / MySQL 8.0$(rpm -q postgresql16-server >/dev/null 2>&1 && echo ' / PostgreSQL 16')$(command -v node >/dev/null 2>&1 && echo " / Node.js $(node -v)")
 
   必须在腾讯云控制台完成：
     1. 安全组放行入站 TCP 80 / 443 / ${PANEL_PORT}（面板端口建议仅对自己的 IP 开放）
     2. 域名添加 A 记录指向 ${PUB_IP:-<服务器公网IP>} 后，再到面板「SSL 证书」页签发证书
 
   常用目录：
-    站点文件 : $WWW_ROOT/<站点用户>/public
+    站点文件 : $WWW_ROOT/<站点用户>/public（PHP）或 $WWW_ROOT/<站点用户>/app（Node.js）
     站点日志 : $LOG_ROOT
     证书目录 : $CERT_ROOT
   找回/重置面板密码：

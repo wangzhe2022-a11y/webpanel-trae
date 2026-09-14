@@ -30,11 +30,17 @@ if [ "$PURGE" -eq 1 ]; then
     read -r -p "确认删除所有站点文件、数据库与证书？输入 YES 继续: " ans
     [ "$ans" = "YES" ] || { echo "已取消"; exit 1; }
 
-    echo "==> 删除站点 FPM 池、系统用户与文件"
+    echo "==> 删除站点 FPM 池、Node 服务单元、系统用户与文件"
     for v in "${PHP_VERSIONS[@]}"; do
         rm -f /etc/opt/remi/php$v/php-fpm.d/*.conf
         systemctl restart "php${v}-php-fpm" 2>/dev/null || true
     done
+    for u in /etc/systemd/system/wp-node-*.service; do
+        [ -f "$u" ] || continue
+        systemctl disable --now "$(basename "$u")" 2>/dev/null || true
+        rm -f "$u"
+    done
+    systemctl daemon-reload 2>/dev/null || true
     for u in $(awk -F: '$6 ~ "^/www/wwwroot/" {print $1}' /etc/passwd); do
         userdel -r "$u" 2>/dev/null || true
     done
@@ -47,10 +53,18 @@ if [ "$PURGE" -eq 1 ]; then
             mysql -e "DROP DATABASE \`$db\`;"
         done
     fi
+    # PostgreSQL：删除面板创建的用户库（跳过 postgres 模板库）
+    PG_PSQL="$([ -x /usr/pgsql-16/bin/psql ] && echo /usr/pgsql-16/bin/psql || command -v psql || true)"
+    if [ -n "$PG_PSQL" ] && runuser -u postgres -- "$PG_PSQL" -qAt -c "SELECT 1" >/dev/null 2>&1; then
+        for db in $(runuser -u postgres -- "$PG_PSQL" -qAt -c "SELECT datname FROM pg_database WHERE NOT datistemplate AND datname <> 'postgres';" 2>/dev/null); do
+            runuser -u postgres -- "$PG_PSQL" -qAt -c "DROP DATABASE IF EXISTS \"$db\";" 2>/dev/null || true
+        done
+    fi
 
-    echo "==> 卸载软件包（Nginx/MySQL/PHP 全部移除）"
-    dnf remove -y nginx mysql-community-server "php*-php-*" php php-fpm php-cli 2>/dev/null || true
-    rm -rf /www /var/lib/mysql
+    echo "==> 卸载软件包（Nginx/MySQL/PHP/Node.js/PostgreSQL 全部移除）"
+    dnf remove -y nginx mysql-community-server postgresql16-server nodejs \
+        "php*-php-*" php php-fpm php-cli 2>/dev/null || true
+    rm -rf /www /var/lib/mysql /var/lib/pgsql
 fi
 
 echo "==> 删除面板程序"

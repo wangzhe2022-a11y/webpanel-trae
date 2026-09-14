@@ -1,13 +1,17 @@
 #!/bin/bash
 # ============================================================================
 # wp-ssl.sh - certificates for sites
-#   issue  <user> <domains_csv>     acme.sh Let's Encrypt issue + auto-install
-#   deploy <user> <domains_csv> <hsts> <upload_dir>
+#   issue  <user> <domains_csv> [type] [node_port]
+#                                  acme.sh Let's Encrypt issue + auto-install
+#   deploy <user> <domains_csv> <hsts> <upload_dir> [type] [node_port]
 #                                  install a third-party certificate (e.g.
 #                                  Tencent Cloud TrustAsia) that the panel
 #                                  uploaded to <upload_dir>/{fullchain,privkey}.pem
-#   remove <user> <domains_csv>     revoke/remove cert + flip vhost back
+#   remove <user> <domains_csv> [type] [node_port]
+#                                  revoke/remove cert + flip vhost back
 #   list                            json of all installed certificates
+#
+# type is "php" (default) or "node" (reverse-proxy vhost needs the port).
 #
 # Requirements: every domain must already have an A/AAAA record pointing at
 # this server, otherwise http-01 validation fails.
@@ -23,8 +27,8 @@ action="$1"; shift
 require_root
 
 cmd_issue() {
-    [ $# -eq 2 ] || fail "usage: issue <user> <domains_csv>"
-    local user="$1" domains="$2"
+    [ $# -ge 2 ] && [ $# -le 4 ] || fail "usage: issue <user> <domains_csv> [type] [node_port]"
+    local user="$1" domains="$2" type="${3:-php}" port="${4:-}"
     valid_user "$user" || fail "invalid system user: $user"
 
     local IFS=',' d primary
@@ -42,7 +46,7 @@ cmd_issue() {
 
     if is_dry_run; then
         echo "[dry-run] acme issue ${doms[*]} webroot=$webroot" >&2
-        render_vhost "$user" "$domains" 1 0
+        render_vhost "$user" "$domains" 1 0 "$type" "$port"
         ok "\"domain\":\"$primary\",\"not_before\":\"dryrun\",\"not_after\":\"dryrun\""
     fi
 
@@ -51,7 +55,7 @@ cmd_issue() {
     chmod 755 "$WEB_ROOT/$user" "$webroot"
 
     # make sure port-80 vhost currently serves ACME challenges
-    render_vhost "$user" "$domains" 0 0
+    render_vhost "$user" "$domains" 0 0 "$type" "$port"
     nginx -t && systemctl reload nginx
 
     local -a args=(--issue --server letsencrypt --keylength ec-2048 -w "$webroot")
@@ -76,7 +80,7 @@ cmd_issue() {
     chown root: "$certdir/fullchain.pem" "$certdir/privkey.pem"
 
     # flip the site to HTTPS (HSTS off by default; UI can enable)
-    render_vhost "$user" "$domains" 1 0
+    render_vhost "$user" "$domains" 1 0 "$type" "$port"
     nginx -t && systemctl reload nginx
 
     local dates
@@ -87,8 +91,8 @@ cmd_issue() {
 }
 
 cmd_deploy() {
-    [ $# -eq 4 ] || fail "usage: deploy <user> <domains_csv> <hsts> <upload_dir>"
-    local user="$1" domains="$2" hsts="$3" updir="$4"
+    [ $# -ge 4 ] && [ $# -le 6 ] || fail "usage: deploy <user> <domains_csv> <hsts> <upload_dir> [type] [node_port]"
+    local user="$1" domains="$2" hsts="$3" updir="$4" type="${5:-php}" port="${6:-}"
     valid_user "$user" || fail "invalid system user: $user"
     [[ "$hsts" =~ ^[01]$ ]] || fail "invalid hsts flag"
 
@@ -108,7 +112,7 @@ cmd_deploy() {
 
     if is_dry_run; then
         echo "[dry-run] deploy third-party cert for $user @ $primary" >&2
-        render_vhost "$user" "$domains" 1 "$hsts"
+        render_vhost "$user" "$domains" 1 "$hsts" "$type" "$port"
         ok "\"domain\":\"$primary\",\"not_after\":\"dryrun\",\"source\":\"manual\""
     fi
 
@@ -159,7 +163,7 @@ cmd_deploy() {
         grep -qx "$d" <<<"$sans" || [ "$d" = "$cn" ] || missing+="$d "
     done
 
-    render_vhost "$user" "$domains" 1 "$hsts"
+    render_vhost "$user" "$domains" 1 "$hsts" "$type" "$port"
     reload_nginx
 
     local na
@@ -168,8 +172,8 @@ cmd_deploy() {
 }
 
 cmd_remove() {
-    [ $# -eq 2 ] || fail "usage: remove <user> <domains_csv>"
-    local user="$1" domains="$2"
+    [ $# -ge 2 ] && [ $# -le 4 ] || fail "usage: remove <user> <domains_csv> [type] [node_port]"
+    local user="$1" domains="$2" type="${3:-php}" port="${4:-}"
     valid_user "$user" || fail "invalid system user: $user"
     local primary="${domains%%,*}"
 
@@ -179,7 +183,7 @@ cmd_remove() {
         fi
         rm -rf "$CERT_ROOT/$primary"
     fi
-    render_vhost "$user" "$domains" 0 0
+    render_vhost "$user" "$domains" 0 0 "$type" "$port"
     reload_nginx
     ok
 }

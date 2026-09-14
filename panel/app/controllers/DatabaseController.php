@@ -25,6 +25,7 @@ class DatabaseController extends Controller
         $name = (string) $this->input('name', '');
         $user = (string) $this->input('username', '');
         $siteId = (int) $this->input('site_id', 0) ?: null;
+        $engine = $this->input('engine') === 'postgres' ? 'postgres' : 'mysql';
 
         if (!valid_mysql_name($name, 64)) {
             $this->fail('数据库名只能含字母、数字、下划线（2-64 位）');
@@ -40,28 +41,27 @@ class DatabaseController extends Controller
         }
 
         $password = random_password(20);
-        $r = Shell::sudo('wp-db.sh', ['create', $name, $user], $password);
+        $r = Shell::sudo($engine === 'postgres' ? 'wp-pg.sh' : 'wp-db.sh', ['create', $name, $user], $password);
         if (!$r['ok']) {
             $this->fail('创建失败：' . $r['error']);
         }
-        $id = Db::insert('INSERT INTO databases (site_id, name, username) VALUES (?,?,?)', [$siteId, $name, $user]);
-        Auth::log('db.create', "$name ($user)");
+        $id = Db::insert('INSERT INTO databases (site_id, name, username, engine) VALUES (?,?,?,?)', [$siteId, $name, $user, $engine]);
+        Auth::log('db.create', "$name ($user, $engine)");
 
         // password is returned exactly once and never stored
-        $this->ok(['id' => $id, 'name' => $name, 'username' => $user, 'password' => $password]);
+        $this->ok(['id' => $id, 'name' => $name, 'username' => $user, 'engine' => $engine, 'password' => $password]);
     }
 
     public function resetPassword(): void
     {
         $this->requireLogin();
         $this->verifyCsrf();
-
         $row = Db::one('SELECT * FROM databases WHERE id = ?', [(int) $this->input('id', 0)]);
         if (!$row) {
             $this->fail('数据库不存在');
         }
         $password = random_password(20);
-        $r = Shell::sudo('wp-db.sh', ['passwd', $row['name'], $row['username']], $password);
+        $r = Shell::sudo(($row['engine'] ?? 'mysql') === 'postgres' ? 'wp-pg.sh' : 'wp-db.sh', ['passwd', $row['name'], $row['username']], $password);
         if (!$r['ok']) {
             $this->fail('重置失败：' . $r['error']);
         }
@@ -73,12 +73,11 @@ class DatabaseController extends Controller
     {
         $this->requireLogin();
         $this->verifyCsrf();
-
         $row = Db::one('SELECT * FROM databases WHERE id = ?', [(int) $this->input('id', 0)]);
         if (!$row) {
             $this->fail('数据库不存在');
         }
-        $r = Shell::sudo('wp-db.sh', ['delete', $row['name'], $row['username']]);
+        $r = Shell::sudo(($row['engine'] ?? 'mysql') === 'postgres' ? 'wp-pg.sh' : 'wp-db.sh', ['delete', $row['name'], $row['username']]);
         if (!$r['ok']) {
             $this->fail('删除失败：' . $r['error']);
         }

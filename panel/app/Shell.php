@@ -75,9 +75,19 @@ final class Shell
                 => ['ok' => true, 'data' => ['ok' => true, 'user' => $args[1], 'docroot' => '/www/wwwroot/' . $args[1] . '/public', 'php' => $args[2]], 'error' => ''],
             str_starts_with($script, 'wp-site')
                 => ['ok' => true, 'data' => ['ok' => true], 'error' => ''],
+            str_starts_with($script, 'wp-node') && $a === 'create'
+                => ['ok' => true, 'data' => ['ok' => true, 'user' => $args[1], 'appdir' => '/www/wwwroot/' . $args[1] . '/app', 'port' => (int) $args[3], 'unit' => 'wp-node-' . $args[1] . '.service'], 'error' => ''],
+            str_starts_with($script, 'wp-node')
+                => ['ok' => true, 'data' => ['ok' => true], 'error' => ''],
             str_starts_with($script, 'wp-db') && $a === 'create'
                 => ['ok' => true, 'data' => ['ok' => true, 'database' => $args[1], 'user' => $args[2]], 'error' => ''],
             str_starts_with($script, 'wp-db')
+                => ['ok' => true, 'data' => ['ok' => true], 'error' => ''],
+            str_starts_with($script, 'wp-pg') && $a === 'create'
+                => ['ok' => true, 'data' => ['ok' => true, 'database' => $args[1], 'user' => $args[2], 'engine' => 'postgres'], 'error' => ''],
+            str_starts_with($script, 'wp-pg') && $a === 'list'
+                => ['ok' => true, 'data' => ['ok' => true, 'dbs' => [['name' => 'pg_demo', 'size' => '12 MB', 'owner' => 'pg_demo_user']]], 'error' => ''],
+            str_starts_with($script, 'wp-pg')
                 => ['ok' => true, 'data' => ['ok' => true], 'error' => ''],
             str_starts_with($script, 'wp-ssl') && $a === 'issue'
                 => ['ok' => true, 'data' => ['ok' => true, 'domain' => $args[2] ?? 'demo', 'not_before' => 'dryrun', 'not_after' => 'dryrun'], 'error' => ''],
@@ -96,7 +106,7 @@ final class Shell
             str_starts_with($script, 'wp-fs')
                 => ['ok' => true, 'data' => ['ok' => true], 'error' => ''],
             str_starts_with($script, 'wp-sys') && $a === 'info'
-                => ['ok' => true, 'data' => json_decode('{"ok":true,"hostname":"demo-srv","os":"AlmaLinux 8.10","kernel":"4.18.0-553","uptime":"3d 4h 12m","cpu_cores":4,"loadavg":"0.21 0.18 0.10","mem_total_kb":8167020,"mem_available_kb":5980432,"disk":[{"fs":"/","size":"80G","used":"21G","avail":"59G","use_pct":27}],"services":[{"name":"nginx","unit":"nginx","status":"active"},{"name":"mysql","unit":"mysqld","status":"active"},{"name":"panel-php","unit":"php-fpm","status":"active"},{"name":"php74-fpm","unit":"php74-php-fpm","status":"active"},{"name":"php82-fpm","unit":"php82-php-fpm","status":"active"}],"sites":1,"databases":1}', true), 'error' => ''],
+                => ['ok' => true, 'data' => json_decode('{"ok":true,"hostname":"demo-srv","os":"AlmaLinux 8.10","kernel":"4.18.0-553","uptime":"3d 4h 12m","cpu_cores":4,"loadavg":"0.21 0.18 0.10","mem_total_kb":8167020,"mem_available_kb":5980432,"disk":[{"fs":"/","size":"80G","used":"21G","avail":"59G","use_pct":27}],"services":[{"name":"nginx","unit":"nginx","status":"active"},{"name":"mysql","unit":"mysqld","status":"active"},{"name":"postgres","unit":"postgresql-16","status":"active"},{"name":"panel-php","unit":"php-fpm","status":"active"},{"name":"php74-fpm","unit":"php74-php-fpm","status":"active"},{"name":"php82-fpm","unit":"php82-php-fpm","status":"active"},{"name":"node:apidemo01","unit":"wp-node-apidemo01","status":"active"}],"sites":1,"databases":2}', true), 'error' => ''],
             str_starts_with($script, 'wp-wp')
                 => ['ok' => true, 'data' => ['ok' => true, 'domain' => $args[2] ?? 'demo', 'admin' => $args[6] ?? 'admin', 'url' => 'http://demo/wp-admin/'], 'error' => ''],
             default => ['ok' => true, 'data' => ['ok' => true], 'error' => ''],

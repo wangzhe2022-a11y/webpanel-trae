@@ -101,5 +101,18 @@ CREATE TABLE IF NOT EXISTS action_log (
     ts     TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 );
 SQL);
+        // lightweight column migrations (added by later panel versions)
+        foreach ([
+            "ALTER TABLE sites ADD COLUMN type TEXT NOT NULL DEFAULT 'php'",
+            'ALTER TABLE sites ADD COLUMN app_port INTEGER',
+            'ALTER TABLE sites ADD COLUMN start_cmd TEXT',
+            "ALTER TABLE databases ADD COLUMN engine TEXT NOT NULL DEFAULT 'mysql'",
+        ] as $sql) {
+            try {
+                self::$pdo->exec($sql);
+            } catch (\PDOException) {
+                // column already exists
+            }
+        }
     }
 }

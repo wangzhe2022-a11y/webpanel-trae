@@ -7,7 +7,9 @@ Defaults:webpanel secure_path=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
 
 webpanel ALL=(root) NOPASSWD: /usr/local/webpanel/bin/wp-site.sh
 webpanel ALL=(root) NOPASSWD: /usr/local/webpanel/bin/wp-db.sh
+webpanel ALL=(root) NOPASSWD: /usr/local/webpanel/bin/wp-pg.sh
 webpanel ALL=(root) NOPASSWD: /usr/local/webpanel/bin/wp-ssl.sh
 webpanel ALL=(root) NOPASSWD: /usr/local/webpanel/bin/wp-fs.sh
 webpanel ALL=(root) NOPASSWD: /usr/local/webpanel/bin/wp-sys.sh
 webpanel ALL=(root) NOPASSWD: /usr/local/webpanel/bin/wp-wp.sh
+webpanel ALL=(root) NOPASSWD: /usr/local/webpanel/bin/wp-node.sh

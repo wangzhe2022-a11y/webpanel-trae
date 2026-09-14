@@ -30,8 +30,9 @@ class SslController extends Controller
             $this->fail('站点不存在');
         }
         $domains = $this->domainsCsv($site);
+        $nodePort = (string) ($site['app_port'] ?? '');
 
-        $r = Shell::sudo('wp-ssl.sh', ['issue', $site['sysuser'], $domains]);
+        $r = Shell::sudo('wp-ssl.sh', ['issue', $site['sysuser'], $domains, $site['type'] ?? 'php', $nodePort]);
         if (!$r['ok']) {
             $this->fail('SSL 签发失败：' . $r['error'] . '（请确认所有域名已解析到本机，且 80 端口可从公网访问）');
         }
@@ -82,7 +83,7 @@ class SslController extends Controller
 
         $r = Shell::sudo('wp-ssl.sh', [
             'deploy', $site['sysuser'], $this->domainsCsv($site),
-            (string) (int) $site['hsts'], $dir,
+            (string) (int) $site['hsts'], $dir, $site['type'] ?? 'php', (string) ($site['app_port'] ?? ''),
         ]);
         if (!$r['ok']) {
             $cleanup();
@@ -111,7 +112,7 @@ class SslController extends Controller
         if (!$site) {
             $this->fail('站点不存在');
         }
-        $r = Shell::sudo('wp-ssl.sh', ['remove', $site['sysuser'], $this->domainsCsv($site)]);
+        $r = Shell::sudo('wp-ssl.sh', ['remove', $site['sysuser'], $this->domainsCsv($site), $site['type'] ?? 'php', (string) ($site['app_port'] ?? '')]);
         if (!$r['ok']) {
             $this->fail('删除证书失败：' . $r['error']);
         }
@@ -132,7 +133,7 @@ class SslController extends Controller
             $this->fail('请先签发并启用 SSL 证书');
         }
         $hsts = (int) $this->input('hsts', 0) === 1 ? 1 : 0;
-        $r = Shell::sudo('wp-site.sh', ['render', $site['sysuser'], $this->domainsCsv($site), '1', (string) $hsts]);
+        $r = Shell::sudo('wp-site.sh', ['render', $site['sysuser'], $this->domainsCsv($site), '1', (string) $hsts, $site['type'] ?? 'php', (string) ($site['app_port'] ?? '')]);
         if (!$r['ok']) {
             $this->fail('切换 HSTS 失败：' . $r['error']);
         }

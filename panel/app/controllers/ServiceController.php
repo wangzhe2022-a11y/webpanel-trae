@@ -9,6 +9,7 @@ class ServiceController extends Controller
     private const UNITS = [
         'nginx'    => 'nginx',
         'mysql'    => 'mysqld',
+        'postgres' => 'postgresql-16',
         'phpfpm'   => 'php-fpm',
         'php74fpm' => 'php74-php-fpm',
         'php80fpm' => 'php80-php-fpm',
@@ -34,7 +35,13 @@ class ServiceController extends Controller
         $this->verifyCsrf();
         $name = (string) $this->input('service', '');
         $action = (string) $this->input('action', '');
-        if (!isset(self::UNITS[$name])) {
+
+        // node sites: "node-<siteuser>" maps to wp-node-<siteuser>.service
+        $unit = self::UNITS[$name] ?? null;
+        if ($unit === null && preg_match('/^node-([a-z][a-z0-9_]{2,30})$/', $name, $m)) {
+            $unit = 'wp-node-' . $m[1];
+        }
+        if ($unit === null) {
             $this->fail('未知服务');
         }
         if (!in_array($action, ['start', 'stop', 'restart', 'reload'], true)) {
@@ -44,7 +51,7 @@ class ServiceController extends Controller
         if (!$r['ok']) {
             $this->fail('操作失败：' . $r['error']);
         }
-        Auth::log('sys.svc', self::UNITS[$name] . ' ' . $action);
+        Auth::log('sys.svc', $unit . ' ' . $action);
         $this->ok();
     }
 }

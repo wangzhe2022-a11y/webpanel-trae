@@ -15,6 +15,8 @@ VHOST_TPL_DIR="${VHOST_TPL_DIR:-/usr/local/webpanel/config/nginx}"
 FPM_TPL="${FPM_TPL:-/usr/local/webpanel/config/php-fpm/site.conf.tmpl}"
 ACME_HOME="${ACME_HOME:-/www/server/acme.sh}"
 ACME_BIN="$ACME_HOME/acme.sh"
+NODE_UNIT_DIR="${NODE_UNIT_DIR:-/etc/systemd/system}"
+NODE_TPL="${NODE_TPL:-/usr/local/webpanel/config/systemd/node-site.service.tmpl}"
 TIMEZONE="${TIMEZONE:-Asia/Shanghai}"
 DRY_RUN_MARKER="${DRY_RUN_MARKER:-/usr/local/webpanel/.dryrun}"
 
@@ -57,6 +59,36 @@ valid_domain() {
     [[ "$d" =~ ^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$ ]]
 }
 
+# node app port: unprivileged range only
+valid_port() {
+    [[ "$1" =~ ^[0-9]{4,5}$ ]] && [ "$1" -ge 1024 ] && [ "$1" -le 65535 ]
+}
+
+# node start command: first token must be a known runtime, charset is strict
+# (no shell metacharacters - systemd runs it directly, no shell involved)
+valid_node_cmd() {
+    local c="$1"
+    [ ${#c} -le 200 ] || return 1
+    [[ "$c" =~ ^(/usr/(local/)?bin/)?(node|npm|npx|yarn|pnpm|bun|deno)([0-9.]+)?([ ][A-Za-z0-9._/=@:-]+)*$ ]]
+}
+
+# app directory for a node site user
+appdir_of() { echo "$WEB_ROOT/$1/app"; }
+
+# systemd unit name for a node site
+node_unit() { echo "wp-node-$1.service"; }
+
+# is this port already used by another managed vhost?
+port_in_use() {
+    local port="$1" f
+    [ -d "$VHOST_DIR" ] || return 1
+    for f in "$VHOST_DIR"/*.conf; do
+        [ -f "$f" ] || continue
+        grep -q "127\.0\.0\.1:$port\b" "$f" && return 0
+    done
+    return 1
+}
+
 # docroot for a site user
 docroot_of() { echo "$WEB_ROOT/$1/public"; }
 
@@ -81,27 +113,43 @@ dr() {
 }
 
 # render the nginx vhost for a site
-# args: user primary_domains_csv ssl(0|1) hsts(0|1)
+# args: user primary_domains_csv ssl(0|1) hsts(0|1) [type(php|node)] [node_port]
 render_vhost() {
     local user="$1" domains_csv="$2" ssl="${3:-0}" hsts="${4:-0}"
+    local type="${5:-php}" port="${6:-}"
     valid_user "$user" || fail "invalid site user"
     local primary first
     primary="${domains_csv%%,*}"
     valid_domain "$primary" || fail "invalid domain: $primary"
+
     local docroot
     docroot="$(docroot_of "$user")"
 
     local tpl target hsts_line=""
-    if [ "$ssl" = "1" ]; then
-        tpl="$VHOST_TPL_DIR/vhost-https.conf.tmpl"
-        [ "$hsts" = "1" ] && hsts_line='    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;'
-    else
-        tpl="$VHOST_TPL_DIR/vhost-http.conf.tmpl"
-    fi
+    case "$type" in
+        php)
+            if [ "$ssl" = "1" ]; then
+                tpl="$VHOST_TPL_DIR/vhost-https.conf.tmpl"
+                [ "$hsts" = "1" ] && hsts_line='    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;'
+            else
+                tpl="$VHOST_TPL_DIR/vhost-http.conf.tmpl"
+            fi
+            ;;
+        node)
+            valid_port "$port" || fail "invalid app port: $port"
+            if [ "$ssl" = "1" ]; then
+                tpl="$VHOST_TPL_DIR/vhost-proxy-https.conf.tmpl"
+                [ "$hsts" = "1" ] && hsts_line='    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;'
+            else
+                tpl="$VHOST_TPL_DIR/vhost-proxy-http.conf.tmpl"
+            fi
+            ;;
+        *) fail "invalid site type: $type" ;;
+    esac
     target="$VHOST_DIR/$user.conf"
 
     if is_dry_run; then
-        echo "[dry-run] render $target from $tpl ($domains_csv ssl=$ssl)" >&2
+        echo "[dry-run] render $target from $tpl ($domains_csv ssl=$ssl type=$type port=$port)" >&2
         return 0
     fi
     [ -f "$tpl" ] || fail "vhost template missing: $tpl"
@@ -110,6 +158,7 @@ render_vhost() {
         -e "s|{{PRIMARY}}|$primary|g" \
         -e "s|{{DOMAINS}}|${domains_csv//,/ }|g" \
         -e "s|{{DOCROOT}}|$docroot|g" \
+        -e "s|{{PORT}}|$port|g" \
         -e "s|{{HSTS}}|$hsts_line|g" \
         "$tpl" > "$target"
 }
