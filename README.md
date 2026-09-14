@@ -10,7 +10,7 @@
 | 网站/域名 | 创建站点、主域名 + 多别名、独立 Linux 用户隔离、Nginx vhost（WordPress 伪静态/上传加固） |
 | 多版本 PHP | PHP **7.4 / 8.0 / 8.1 / 8.2 / 8.3**（Remi SCL 并行安装），每个站点独立 FPM 池（unix socket、ondemand 省电），页面下拉一键切换 |
 | 数据库 | MySQL 8.0 建库/建用户/改密/删除，utf8mb4，账号仅授权本库；密码自动生成、只显示一次 |
-| SSL | acme.sh 自动签发 Let's Encrypt（http-01）、自动续签（cron）、一键 HTTP→HTTPS 跳转、HSTS 开关 |
+| SSL | 方式一：acme.sh 自动签发 Let's Encrypt（http-01）+ 自动续签（cron）+ 一键 HTTPS 跳转 + HSTS；方式二：**上传第三方证书**（腾讯云 TrustAsia 等，粘贴 PEM 或选文件，自动校验证书/私钥/域名匹配与有效期） |
 | 文件管理 | 目录浏览、在线编辑文本、上传/下载、新建、重命名、改权限、删除；**严格 jailed 在站点目录内**，拒绝路径穿越与符号链接逃逸 |
 | WordPress | WP-CLI 一键部署中文版 WordPress（wp-config、固定链接、WooCommerce 内存参数、FS_METHOD 全部配好），自动生成管理员密码 |
 | 系统 | 仪表盘（CPU/内存/磁盘/负载）、Nginx/MySQL/各版本 PHP-FPM 启停重载、操作审计日志 |
@@ -65,6 +65,21 @@ acme.sh、WP-CLI、防火墙放行、定时续期任务。
 4. 到 **SSL 证书** 页点“申请证书”→ 自动签发并切到 HTTPS；需要时打开 HSTS
 5. 浏览器打开 `https://域名/wp-admin/`，用弹出的管理员密码登录，后台安装 WooCommerce 插件即可
 6. 主题/插件文件可在 **文件管理** 页直接上传到 `wp-content/`
+
+### 使用腾讯云 TrustAsia 免费证书（可选）
+
+面板默认用 Let's Encrypt **全自动签发+续期**（推荐，零维护）。如果你更希望使用
+[腾讯云免费证书](https://console.cloud.tencent.com/ssl)（TrustAsia，DV 单域名，有效期 90 天，
+单账号每年最多 50 张，不支持泛域名），流程：
+
+1. 腾讯云 SSL 控制台 → 申请免费证书（域名验证选自动 DNS 最快，十几分钟签发）
+2. 下载证书 zip → 解压 → 打开 **Nginx** 目录（`域名_bundle.crt` + `域名.key`）
+3. 面板 **SSL 证书** 页 → 站点行点「上传证书」→ 粘贴/选择这两个文件 → 部署
+4. 面板会自动校验：证书可解析、与私钥匹配、未过期、覆盖站点域名；之后自动切 HTTPS
+
+> 注意：TrustAsia 免费证书**不会自动续期**（面板会以「手动部署」橙色标识提醒），
+> 到期前 7 天左右需重新申请并再次上传。若想彻底免维护，直接用方式一即可。
+
 
 > 文件以站点用户身份落盘，WordPress 后台在线升级、装插件**不需要 777 权限**。
 > 站点目录：`/www/wwwroot/<站点用户>/public`，日志：`/www/wwwlogs/`。

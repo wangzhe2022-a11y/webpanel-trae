@@ -43,6 +43,66 @@ class SslController extends Controller
         ]);
     }
 
+    public function upload(): void
+    {
+        $this->requireLogin();
+        $this->verifyCsrf();
+        $site = $this->findSite((int) $this->input('id', 0));
+        if (!$site) {
+            $this->fail('站点不存在');
+        }
+
+        $cert = (string) ($_POST['fullchain'] ?? '');
+        $key = (string) ($_POST['privkey'] ?? '');
+        if (!str_contains($cert, '-----BEGIN CERTIFICATE-----')) {
+            $this->fail('证书内容不正确：需为 PEM 格式（以 -----BEGIN CERTIFICATE----- 开头，含中间证书链）');
+        }
+        if (!str_contains($key, 'PRIVATE KEY-----')) {
+            $this->fail('私钥内容不正确：需为 PEM 格式（以 -----BEGIN ... PRIVATE KEY----- 开头）');
+        }
+        if (str_contains($key, 'ENCRYPTED PRIVATE KEY')) {
+            $this->fail('私钥已加密，请提供未加密的私钥（腾讯云下载时不要设置私钥密码）');
+        }
+
+        // stage files for the root worker (0700/0600, panel temp area)
+        $dir = PANEL_DATA . '/tmp/cert-' . bin2hex(random_bytes(8));
+        if (!@mkdir($dir, 0700, true)) {
+            $this->fail('无法创建临时目录');
+        }
+        file_put_contents("$dir/fullchain.pem", $cert);
+        file_put_contents("$dir/privkey.pem", $key);
+        chmod("$dir/fullchain.pem", 0600);
+        chmod("$dir/privkey.pem", 0600);
+
+        $cleanup = function () use ($dir): void {
+            @unlink("$dir/fullchain.pem");
+            @unlink("$dir/privkey.pem");
+            @rmdir($dir);
+        };
+
+        $r = Shell::sudo('wp-ssl.sh', [
+            'deploy', $site['sysuser'], $this->domainsCsv($site),
+            (string) (int) $site['hsts'], $dir,
+        ]);
+        if (!$r['ok']) {
+            $cleanup();
+            $this->fail('证书部署失败：' . $r['error']);
+        }
+        if (PANEL_DRY) {
+            $cleanup(); // real mode: worker already removed the dir
+        }
+
+        Db::run('UPDATE sites SET ssl = 1 WHERE id = ?', [$site['id']]);
+        Auth::log('ssl.upload', "{$site['domain']} (third-party cert)");
+
+        $missing = trim((string) ($r['data']['missing'] ?? ''));
+        $this->ok([
+            'domain' => $r['data']['domain'] ?? $site['domain'],
+            'not_after' => $r['data']['not_after'] ?? '',
+            'missing' => $missing,
+        ]);
+    }
+
     public function remove(): void
     {
         $this->requireLogin();

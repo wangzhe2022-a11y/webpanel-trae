@@ -81,6 +81,8 @@ final class Shell
                 => ['ok' => true, 'data' => ['ok' => true], 'error' => ''],
             str_starts_with($script, 'wp-ssl') && $a === 'issue'
                 => ['ok' => true, 'data' => ['ok' => true, 'domain' => $args[2] ?? 'demo', 'not_before' => 'dryrun', 'not_after' => 'dryrun'], 'error' => ''],
+            str_starts_with($script, 'wp-ssl') && $a === 'deploy'
+                => ['ok' => true, 'data' => ['ok' => true, 'domain' => explode(',', (string) ($args[2] ?? ''))[0], 'not_after' => 'dryrun', 'missing' => ''], 'error' => ''],
             str_starts_with($script, 'wp-ssl') && $a === 'list'
                 => ['ok' => true, 'data' => ['ok' => true, 'certs' => [['domain' => 'demo.example.com', 'not_before' => 'dryrun', 'not_after' => 'dryrun']]], 'error' => ''],
             str_starts_with($script, 'wp-ssl')

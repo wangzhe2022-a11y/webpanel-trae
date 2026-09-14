@@ -29,6 +29,7 @@ $router->post('/sites/wp', [SiteController::class, 'installWordPress']);
 /* ---- SSL ----------------------------------------------------------------- */
 $router->get('/ssl', [SslController::class, 'index']);
 $router->post('/ssl/issue', [SslController::class, 'issue']);
+$router->post('/ssl/upload', [SslController::class, 'upload']);
 $router->post('/ssl/remove', [SslController::class, 'remove']);
 $router->post('/ssl/hsts', [SslController::class, 'toggleHsts']);
 
