@@ -1,0 +1,3 @@
+# Auto-renew all Let's Encrypt certificates issued through the panel
+# acme.sh remembers --install-cert/--reloadcmd per certificate, nginx is reloaded automatically
+17 3 * * * root /www/server/acme.sh/acme.sh --cron --home /www/server/acme.sh >> /www/wwwlogs/acme-renew.log 2>&1

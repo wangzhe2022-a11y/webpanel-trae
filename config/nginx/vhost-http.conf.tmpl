@@ -1,0 +1,71 @@
+# ============================================================================
+# WebPanel managed vhost - DO NOT EDIT BY HAND (will be overwritten)
+# Site user : {{USER}}
+# Domain    : {{PRIMARY}}
+# ----------------------------------------------------------------------------
+server {
+    listen 80;
+    server_name {{DOMAINS}};
+
+    root {{DOCROOT}};
+    index index.php index.html index.htm;
+
+    access_log /www/wwwlogs/{{USER}}.log;
+    error_log  /www/wwwlogs/{{USER}}.error.log;
+
+    # WooCommerce / uploads
+    client_max_body_size 256m;
+    client_body_buffer_size 128k;
+
+    gzip on;
+    gzip_comp_level 5;
+    gzip_min_length 1k;
+    gzip_types text/plain text/css application/json application/javascript
+               text/xml application/xml application/xml+rss text/javascript
+               image/svg+xml font/woff font/woff2;
+    gzip_vary on;
+
+    # Let's Encrypt http-01 challenge
+    location ^~ /.well-known/acme-challenge/ {
+        default_type "text/plain";
+        try_files $uri =404;
+    }
+
+    # WordPress rewrite
+    location / {
+        try_files $uri $uri/ /index.php?$args;
+    }
+
+    # Static asset caching
+    location ~* \.(?:css|js|png|jpg|jpeg|gif|ico|svg|webp|woff2?|ttf|eot|map)$ {
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+        try_files $uri =404;
+    }
+
+    location ~ \.php$ {
+        try_files $uri =404;
+        fastcgi_pass unix:/run/php-fpm/{{USER}}.sock;
+        fastcgi_index index.php;
+        fastcgi_read_timeout 300;
+        fastcgi_buffer_size 128k;
+        fastcgi_buffers 4 256k;
+        fastcgi_busy_buffers_size 256k;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+
+    # Deny hidden files except ACME challenge
+    location ~ /\.(?!well-known) {
+        deny all;
+    }
+
+    # WordPress hardening
+    location ~* /(?:wp-config\.php|xmlrpc\.php|readme\.html|license\.txt)$ {
+        # xmlrpc.php is allowed (WooCommerce mobile/Jetpack), wp-config blocked
+        location ~* wp-config\.php { deny all; }
+    }
+    location ~* ^/(?:wp-content/uploads)/.*\.(?:php|phtml|phps)$ {
+        deny all;
+    }
+}

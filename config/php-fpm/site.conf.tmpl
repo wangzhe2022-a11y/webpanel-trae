@@ -1,0 +1,41 @@
+; ============================================================================
+; WebPanel managed PHP-FPM pool - DO NOT EDIT BY HAND
+; Site user : {{USER}}
+; PHP       : {{PHPVER}} (Remi SCL)
+; ----------------------------------------------------------------------------
+[{{USER}}]
+user = {{USER}}
+group = {{USER}}
+
+listen = /run/php-fpm/{{USER}}.sock
+listen.owner = nginx
+listen.group = nginx
+listen.mode = 0660
+
+; ondemand keeps memory low for idle WordPress sites
+pm = ondemand
+pm.max_children = {{MAXCHILDREN}}
+pm.process_idle_timeout = 30s
+pm.max_requests = 500
+
+; Per-site jail
+php_admin_value[open_basedir] = {{DOCROOT}}:/tmp
+php_admin_value[upload_tmp_dir] = /tmp
+php_admin_value[session.save_path] = /tmp
+php_admin_value[error_log] = /www/wwwlogs/{{USER}}.php-error.log
+
+; WooCommerce friendly limits
+php_admin_value[memory_limit] = 512M
+php_admin_value[upload_max_filesize] = 256M
+php_admin_value[post_max_size] = 260M
+php_admin_value[max_execution_time] = 300
+php_admin_value[max_input_time] = 300
+php_admin_value[max_input_vars] = 5000
+php_admin_value[date.timezone] = {{TIMEZONE}}
+
+; Dangerous functions disabled (exec kept: some WP plugins need it)
+php_admin_value[disable_functions] = passthru,shell_exec,system,proc_open,popen,pcntl_exec,pcntl_fork,pcntl_waitpid,show_source,posix_kill,posix_setuid,posix_setgid,posix_seteuid,posix_setegid
+
+env[HOSTNAME] = $HOSTNAME
+env[TMP] = /tmp
+env[TMPDIR] = /tmp

@@ -1,0 +1,38 @@
+# ============================================================================
+# WebPanel itself - management UI on {{PORT}} (HTTPS, self-signed by default)
+# Restrict source IPs here or via Tencent Cloud security group.
+# ----------------------------------------------------------------------------
+server {
+    listen {{PORT}} ssl http2;
+    server_name _;
+
+    ssl_certificate     /www/server/certs/panel/fullchain.pem;
+    ssl_certificate_key /www/server/certs/panel/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    root /usr/local/webpanel/panel/public;
+    index index.php;
+
+    # Hardening: uncomment and edit to allow only your office/home IPs
+    # allow 1.2.3.4;
+    # deny all;
+
+    client_max_body_size 1024m;
+
+    location / {
+        try_files $uri /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        try_files $uri =404;
+        fastcgi_pass unix:/run/php-fpm/panel.sock;
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param HTTPS on;
+    }
+
+    location ~ /\.(?!well-known) {
+        deny all;
+    }
+}
