@@ -36,43 +36,38 @@
 </div>
 <?php else: ?>
 <div class="panel-card">
-    <h3>管理</h3>
-    <table class="layui-table" style="margin:0">
-        <tbody>
-        <tr>
-            <td width="140">当前版本</td>
-            <td class="mono"><?= $version !== '' ? e($version) : '未知（服务可能正在启动）' ?></td>
-        </tr>
-        <tr>
-            <td>控制台入口</td>
-            <td>
-                <button class="layui-btn layui-btn-sm" id="btnItLogin" data-url="<?= e($loginUrl ?? '') ?>">
-                            <span class="layui-icon layui-icon-website"></span> 打开 Installatron 控制台
-                        </button>
-                <span style="color:#999;font-size:12px;margin-left:8px">每次点击生成一次性会话，新窗口打开</span>
-            </td>
-        </tr>
-        <tr>
-            <td>版本维护</td>
-            <td>
-                <button class="layui-btn layui-btn-sm layui-btn-primary" id="btnItUpgrade">
-                    <span class="layui-icon layui-icon-refresh"></span> 立即升级
-                </button>
-                <span style="color:#999;font-size:12px;margin-left:8px">官方已每日自动升级，此按钮用于手动触发</span>
-            </td>
-        </tr>
-        <tr>
-            <td>卸载</td>
-            <td>
-                <button class="layui-btn layui-btn-sm layui-btn-danger" id="btnItUninstall">
-                    <span class="layui-icon layui-icon-delete"></span> 卸载 Installatron
-                </button>
-            </td>
-        </tr>
-        </tbody>
-    </table>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <h3 style="margin:0">Installatron 控制台</h3>
+        <div style="font-size:12px;color:#999">
+            当前版本 <span class="mono"><?= $version !== '' ? e($version) : '未知' ?></span>
+            <?php if (!empty($loginUrl)): ?>
+                &nbsp;·&nbsp;
+                <a href="javascript:;" id="btnItOpenNew" data-url="<?= e($loginUrl) ?>" style="color:#1e9fff">
+                    <span class="layui-icon layui-icon-link"></span> 新窗口打开
+                </a>
+            <?php endif; ?>
+            &nbsp;·&nbsp;
+            <a href="javascript:;" id="btnItUpgrade" style="color:#1e9fff">
+                <span class="layui-icon layui-icon-refresh"></span> 升级
+            </a>
+            &nbsp;·&nbsp;
+            <a href="javascript:;" id="btnItUninstall" style="color:#ff5722">
+                <span class="layui-icon layui-icon-delete"></span> 卸载
+            </a>
+        </div>
+    </div>
+    <?php if (!empty($loginUrl)): ?>
+    <iframe id="itronFrame" src="<?= e($loginUrl) ?>" style="width:100%;height:720px;border:1px solid #e6e6e6;border-radius:6px;background:#fff"
+        onload="this.style.height=(Math.max(720, this.contentWindow.document.body.scrollHeight+40))+'px'"></iframe>
+    <?php else: ?>
+    <div style="text-align:center;padding:60px 20px;color:#999">
+        <i class="layui-icon layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop" style="font-size:32px;color:#1e9fff"></i>
+        <p style="margin-top:10px">正在创建控制台会话...</p>
+        <p style="font-size:12px">若长时间未加载，请刷新本页</p>
+    </div>
+    <?php endif; ?>
     <p style="color:#999;font-size:12px;margin:10px 0 0">
-        在控制台中可为站点一键安装/更新/克隆/备份应用；面板「网站管理」创建的站点目录可直接在控制台中导入。
+        在此直接管理 320+ 应用的安装/更新/克隆/备份；面板「网站管理」创建的站点目录可直接在控制台中导入。
     </p>
 </div>
 <?php endif; ?>
@@ -101,7 +96,9 @@ layui.use(['layer', 'element'], function () {
 
     function setBusy(b) {
         busy = b;
-        $('#btnItInstall,#btnItUpgrade,#btnItLogin,#btnItUninstall').prop('disabled', b).toggleClass('layui-btn-disabled', b);
+        $('#btnItInstall,#btnItUpgrade,#btnItOpenNew,#btnItUninstall')
+            .css('pointer-events', b ? 'none' : 'auto')
+            .css('opacity', b ? 0.5 : 1);
     }
 
     function showJob(j) {
@@ -155,28 +152,13 @@ layui.use(['layer', 'element'], function () {
         });
     });
 
-    $('#btnItLogin').on('click', function () {
+    $('#btnItOpenNew').on('click', function () {
         if (jobRunning()) { layer.msg('任务运行中，请稍后再试', { icon: 0 }); return; }
-        // URL is pre-fetched at page render (data-url) so we can open it
-        // synchronously inside the click gesture - the only way to avoid
-        // popup blockers. If the browser still blocks the new tab, fall back
-        // to navigating the current tab (works everywhere).
+        // Secondary action: open the embedded console in a new window/tab.
         var url = $(this).data('url');
-        if (!url) {
-            // URL expired/missing - fetch a fresh one and navigate
-            var load = layer.load(2);
-            WP.post('/installatron/login', {}).then(function (res) {
-                layer.close(load);
-                if (!res.ok || !res.url) { layer.alert(res.error || '控制台未返回会话地址', { icon: 2 }); return; }
-                location.href = res.url;
-            }).catch(function () { layer.close(load); });
-            return;
-        }
+        if (!url) { layer.msg('控制台地址不可用，请刷新页面', { icon: 2 }); return; }
         var win = window.open(url, '_blank');
-        if (!win) {
-            // popup blocked -> open in current tab instead
-            location.href = url;
-        }
+        if (!win) { location.href = url; }
     });
 
     $('#btnItUpgrade').on('click', function () {
