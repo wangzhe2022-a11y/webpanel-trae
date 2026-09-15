@@ -158,12 +158,26 @@ layui.use(['layer', 'element'], function () {
     $('#btnItLogin').on('click', function () {
         if (jobRunning()) { layer.msg('任务运行中，请稍后再试', { icon: 0 }); return; }
         var load = layer.load(2);
+        // The tab must be opened synchronously inside the click gesture:
+        // window.open() from an async fetch callback is silently blocked by
+        // every browser popup blocker (looks like "nothing happened").
+        var win = window.open('', '_blank');
         WP.post('/installatron/login', {}).then(function (res) {
             layer.close(load);
-            if (!res.ok) { layer.alert(res.error, { icon: 2 }); return; }
-            if (!res.url) { layer.alert('控制台未返回会话地址', { icon: 2 }); return; }
-            window.open(res.url, '_blank');
-        }).catch(function () { layer.close(load); });
+            if (!res.ok || !res.url) {
+                if (win) win.close();
+                layer.alert(res.error || '控制台未返回会话地址', { icon: 2 });
+                return;
+            }
+            if (win) {
+                win.location.href = res.url;
+            } else {
+                layer.alert('浏览器拦截了新窗口，请允许本站弹出窗口后重试', { icon: 0 });
+            }
+        }).catch(function () {
+            layer.close(load);
+            if (win) win.close();
+        });
     });
 
     $('#btnItUpgrade').on('click', function () {

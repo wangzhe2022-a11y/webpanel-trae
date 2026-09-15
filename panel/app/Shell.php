@@ -122,7 +122,9 @@ final class Shell
             str_starts_with($script, 'wp-installatron') && $a === 'job'
                 => ['ok' => true, 'data' => ['ok' => true, 'job' => self::itronJobPoll()], 'error' => ''],
             str_starts_with($script, 'wp-installatron') && $a === 'login'
-                => ['ok' => true, 'data' => ['ok' => true, 'url' => 'https://ip-127-0-0-1.is.direct/dryrun-session-token'], 'error' => ''],
+                => self::itronInstalled()
+                    ? ['ok' => true, 'data' => ['ok' => true, 'url' => '/installatron/demo'], 'error' => '']
+                    : ['ok' => false, 'data' => [], 'error' => 'Installatron 未安装'],
             str_starts_with($script, 'wp-backup') && $a === 'list'
                 => ['ok' => true, 'data' => ['ok' => true, 'dir' => '/www/server/backup', 'keep' => 10, 'backups' => [
                     ['name' => 'webpanel-full-' . date('Ymd') . '-033000.tar.gz', 'scope' => 'full', 'size' => 284569907, 'mtime' => date('Y-m-d') . ' 03:30:00'],

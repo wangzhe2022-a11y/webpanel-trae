@@ -30,6 +30,13 @@ class InstallatronController extends Controller
         ]);
     }
 
+    /** dry-run stand-in page for the (non-existent) official console */
+    public function demo(): void
+    {
+        $this->requireLogin();
+        require PANEL_APP . '/views/installatron/demo.php';
+    }
+
     public function install(): void
     {
         $this->requireLogin();

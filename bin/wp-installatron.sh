@@ -184,7 +184,7 @@ cmd_login() {
     if is_dry_run; then
         # dry-run has no /usr/local/installatron binary: use the UI marker
         [ -f /tmp/wp-dry-installatron-installed ] || fail "Installatron 未安装"
-        ok "\"url\":\"https://ip-127-0-0-1.is.direct/dryrun-session-token\""
+        ok "\"url\":\"/installatron/demo\""
     fi
     [ -x "$ITRON_BIN" ] || fail "Installatron 未安装"
     local out url
