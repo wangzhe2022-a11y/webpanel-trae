@@ -109,6 +109,12 @@ final class Shell
                 => ['ok' => true, 'data' => json_decode('{"ok":true,"hostname":"demo-srv","os":"AlmaLinux 8.10","kernel":"4.18.0-553","uptime":"3d 4h 12m","cpu_cores":4,"loadavg":"0.21 0.18 0.10","mem_total_kb":8167020,"mem_available_kb":5980432,"disk":[{"fs":"/","size":"80G","used":"21G","avail":"59G","use_pct":27}],"services":[{"name":"nginx","unit":"nginx","status":"active"},{"name":"mysql","unit":"mysqld","status":"active"},{"name":"postgres","unit":"postgresql-16","status":"active"},{"name":"panel-php","unit":"php-fpm","status":"active"},{"name":"php74-fpm","unit":"php74-php-fpm","status":"active"},{"name":"php82-fpm","unit":"php82-php-fpm","status":"active"},{"name":"node:apidemo01","unit":"wp-node-apidemo01","status":"active"}],"sites":1,"databases":2}', true), 'error' => ''],
             str_starts_with($script, 'wp-wp')
                 => ['ok' => true, 'data' => ['ok' => true, 'domain' => $args[2] ?? 'demo', 'admin' => $args[6] ?? 'admin', 'url' => 'http://demo/wp-admin/'], 'error' => ''],
+            str_starts_with($script, 'wp-installatron') && $a === 'status'
+                => ['ok' => true, 'data' => ['ok' => true, 'installed' => false], 'error' => ''],
+            str_starts_with($script, 'wp-installatron') && $a === 'job'
+                => ['ok' => true, 'data' => ['ok' => true, 'job' => ['state' => 'idle']], 'error' => ''],
+            str_starts_with($script, 'wp-installatron') && $a === 'login'
+                => ['ok' => true, 'data' => ['ok' => true, 'url' => 'https://ip-127-0-0-1.is.direct/dryrun-session-token'], 'error' => ''],
             str_starts_with($script, 'wp-backup') && $a === 'list'
                 => ['ok' => true, 'data' => ['ok' => true, 'dir' => '/www/server/backup', 'keep' => 10, 'backups' => [
                     ['name' => 'webpanel-full-' . date('Ymd') . '-033000.tar.gz', 'scope' => 'full', 'size' => 284569907, 'mtime' => date('Y-m-d') . ' 03:30:00'],

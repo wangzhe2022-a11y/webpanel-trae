@@ -65,4 +65,12 @@ $router->post('/backup/delete', [BackupController::class, 'delete']);
 $router->post('/backup/restore', [BackupController::class, 'restore']);
 $router->get('/backup/download', [BackupController::class, 'download']);
 
+/* ---- installatron (one-click web app installer) ---------------------------- */
+$router->get('/installatron', [InstallatronController::class, 'index']);
+$router->get('/installatron/status', [InstallatronController::class, 'status']);
+$router->post('/installatron/install', [InstallatronController::class, 'install']);
+$router->post('/installatron/login', [InstallatronController::class, 'login']);
+$router->post('/installatron/upgrade', [InstallatronController::class, 'upgrade']);
+$router->post('/installatron/uninstall', [InstallatronController::class, 'uninstall']);
+
 $router->dispatch();
