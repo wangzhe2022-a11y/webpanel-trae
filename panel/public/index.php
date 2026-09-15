@@ -57,4 +57,12 @@ $router->get('/files/download', [FileController::class, 'download']);
 $router->get('/sys/info', [ServiceController::class, 'info']);
 $router->post('/sys/svc', [ServiceController::class, 'svc']);
 
+/* ---- backup / restore ------------------------------------------------------ */
+$router->get('/backup', [BackupController::class, 'index']);
+$router->post('/backup/create', [BackupController::class, 'create']);
+$router->get('/backup/status', [BackupController::class, 'status']);
+$router->post('/backup/delete', [BackupController::class, 'delete']);
+$router->post('/backup/restore', [BackupController::class, 'restore']);
+$router->get('/backup/download', [BackupController::class, 'download']);
+
 $router->dispatch();

@@ -1,0 +1,4 @@
+# WebPanel daily full backup (one-click backups can also be created from
+# the panel at any time). Prunes automatically, keeping the newest
+# BACKUP_KEEP archives (default 10).
+30 3 * * * root /usr/local/webpanel/bin/wp-backup.sh create full >/dev/null 2>&1

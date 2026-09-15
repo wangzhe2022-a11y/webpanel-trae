@@ -223,6 +223,7 @@ if [ ! -x "$ACME_HOME/acme.sh" ]; then
     fi
 fi
 install -m 644 "$INSTALL_DIR/config/cron.d/webpanel-acme" /etc/cron.d/webpanel-acme
+install -m 644 "$INSTALL_DIR/config/cron.d/webpanel-backup" /etc/cron.d/webpanel-backup
 
 if [ ! -x /usr/local/bin/wp ]; then
     curl -fsSL -o /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar

@@ -14,6 +14,7 @@
 | SSL | 方式一：acme.sh 自动签发 Let's Encrypt（http-01）+ 自动续签（cron）+ 一键 HTTPS 跳转 + HSTS；方式二：**上传第三方证书**（腾讯云 TrustAsia 等，粘贴 PEM 或选文件，自动校验证书/私钥/域名匹配与有效期）。PHP 与 Node 站点均支持 |
 | 文件管理 | 目录浏览、在线编辑文本、上传/下载、新建、重命名、改权限、删除；**严格 jailed 在站点目录内**，拒绝路径穿越与符号链接逃逸 |
 | WordPress | WP-CLI 一键部署中文版 WordPress（wp-config、固定链接、WooCommerce 内存参数、FS_METHOD 全部配好），自动生成管理员密码 |
+| 备份恢复 | **一键备份/恢复**：全量（站点文件+证书+vhost+FPM/Node 配置+MySQL+PostgreSQL+面板库）/仅文件/仅数据库三种范围，后台异步执行、页面实时进度；恢复需输入 RESTORE 二次确认；每日 3:30 自动全量备份，保留最近 10 份自动轮转，支持下载到本地 |
 | 系统 | 仪表盘（CPU/内存/磁盘/负载）、Nginx/MySQL/PostgreSQL/各版本 PHP-FPM/Node 服务启停重载、操作审计日志 |
 
 ## 架构与安全模型
@@ -109,6 +110,26 @@ acme.sh、WP-CLI、防火墙放行、定时续期任务。任一外部仓库不�
 - 数据库用户名不能以 `pg_` 开头（PostgreSQL 保留前缀）
 - 服务管理在「系统」页（`postgres` 行启停/重载）；数据目录 `/var/lib/pgsql/16/`
 
+## 备份与恢复
+
+**备份恢复** 页（导航栏）提供一键操作，全部后台异步执行，页面实时显示进度：
+
+| 操作 | 说明 |
+| --- | --- |
+| 一键全量备份 | 站点文件 + 证书 + Nginx vhost + PHP-FPM 池配置 + Node systemd 单元 + MySQL 全库 + PostgreSQL 全库 + 面板 SQLite（原子快照，运行中安全） |
+| 备份文件与配置 | 同上但不含数据库 |
+| 仅备份数据库 | 只含 MySQL / PostgreSQL / 面板库 |
+| 恢复 | 从任一备份还原：文件/证书/配置原位覆盖，数据库按名重建导入，恢复前面板库自动留 `panel.db.pre-restore.*` 兜底；需输入 `RESTORE` 二次确认 |
+| 下载 / 删除 | 备份归档 `/www/server/backup/webpanel-<类型>-<时间戳>.tar.gz`，可下载到本地冷存 |
+
+要点：
+
+- **自动备份**：每日 3:30 全量（`/etc/cron.d/webpanel-backup`），自动轮转保留最近 10 份
+- 同一时刻只允许一个备份/恢复任务（文件锁互斥），完成后页面自动刷新
+- 恢复为**覆盖式**：同名站点/数据库将被替换，请先确认备份点正确；数据库用户与密码不在备份范围（本机恢复不受影响）
+- 跨机迁移：新机器装好面板后，把归档放到 `/www/server/backup/` 再在页面恢复即可
+- 快照级容灾建议搭配腾讯云**云硬盘快照**（系统盘+数据盘），可实现整机级回滚
+
 ## 运维速查
 
 ```bash
@@ -128,6 +149,11 @@ journalctl -u wp-node-<站点用户> -f
 # 手动测试全部证书续签（不影响未到期证书）
 /www/server/acme.sh/acme.sh --cron --home /www/server/acme.sh
 
+# 手动触发一次全量备份 / 查看备份列表 / 任务状态
+sudo /usr/local/webpanel/bin/wp-backup.sh create full
+sudo /usr/local/webpanel/bin/wp-backup.sh list
+sudo /usr/local/webpanel/bin/wp-backup.sh status
+
 # 卸载（保留站点）/ 彻底卸载（含数据，需交互确认）
 sudo bash /usr/local/webpanel/uninstall.sh
 sudo bash /usr/local/webpanel/uninstall.sh --purge
@@ -144,6 +170,7 @@ config/
   systemd/node-site.service.tmpl   Node 站点 systemd 单元模板
   sudoers.d/webpanel        特权脚本白名单
   cron.d/webpanel-acme      证书自动续签
+  cron.d/webpanel-backup    每日 3:30 自动全量备份（保留最近 10 份）
 bin/
   wp-lib.sh                 参数校验/模板渲染/公共函数
   wp-site.sh                站点、vhost、FPM 池生命周期
@@ -151,6 +178,7 @@ bin/
   wp-db.sh                  MySQL 建库建用户改密删除（密码走 stdin）
   wp-pg.sh                  PostgreSQL 建库建用户改密删除（密码走 stdin）
   wp-ssl.sh                 acme.sh 签发/第三方证书部署/删除/列表
+  wp-backup.sh              一键备份/恢复（异步任务、文件锁互斥、轮转清理）
   wp-fs.sh + fs-worker.php  文件管理（jail、chown、禁 setuid）
   wp-sys.sh                 主机信息与服务控制
   wp-wp.sh                  WP-CLI 一键部署 WordPress
@@ -163,6 +191,6 @@ panel/
 ## 已知边界与后续可扩展
 
 - 单机单租户面板；多服务器/负载均衡、DNS/CDN 管理不在范围内
-- 面板数据库为 SQLite，已自动备份建议：定期 `cp panel/data/panel.db` 即可
+- 面板数据库为 SQLite，已包含在每次备份归档中（原子快照）
 - phpMyAdmin 未内置（数据库页面可满足建站需求）；需要可作为独立站点手工部署
-- 备份/定时任务（wp-cron 之外的计划备份）是下一阶段建议优先补的功能
+- 备份为**本机归档**，建议定期下载到本地/对象存储（COS）实现异地容灾；整机级回滚可搭配腾讯云云硬盘快照

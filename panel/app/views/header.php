@@ -6,6 +6,7 @@ $nav = [
     '/databases' => ['数据库', 'layui-icon-table'],
     '/ssl'     => ['SSL 证书', 'layui-icon-auz'],
     '/files'   => ['文件管理', 'layui-icon-file'],
+    '/backup'  => ['备份恢复', 'layui-icon-download-circle'],
 ];
 ?><!doctype html>
 <html lang="zh-CN">
