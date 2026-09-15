@@ -16,7 +16,7 @@ $nav = [
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="csrf" content="<?= e($csrf) ?>">
 <title>WebPanel 管理面板</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.16/dist/css/layui.css">
+<link rel="stylesheet" href="/static/layui/css/layui.css">
 <style>
     .layui-layout-admin .layui-header { background: #23262E; color: #fff; }
     .layui-layout-admin .layui-logo { color: #fff; font-weight: 600; width: 220px; }
@@ -44,6 +44,39 @@ $nav = [
 </style>
 </head>
 <body class="layui-layout-body">
+<script src="/static/layui/layui.js"></script>
+<script>
+/* Shared helpers for every panel page - loaded BEFORE view scripts so inline
+   layui.use(...) calls in views always find the layui object available. */
+window.WP = (function () {
+    var csrf = document.querySelector('meta[name="csrf"]').getAttribute('content');
+
+    function post(url, data) {
+        var body;
+        if (data instanceof FormData) {
+            data.append('_csrf', csrf);
+            body = data;
+        } else {
+            body = new URLSearchParams(data || {});
+            body.append('_csrf', csrf);
+        }
+        return fetch(url, { method: 'POST', body: body, credentials: 'same-origin' })
+            .then(function (r) { return r.json().then(function (j) { j.__status = r.status; return j; }); });
+    }
+
+    function copy(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text);
+        }
+        var ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+        return Promise.resolve();
+    }
+
+    return { post: post, copy: copy, csrf: csrf };
+})();
+</script>
 <div class="layui-layout layui-layout-admin">
     <div class="layui-header">
         <div class="layui-logo layui-elip">

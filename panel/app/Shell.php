@@ -110,9 +110,17 @@ final class Shell
             str_starts_with($script, 'wp-wp')
                 => ['ok' => true, 'data' => ['ok' => true, 'domain' => $args[2] ?? 'demo', 'admin' => $args[6] ?? 'admin', 'url' => 'http://demo/wp-admin/'], 'error' => ''],
             str_starts_with($script, 'wp-installatron') && $a === 'status'
-                => ['ok' => true, 'data' => ['ok' => true, 'installed' => false], 'error' => ''],
+                => ['ok' => true, 'data' => ['ok' => true,
+                    'installed' => self::itronInstalled(),
+                    'version' => self::itronInstalled() ? '5.0.1-dryrun' : ''], 'error' => ''],
+            str_starts_with($script, 'wp-installatron') && $a === 'install'
+                => self::itronJobStart('install'),
+            str_starts_with($script, 'wp-installatron') && $a === 'upgrade'
+                => self::itronJobStart('upgrade'),
+            str_starts_with($script, 'wp-installatron') && $a === 'uninstall'
+                => self::itronUninstall(),
             str_starts_with($script, 'wp-installatron') && $a === 'job'
-                => ['ok' => true, 'data' => ['ok' => true, 'job' => ['state' => 'idle']], 'error' => ''],
+                => ['ok' => true, 'data' => ['ok' => true, 'job' => self::itronJobPoll()], 'error' => ''],
             str_starts_with($script, 'wp-installatron') && $a === 'login'
                 => ['ok' => true, 'data' => ['ok' => true, 'url' => 'https://ip-127-0-0-1.is.direct/dryrun-session-token'], 'error' => ''],
             str_starts_with($script, 'wp-backup') && $a === 'list'
@@ -128,5 +136,66 @@ final class Shell
                 => ['ok' => true, 'data' => ['ok' => true], 'error' => ''],
             default => ['ok' => true, 'data' => ['ok' => true], 'error' => ''],
         };
+    }
+
+    /* ---- Installatron dry-run demo state machine ------------------------- *
+     * Mirrors wp-installatron.sh dry-run: /tmp marker drives the installed
+     * state, a /tmp json file drives the async install/upgrade job so the UI
+     * can demo both page states end-to-end. Not used in production mode. */
+
+    private const ITRON_MARKER = '/tmp/wp-dry-installatron-installed';
+
+    private static function itronInstalled(): bool
+    {
+        return is_file(self::ITRON_MARKER);
+    }
+
+    private static function itronJobStart(string $kind): array
+    {
+        if ($kind === 'install' && self::itronInstalled()) {
+            return ['ok' => false, 'data' => [], 'error' => 'Installatron 已安装，如需重装请先卸载'];
+        }
+        if ($kind === 'upgrade' && !self::itronInstalled()) {
+            return ['ok' => false, 'data' => [], 'error' => 'Installatron 未安装'];
+        }
+        @file_put_contents('/tmp/wp-dry-installatron-job.json', json_encode([
+            'state' => 'running', 'kind' => $kind, 'started' => time(),
+        ]));
+        return ['ok' => true, 'data' => ['ok' => true], 'error' => ''];
+    }
+
+    private static function itronUninstall(): array
+    {
+        @unlink(self::ITRON_MARKER);
+        @unlink('/tmp/wp-dry-installatron-job.json');
+        return ['ok' => true, 'data' => ['ok' => true], 'error' => ''];
+    }
+
+    private static function itronJobPoll(): array
+    {
+        $job = @json_decode((string) @file_get_contents('/tmp/wp-dry-installatron-job.json'), true);
+        if (!is_array($job) || ($job['state'] ?? 'idle') !== 'running') {
+            return ['state' => is_array($job) && (($job['state'] ?? '') === 'done') ? 'done' : 'idle'];
+        }
+        $upgrade = ($job['kind'] ?? '') === 'upgrade';
+        $total = $upgrade ? 4 : 6;
+        $elapsed = max(0, time() - (int) ($job['started'] ?? time()));
+        $phases = $upgrade
+            ? ['备份 Nginx 配置', '下载官方安装器', '执行升级', '校验与验证']
+            : ['备份 Nginx 配置', '准备数据库', '下载官方安装器', '执行安装（约数分钟）', '校验 Nginx 配置', '验证安装'];
+        if ($elapsed >= 4) { // demo job "completes" after 4s
+            @touch(self::ITRON_MARKER);
+            @file_put_contents('/tmp/wp-dry-installatron-job.json', json_encode([
+                'state' => 'done', 'kind' => $job['kind'], 'started' => $job['started'],
+            ]));
+            return ['state' => 'done', 'kind' => $job['kind'], 'name' => 'Installatron Server',
+                'phase' => '完成', 'progress' => $total, 'total' => $total,
+                'started' => date('Y-m-d H:i:s', (int) $job['started']),
+                'finished' => date('Y-m-d H:i:s'), 'error' => ''];
+        }
+        $step = min($total, (int) floor($elapsed / 4 * $total) + 1);
+        return ['state' => 'running', 'kind' => $job['kind'], 'name' => 'Installatron Server',
+            'phase' => $phases[$step - 1], 'progress' => $step, 'total' => $total,
+            'started' => date('Y-m-d H:i:s', (int) $job['started']), 'finished' => '', 'error' => ''];
     }
 }

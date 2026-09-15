@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>WebPanel 登录</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.16/dist/css/layui.css">
+<link rel="stylesheet" href="/static/layui/css/layui.css">
 <style>
     body { background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); height: 100vh; margin: 0; }
     .login-box {
@@ -51,7 +51,7 @@
         </form>
     </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/layui@2.9.16/dist/layui.js"></script>
+<script src="/static/layui/layui.js"></script>
 <script>
 layui.use(['form', 'layer'], function () {
     var form = layui.form, layer = layui.layer, $ = layui.$;
