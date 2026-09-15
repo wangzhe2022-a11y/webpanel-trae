@@ -46,9 +46,9 @@
         <tr>
             <td>控制台入口</td>
             <td>
-                <button class="layui-btn layui-btn-sm" id="btnItLogin">
-                    <span class="layui-icon layui-icon-website"></span> 打开 Installatron 控制台
-                </button>
+                <button class="layui-btn layui-btn-sm" id="btnItLogin" data-url="<?= e($loginUrl ?? '') ?>">
+                            <span class="layui-icon layui-icon-website"></span> 打开 Installatron 控制台
+                        </button>
                 <span style="color:#999;font-size:12px;margin-left:8px">每次点击生成一次性会话，新窗口打开</span>
             </td>
         </tr>
@@ -157,27 +157,26 @@ layui.use(['layer', 'element'], function () {
 
     $('#btnItLogin').on('click', function () {
         if (jobRunning()) { layer.msg('任务运行中，请稍后再试', { icon: 0 }); return; }
-        var load = layer.load(2);
-        // The tab must be opened synchronously inside the click gesture:
-        // window.open() from an async fetch callback is silently blocked by
-        // every browser popup blocker (looks like "nothing happened").
-        var win = window.open('', '_blank');
-        WP.post('/installatron/login', {}).then(function (res) {
-            layer.close(load);
-            if (!res.ok || !res.url) {
-                if (win) win.close();
-                layer.alert(res.error || '控制台未返回会话地址', { icon: 2 });
-                return;
-            }
-            if (win) {
-                win.location.href = res.url;
-            } else {
-                layer.alert('浏览器拦截了新窗口，请允许本站弹出窗口后重试', { icon: 0 });
-            }
-        }).catch(function () {
-            layer.close(load);
-            if (win) win.close();
-        });
+        // URL is pre-fetched at page render (data-url) so we can open it
+        // synchronously inside the click gesture - the only way to avoid
+        // popup blockers. If the browser still blocks the new tab, fall back
+        // to navigating the current tab (works everywhere).
+        var url = $(this).data('url');
+        if (!url) {
+            // URL expired/missing - fetch a fresh one and navigate
+            var load = layer.load(2);
+            WP.post('/installatron/login', {}).then(function (res) {
+                layer.close(load);
+                if (!res.ok || !res.url) { layer.alert(res.error || '控制台未返回会话地址', { icon: 2 }); return; }
+                location.href = res.url;
+            }).catch(function () { layer.close(load); });
+            return;
+        }
+        var win = window.open(url, '_blank');
+        if (!win) {
+            // popup blocked -> open in current tab instead
+            location.href = url;
+        }
     });
 
     $('#btnItUpgrade').on('click', function () {

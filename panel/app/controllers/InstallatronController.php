@@ -12,9 +12,20 @@ class InstallatronController extends Controller
     {
         $this->requireLogin();
         $r = Shell::sudo('wp-installatron.sh', ['status']);
+        $installed = $r['ok'] && !empty($r['data']['installed']);
+        // Pre-fetch the one-time console URL so the click handler can open it
+        // synchronously (avoids popup blockers on async window.open).
+        $loginUrl = '';
+        if ($installed) {
+            $lr = Shell::sudo('wp-installatron.sh', ['login']);
+            if ($lr['ok']) {
+                $loginUrl = (string) ($lr['data']['url'] ?? '');
+            }
+        }
         $this->render('installatron/index', [
-            'installed' => $r['ok'] && !empty($r['data']['installed']),
+            'installed' => $installed,
             'version'  => $r['ok'] ? (string) ($r['data']['version'] ?? '') : '',
+            'loginUrl' => $loginUrl,
             'job'      => $this->jobStatus(),
         ]);
     }
