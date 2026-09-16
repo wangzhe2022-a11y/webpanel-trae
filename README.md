@@ -151,6 +151,139 @@ acme.sh、WP-CLI、防火墙放行、定时续期任务。任一外部仓库不�
 - License Key 只走 stdin 传递，装完立即从磁盘擦除，不进进程参数
 - 同一时刻仅允许一个安装/升级任务（文件锁互斥），任务异常中断可被检测并报告
 
+## 从 cPanel 迁移到 WebPanel
+
+> cPanel 与任何第三方面板都**不能共存**（两者都管理 Web/MySQL/PHP/DNS/邮件等底层服务）。
+> 迁移路线：**备份 → 记录映射表 → 卸载 cPanel → 清理残留 → 装 WebPanel → 还原站点 → 取消 cPanel 授权**。
+
+### 1. 全量备份
+
+```bash
+mkdir -p /root/migration/{sites,dbs,ssl,config}
+
+# cPanel 账户级备份（推荐，每用户一个包，含站点+DB+邮件+配置）
+for user in $(ls /home); do
+    /scripts/pkgacct "$user" /root/migration/
+done
+
+# 兜底：单独备份站点文件
+for user in $(ls /home); do
+    [ -d "/home/$user/public_html" ] && tar -czf "/root/migration/sites/$user.tar.gz" -C /home "$user/public_html"
+done
+
+# 所有数据库
+for db in $(mysql -e "SHOW DATABASES" -N | grep -vE '^(information_schema|mysql|performance_schema|sys)$'); do
+    mysqldump --single-transaction --routines --triggers "$db" > "/root/migration/dbs/$db.sql"
+done
+
+# SSL 证书
+cp -r /var/cpanel/ssl/ /root/migration/ssl/cpanel-ssl/ 2>/dev/null
+cp -r /etc/pki/tls/ /root/migration/ssl/system-tls/ 2>/dev/null
+```
+
+> 务必把 `/root/migration/` 下载到**外部存储**（另一台服务器或对象存储），不要只留在本机。
+
+### 2. 记录站点映射表
+
+导出每个域名的 docroot、数据库、PHP 版本，供还原时对照：
+
+```bash
+cat > /root/migration/site-map.txt <<'EOF'
+# domain        | docroot                    | db_name      | db_user     | php_ver
+example.com     | /home/user1/public_html    | user1_wp     | user1_wp    | 8.2
+blog.example.com| /home/user1/public_html/blog| user1_blog  | user1_blog  | 8.1
+EOF
+```
+
+获取方式：
+- **docroot**：`cat /etc/userdatadomains | grep <domain>`
+- **数据库**：WHM → List Accounts，或 `cat /var/cpanel/databases/*.json`
+- **PHP 版本**：WHM → MultiPHP Manager
+
+### 3. 卸载 cPanel
+
+```bash
+/usr/local/cpanel/scripts/uninstall_cpanel
+reboot
+```
+
+cPanel 卸载后会残留 Apache / MySQL / PHP / DNS / 邮件服务，需手动清理（确认备份已完成）：
+
+```bash
+systemctl stop httpd mysql named dovecot exim 2>/dev/null
+yum remove -y ea-apache24 ea-php* httpd* mysql* mariadb* bind* dovecot* exim* cpanel* 2>/dev/null
+rm -rf /etc/httpd /etc/my.cnf /etc/named.conf /etc/dovecot /etc/exim.conf
+rm -rf /usr/local/apache /usr/local/cpanel /var/cpanel /var/named
+# /var/lib/mysql 如需保留数据库文件则不删；否则删除
+reboot
+```
+
+验证环境干净（应无输出）：
+```bash
+ss -tlnp | grep -E ':(80|443|3306|25|53)\b'
+which httpd nginx mysqld php-fpm named
+```
+
+### 4. 安装 LEMP 栈 + WebPanel
+
+```bash
+# EPEL + Remi 源
+yum install -y epel-release
+yum install -y https://rpms.remirepo.net/enterprise/remi-release-8.rpm
+
+# Nginx
+yum install -y nginx && systemctl enable --now nginx
+
+# MySQL 8
+yum install -y mysql-server && systemctl enable --now mysqld && mysql_secure_installation
+
+# PHP-FPM（按需多版本）
+yum install -y php82-php-fpm php82-php-mysqlnd php82-php-gd php82-php-mbstring \
+               php82-php-xml php82-php-curl php82-php-zip php82-php-bcmath \
+               php74-php-fpm php74-php-mysqlnd php81-php-fpm php81-php-mysqlnd
+systemctl enable --now php82-php-fpm
+
+# 可选：PostgreSQL 16
+yum install -y postgresql-server postgresql-contrib
+postgresql-setup --initdb && systemctl enable --now postgresql
+
+# 部署 WebPanel（见上方「一键安装」章节）
+sudo bash install.sh
+```
+
+### 5. 还原站点 + SSL
+
+对照步骤 2 的映射表，在 WebPanel 中逐个还原：
+
+1. **网站管理 → 创建网站**：填域名、选 PHP 版本（与映射表一致）
+2. **还原文件**：
+   ```bash
+   tar -xzf /root/migration/sites/<user>.tar.gz -C /www/wwwroot/<站点用户>/
+   chown -R <站点用户>:www /www/wwwroot/<站点用户>/
+   ```
+3. **还原数据库**：面板「数据库」页建库建用户，然后导入：
+   ```bash
+   mysql <db_name> < /root/migration/dbs/<db>.sql
+   ```
+   更新站点配置文件（`wp-config.php` / `configuration.php` 等）中的数据库密码
+4. **SSL 证书**：面板「SSL 证书」页上传旧证书，或用 acme.sh 重新签发
+
+### 6. 取消 cPanel 授权
+
+在购买渠道取消续订：
+- cPanel 官方：[store.cpanel.net](https://store.cpanel.net) → My Account → Cancel License
+- 经销商（腾讯云/阿里云/Namecheap 等）：对应平台订单管理取消
+
+### 风险提示
+
+| 环节 | 风险 | 缓解 |
+| --- | --- | --- |
+| 卸载 cPanel | `/home` 数据可能被误删 | 卸载前必须有外部备份，别只留在本机 |
+| MySQL 版本差异 | cPanel 可能用 5.7，新装可能是 8.0 | 确认版本一致，否则导入可能报字符集错误 |
+| PHP 扩展差异 | ionCube / SourceGuardian 等加密扩展 | 提前确认站点是否依赖，按需装到对应 PHP 版本 |
+| DNS 切换 | cPanel 卸载后 DNS 解析中断 | 提前迁到 Cloudflare / DNSPod，TTL 改小 |
+| 邮件 | cPanel 邮件服务卸载后邮件丢失 | 用 `/scripts/pkgacct` 完整备份，或迁第三方邮件 |
+
 ## 运维速查
 
 ```bash
