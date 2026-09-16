@@ -156,49 +156,238 @@ acme.sh、WP-CLI、防火墙放行、定时续期任务。任一外部仓库不�
 > cPanel 与任何第三方面板都**不能共存**（两者都管理 Web/MySQL/PHP/DNS/邮件等底层服务）。
 > 迁移路线：**备份 → 记录映射表 → 卸载 cPanel → 清理残留 → 装 WebPanel → 还原站点 → 取消 cPanel 授权**。
 
-### 1. 全量备份
+### 1. 全量备份（详细步骤）
+
+> 备份是整个迁移最关键的一步。**先在服务器本地打包，再下载到外部存储**，不要只留在本机。
+
+#### 1.1 备份前准备
 
 ```bash
-mkdir -p /root/migration/{sites,dbs,ssl,config}
+# 检查磁盘剩余空间（备份通常需要站点总大小的 1.5-2 倍空间）
+df -h /root /home
 
-# cPanel 账户级备份（推荐，每用户一个包，含站点+DB+邮件+配置）
-for user in $(ls /home); do
-    /scripts/pkgacct "$user" /root/migration/
-done
+# 创建备份目录结构
+mkdir -p /root/migration/{accounts,sites,dbs,ssl,dns,mail,config,logs}
 
-# 兜底：单独备份站点文件
-for user in $(ls /home); do
-    [ -d "/home/$user/public_html" ] && tar -czf "/root/migration/sites/$user.tar.gz" -C /home "$user/public_html"
-done
-
-# 所有数据库
-for db in $(mysql -e "SHOW DATABASES" -N | grep -vE '^(information_schema|mysql|performance_schema|sys)$'); do
-    mysqldump --single-transaction --routines --triggers "$db" > "/root/migration/dbs/$db.sql"
-done
-
-# SSL 证书
-cp -r /var/cpanel/ssl/ /root/migration/ssl/cpanel-ssl/ 2>/dev/null
-cp -r /etc/pki/tls/ /root/migration/ssl/system-tls/ 2>/dev/null
+# 记录备份开始时间
+echo "备份开始: $(date)" > /root/migration/BACKUP-LOG.txt
 ```
 
-> 务必把 `/root/migration/` 下载到**外部存储**（另一台服务器或对象存储），不要只留在本机。
+#### 1.2 cPanel 账户级完整备份（推荐主方案）
 
-### 2. 记录站点映射表
+`pkgacct` 会把每个 cPanel 用户的**站点文件 + 数据库 + 邮件 + 转发器 + 自动回复 + DNS zone + 配额 + 子域名**打成一个 tar.gz，
+这是最完整、还原最方便的方式：
 
-导出每个域名的 docroot、数据库、PHP 版本，供还原时对照：
+```bash
+# 遍历所有 cPanel 用户（排除系统目录）
+for user in $(ls -1 /home | grep -vE '^(lost\+found|cPanelInstall|cpeasyapache|\.cpan)$'); do
+    echo "[$(date)] 开始备份账户: $user" >> /root/migration/BACKUP-LOG.txt
+    /scripts/pkgacct "$user" /root/migration/accounts/ \
+        && echo "[$(date)] 完成: $user" >> /root/migration/BACKUP-LOG.txt \
+        || echo "[$(date)] 失败: $user" >> /root/migration/BACKUP-LOG.txt
+done
+
+# 检查产物（每个用户一个 cpmove-<user>.tar.gz）
+ls -lh /root/migration/accounts/
+```
+
+> `pkgacct` 的 tar.gz 里包含：`homedir.tar`（站点文件）、`mysql/`（各库 SQL）、`psql/`（PG 库）、
+> `mail/`（邮件数据）、`dnszones/`（DNS 记录）、`sslcerts/`（SSL）、`counters/`、`bandwidth/` 等。
+
+#### 1.3 单独备份站点文件（兜底方案，防止 pkgacct 遗漏）
+
+```bash
+for user in $(ls -1 /home | grep -vE '^(lost\+found|cPanelInstall|cpeasyapache|\.cpan)$'); do
+    # 备份 public_html（站点根目录）
+    if [ -d "/home/$user/public_html" ]; then
+        tar -czf "/root/migration/sites/${user}-public_html.tar.gz" \
+            -C /home "$user/public_html" 2>/dev/null
+    fi
+    # 备份用户整个 home（含 .htaccess、.ssh、cron 等隐藏文件）
+    tar -czf "/root/migration/sites/${user}-home.tar.gz" \
+        --exclude="/home/$user/.cpanel/datastore" \
+        --exclude="/home/$user/.cpanel/caches" \
+        -C /home "$user" 2>/dev/null
+done
+```
+
+#### 1.4 数据库备份（逐库 SQL，可独立还原）
+
+```bash
+# 获取 MySQL root 密码（cPanel 存放在 /root/.my.cnf）
+cat /root/.my.cnf 2>/dev/null
+
+# 排除系统库，逐个导出业务库
+for db in $(mysql -e "SHOW DATABASES" -N | grep -vE '^(information_schema|mysql|performance_schema|sys)$'); do
+    echo "[$(date)] 导出数据库: $db" >> /root/migration/BACKUP-LOG.txt
+    mysqldump --single-transaction --routines --triggers --events \
+        --quick --default-character-set=utf8mb4 \
+        "$db" > "/root/migration/dbs/${db}.sql" 2>> /root/migration/BACKUP-LOG.txt
+done
+
+# 额外：导出 MySQL 用户和权限（还原后重建账号用）
+mysql -e "SELECT user,host FROM mysql.user;" > /root/migration/dbs/mysql-users.txt
+mysqldump --no-data --skip-triggers mysql > /root/migration/dbs/mysql-schema.sql 2>/dev/null
+
+# 验证每个 SQL 文件非空且可解析
+for f in /root/migration/dbs/*.sql; do
+    [ -s "$f" ] || echo "警告: $f 为空" >> /root/migration/BACKUP-LOG.txt
+done
+```
+
+#### 1.5 SSL 证书备份
+
+```bash
+# cPanel 管理的证书（每个站点的证书、私钥、CA 链）
+cp -r /var/cpanel/ssl/ /root/migration/ssl/cpanel-ssl/ 2>/dev/null
+
+# 系统级 CA 证书和私钥
+cp -r /etc/pki/tls/ /root/migration/ssl/system-tls/ 2>/dev/null
+
+# cPanel 的 SSL 存储库（含 Let's Encrypt / AutoSSL 签发的证书）
+cp -r /var/cpanel/ssl/apache_tls/ /root/migration/ssl/apache_tls/ 2>/dev/null
+
+# 导出所有已安装证书的摘要（方便还原时对照）
+for crt in /var/cpanel/ssl/apache_tls/*/combined; do
+    domain=$(basename $(dirname "$crt"))
+    openssl x509 -in "$crt" -noout -subject -enddate 2>/dev/null \
+        >> /root/migration/ssl/cert-summary.txt
+done
+```
+
+#### 1.6 DNS 配置备份
+
+```bash
+# 导出所有 DNS zone 文件（cPanel 的 BIND 配置）
+cp -r /var/named/*.db /root/migration/dns/ 2>/dev/null
+cp /etc/named.conf /root/migration/dns/named.conf 2>/dev/null
+
+# 导出每个域名的 NS 记录摘要
+for zone in /var/named/*.db; do
+    domain=$(basename "$zone" .db)
+    grep -E '^(NS|A|CNAME|MX)' "$zone" >> "/root/migration/dns/${domain}-records.txt" 2>/dev/null
+done
+
+# 重要：如果域名 DNS 由 cPanel 服务器托管，卸载前必须把 DNS 迁到
+# 第三方（Cloudflare / DNSPod / 阿里云 DNS），否则站点会断！
+```
+
+#### 1.7 邮件数据备份
+
+```bash
+# cPanel 的邮件存储（每个用户的所有邮箱）
+for user in $(ls -1 /home | grep -vE '^(lost\+found|cPanelInstall|cpeasyapache|\.cpan)$'); do
+    if [ -d "/home/$user/mail" ]; then
+        tar -czf "/root/migration/mail/${user}-mail.tar.gz" \
+            -C /home "$user/mail" 2>/dev/null
+    fi
+done
+
+# 邮件别名和转发器
+cp -r /etc/valiases /root/migration/mail/valiases/ 2>/dev/null
+cp -r /etc/vfilters /root/migration/mail/vfilters/ 2>/dev/null
+```
+
+#### 1.8 cPanel/WHM 全局配置备份
+
+```bash
+# cPanel 核心配置
+cp -r /var/cpanel /root/migration/config/var-cpanel/ 2>/dev/null
+cp -r /etc/cpanel /root/migration/config/etc-cpanel/ 2>/dev/null
+
+# Apache 配置（vhost、PHP 处理、模块）
+cp -r /etc/apache2/conf/ /root/migration/config/apache-conf/ 2>/dev/null
+cp -r /usr/local/apache/conf/ /root/migration/config/apache-conf-local/ 2>/dev/null
+
+# PHP 配置（php.ini、每个版本的配置）
+cp /usr/local/lib/php.ini /root/migration/config/php.ini 2>/dev/null
+find /opt/cpanel/ -name "php.ini" -exec cp --parents {} /root/migration/config/ \; 2>/dev/null
+
+# crontab（所有用户的定时任务）
+for user in $(ls -1 /var/spool/cron); do
+    crontab -u "$user" -l > "/root/migration/config/cron-${user}.txt" 2>/dev/null
+done
+```
+
+#### 1.9 生成站点映射表（还原时对照用）
 
 ```bash
 cat > /root/migration/site-map.txt <<'EOF'
+# 域名 | docroot | 数据库名 | 数据库用户 | PHP 版本 | 证书状态
+# 请根据 WHM 后台信息填写，还原时逐一对照
+EOF
+
+# 自动抓取域名 → docroot 映射
+cat /etc/userdatadomains | grep -vE '^(\#|$)' | while IFS=: read domain rest; do
+    user=$(echo "$rest" | cut -d'=' -f1)
+    echo "$domain => /home/$user/public_html" >> /root/migration/site-map-auto.txt
+done
+
+# 自动抓取数据库归属（哪个用户有哪些库）
+cat /var/cpanel/databases/*.json 2>/dev/null | grep -oP '"dbname":"[^"]+"' | sort -u \
+    >> /root/migration/databases-list.txt
+```
+
+#### 1.10 备份完整性校验
+
+```bash
+# 统计备份总大小
+du -sh /root/migration/
+
+# 检查所有 tar.gz 是否损坏
+echo "=== tar.gz 完整性检查 ===" >> /root/migration/BACKUP-LOG.txt
+for f in /root/migration/accounts/*.tar.gz /root/migration/sites/*.tar.gz /root/migration/mail/*.tar.gz; do
+    [ -f "$f" ] || continue
+    if gzip -t "$f" 2>/dev/null; then
+        echo "OK: $f" >> /root/migration/BACKUP-LOG.txt
+    else
+        echo "损坏: $f" >> /root/migration/BACKUP-LOG.txt
+    fi
+done
+
+# 检查 SQL 文件数量是否和数据库数量一致
+echo "SQL 文件数: $(ls /root/migration/dbs/*.sql 2>/dev/null | wc -l)" >> /root/migration/BACKUP-LOG.txt
+echo "数据库数: $(mysql -e 'SHOW DATABASES' -N | grep -vE '^(information_schema|mysql|performance_schema|sys)$' | wc -l)" >> /root/migration/BACKUP-LOG.txt
+
+# 最终确认
+echo "备份完成: $(date)" >> /root/migration/BACKUP-LOG.txt
+cat /root/migration/BACKUP-LOG.txt
+```
+
+#### 1.11 异地传输（务必执行！）
+
+```bash
+# 方式一：下载到本地（在你本地电脑执行）
+# scp -r root@<服务器IP>:/root/migration/ /本地/备份目录/
+
+# 方式二：传到另一台服务器
+# rsync -avz /root/migration/ root@<备份服务器>:/backup/cpanel-migration/
+
+# 方式三：上传到对象存储（腾讯云 COS / 阿里云 OSS 等）
+# 例如用 coscmd：
+# coscmd upload -r /root/migration/ cos://你的bucket/cpanel-migration/
+
+# 确认异地存储成功后，再继续卸载 cPanel
+```
+
+> ⚠️ **在确认备份已安全存放到外部存储之前，绝对不要卸载 cPanel。**
+
+### 2. 整理站点映射表（还原时对照）
+
+步骤 1.9 已自动生成域名→docroot 映射和数据库列表。现在补充 PHP 版本等信息，
+整理成一张完整表（手动填写或从 WHM 导出）：
+
+```bash
+cat > /root/migration/site-map-final.txt <<'EOF'
 # domain        | docroot                    | db_name      | db_user     | php_ver
 example.com     | /home/user1/public_html    | user1_wp     | user1_wp    | 8.2
 blog.example.com| /home/user1/public_html/blog| user1_blog  | user1_blog  | 8.1
 EOF
 ```
 
-获取方式：
-- **docroot**：`cat /etc/userdatadomains | grep <domain>`
-- **数据库**：WHM → List Accounts，或 `cat /var/cpanel/databases/*.json`
-- **PHP 版本**：WHM → MultiPHP Manager
+- **PHP 版本**：WHM → MultiPHP Manager，或 `cat /var/cpanel/userdata/*/*.phpversion` 2>/dev/null
+- **docroot**：已自动生成在 `site-map-auto.txt`
+- **数据库**：已自动生成在 `databases-list.txt`
 
 ### 3. 卸载 cPanel
 
