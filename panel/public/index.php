@@ -5,6 +5,18 @@
  */
 declare(strict_types=1);
 
+// PHP built-in dev server: serve real static files directly with correct MIME
+// types instead of letting the front controller wrap them as text/html.
+if (PHP_SAPI === 'cli-server') {
+    $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+    if ($path !== '/') {
+        $file = __DIR__ . $path;
+        if (is_file($file)) {
+            return false;
+        }
+    }
+}
+
 require __DIR__ . '/../app/bootstrap.php';
 
 use WebPanel\{Auth, Csrf, Router};
