@@ -440,22 +440,198 @@ postgresql-setup --initdb && systemctl enable --now postgresql
 sudo bash install.sh
 ```
 
-### 5. 还原站点 + SSL
+### 5. 还原备份资料到 WebPanel（详细步骤）
 
-对照步骤 2 的映射表，在 WebPanel 中逐个还原：
+> 还原前确认：WebPanel 已安装完毕、Nginx/MySQL/PHP-FPM 服务正常、备份文件已上传到服务器。
 
-1. **网站管理 → 创建网站**：填域名、选 PHP 版本（与映射表一致）
-2. **还原文件**：
+#### 5.1 上传备份到新服务器
+
+```bash
+# 把之前存到外部的备份传回来
+# 方式一：从本地 scp 上传
+# scp -r /本地/备份目录/migration/ root@<新服务器IP>:/root/migration/
+
+# 方式二：从备份服务器 rsync
+# rsync -avz root@<备份服务器>:/backup/cpanel-migration/ /root/migration/
+
+# 验证上传完整
+ls -lh /root/migration/accounts/
+ls -lh /root/migration/dbs/
+du -sh /root/migration/
+```
+
+#### 5.2 逐个还原站点（对照 site-map-final.txt）
+
+对映射表中的每一个域名，执行以下流程：
+
+**步骤 A：在面板创建站点骨架**
+
+1. 登录 WebPanel → **网站管理** → **创建网站**
+2. 填写：主域名、别名（www 等）、PHP 版本（与映射表一致）
+3. 勾选「同时创建数据库」（如果该站点有数据库）
+4. 记下弹出的：**站点用户名**、**数据库名**、**数据库密码**
+
+> 面板会自动创建：系统用户、`/www/wwwroot/<站点用户>/public/` 目录、Nginx vhost、PHP-FPM 池。
+
+**步骤 B：还原站点文件**
+
+```bash
+# 解压站点文件到面板创建的站点目录
+# 注意：cPanel 的站点在 public_html，本面板在 public/
+tar -xzf /root/migration/sites/<cpanel用户>-public_html.tar.gz \
+    -C /www/wwwroot/<站点用户>/public/ --strip-components=1
+
+# 如果用的是 home 完整备份（含 public_html 目录）：
+tar -xzf /root/migration/sites/<cpanel用户>-home.tar.gz \
+    -C /tmp/cpanel-home/
+cp -a /tmp/cpanel-home/<cpanel用户>/public_html/. /www/wwwroot/<站点用户>/public/
+
+# 修正属主（面板站点用户 + www 组）
+chown -R <站点用户>:www /www/wwwroot/<站点用户>/
+
+# 修正权限（标准 WordPress/PHP 权限）
+find /www/wwwroot/<站点用户>/public/ -type d -exec chmod 755 {} \;
+find /www/wwwroot/<站点用户>/public/ -type f -exec chmod 644 {} \;
+# wp-content/uploads 等可写目录按需给 775
+chmod -R 775 /www/wwwroot/<站点用户>/public/wp-content/uploads 2>/dev/null
+```
+
+**步骤 C：还原数据库**
+
+```bash
+# 方式一：用面板创建的数据库名和用户（推荐，密码已由面板管理）
+# 面板「数据库」页已建好 <db_name> 和 <db_user>，直接导入：
+mysql <db_name> < /root/migration/dbs/<原cPanel库名>.sql
+
+# 方式二：如果想保留原数据库名（需先建库建用户）
+mysql -e "CREATE DATABASE <原库名> CHARACTER SET utf8mb4;
+          CREATE USER '<原用户>'@'localhost' IDENTIFIED BY '<新密码>';
+          GRANT ALL PRIVILEGES ON <原库名>.* TO '<原用户>'@'localhost';
+          FLUSH PRIVILEGES;"
+mysql <原库名> < /root/migration/dbs/<原库名>.sql
+
+# 验证导入
+mysql <db_name> -e "SHOW TABLES;"
+mysql <db_name> -e "SELECT COUNT(*) FROM <某个核心表>;"
+```
+
+**步骤 D：更新站点配置文件中的数据库连接**
+
+```bash
+# WordPress
+vi /www/wwwroot/<站点用户>/public/wp-config.php
+# 修改：DB_NAME, DB_USER, DB_PASSWORD, DB_HOST（通常是 localhost）
+
+# Joomla
+vi /www/wwwroot/<站点用户>/public/configuration.php
+
+# Drupal
+vi /www/wwwroot/<站点用户>/public/sites/default/settings.php
+
+# PrestaShop
+vi /www/wwwroot/<站点用户>/public/app/config/parameters.php
+```
+
+**步骤 E：处理特殊配置**
+
+```bash
+# 还原 .htaccess（cPanel 的伪静态规则，Nginx 需要转换）
+# WordPress 的伪静态在面板 vhost 模板里已内置，无需 .htaccess
+# 如果有自定义规则，需要转换为 Nginx 语法放到站点 vhost 里
+
+# 还原 wp-config.php 里的密钥和盐（如果迁移的是 WordPress）
+# cPanel 的 wp-config.php 里的 AUTH_KEY / SECURE_AUTH_KEY 等保持不变即可
+
+# 还原自定义 php.ini 配置（如果有）
+# 面板的 PHP-FPM 池配置在 /etc/opt/remi/phpXX/php-fpm.d/<站点用户>.conf
+# 可通过面板「网站管理 → 站点设置 → PHP 配置」修改
+```
+
+#### 5.3 还原 SSL 证书
+
+**方式一：上传旧证书（推荐，保持原证书有效）**
+
+1. 从备份中找到该域名的证书文件：
    ```bash
-   tar -xzf /root/migration/sites/<user>.tar.gz -C /www/wwwroot/<站点用户>/
-   chown -R <站点用户>:www /www/wwwroot/<站点用户>/
+   # cPanel 的证书通常在 /var/cpanel/ssl/apache_tls/<域名>/
+   ls /root/migration/ssl/apache_tls/<域名>/
+   # combined = 证书 + CA 链，crt 里可能是纯证书，需要分离
    ```
-3. **还原数据库**：面板「数据库」页建库建用户，然后导入：
+2. 提取证书和私钥：
    ```bash
-   mysql <db_name> < /root/migration/dbs/<db>.sql
+   # combined 文件里通常是：证书 + 中间证书 + 私钥
+   # 分离证书（BEGIN CERTIFICATE 到 END CERTIFICATE 的第一段）
+   # 分离私钥（BEGIN PRIVATE KEY 到 END PRIVATE KEY）
    ```
-   更新站点配置文件（`wp-config.php` / `configuration.php` 等）中的数据库密码
-4. **SSL 证书**：面板「SSL 证书」页上传旧证书，或用 acme.sh 重新签发
+3. 面板 **SSL 证书** 页 → 站点行点「上传证书」→ 粘贴证书链和私钥 → 部署
+
+**方式二：用 acme.sh 重新签发（证书已过期或找不到时）**
+
+1. 确保域名 A 记录已指向新服务器
+2. 面板 **SSL 证书** 页 → 站点行点「申请证书」→ 自动签发 Let's Encrypt
+3. 签发成功后面板自动配置 Nginx 并开启 HTTPS
+
+#### 5.4 还原邮件（可选）
+
+> WebPanel 当前不内置邮件服务。如需保留邮件，建议迁移到第三方邮件服务（腾讯企业邮、阿里云邮、Google Workspace 等）。
+
+```bash
+# 如果要手动还原邮件到本地（需自行安装 Dovecot + Postfix，不在面板范围内）
+for user in $(ls /root/migration/mail/*-mail.tar.gz); do
+    tar -xzf "$user" -C /tmp/mail-restore/
+done
+# 然后按第三方邮件服务商的导入指南操作
+```
+
+#### 5.5 还原定时任务（crontab）
+
+```bash
+# 查看备份的 crontab
+cat /root/migration/config/cron-*.txt
+
+# 对每个站点用户，在面板里手动重建定时任务
+# 或直接用 crontab 命令（面板站点用户是独立系统用户）
+crontab -u <站点用户> /root/migration/config/cron-<cpanel用户>.txt
+
+# 注意：cPanel 的 cron 路径可能用的是 /home/<cpanel用户>/...
+# 需要改成 /www/wwwroot/<站点用户>/...
+```
+
+#### 5.6 还原后的验证清单
+
+```bash
+# 1. 站点文件权限正确
+ls -la /www/wwwroot/<站点用户>/public/index.php
+
+# 2. 数据库可连接（用站点配置里的账号）
+mysql -u<db_user> -p<db_pass> <db_name> -e "SELECT 1;"
+
+# 3. Nginx vhost 生效
+nginx -t
+curl -I http://<域名>
+curl -I https://<域名>
+
+# 4. PHP 版本正确（在站点目录创建 phpinfo 临时文件测试）
+echo '<?php phpinfo(); ?>' > /www/wwwroot/<站点用户>/public/info.php
+curl -s http://<域名>/info.php | grep "PHP Version"
+rm /www/wwwroot/<站点用户>/public/info.php
+
+# 5. 浏览器访问站点首页和后台，确认功能正常
+
+# 6. 检查错误日志
+tail -f /www/wwwlogs/<站点用户>.error.log
+```
+
+#### 5.7 常见问题处理
+
+| 问题 | 原因 | 解决 |
+| --- | --- | --- |
+| 500 错误 | 属主/权限不对 | `chown -R <站点用户>:www` + 目录 755 / 文件 644 |
+| 数据库连接失败 | 密码/库名不一致 | 检查 wp-config.php 与面板数据库页的账号密码 |
+| 404（除首页外） | 伪静态规则缺失 | WordPress：面板已内置；其他程序需转换 .htaccess 为 Nginx 规则 |
+| 上传大小限制 | PHP 默认 2M | 面板「网站管理 → PHP 配置」调大 upload_max_filesize / post_max_size |
+| 证书不匹配 | 域名与证书不一致 | 重新签发或上传正确的证书 |
+| 邮件发送失败 | 面板无邮件服务 | 用 SMTP 插件（如 WP Mail SMTP）走第三方邮箱 |
 
 ### 6. 取消 cPanel 授权
 
