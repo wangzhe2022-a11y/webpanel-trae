@@ -1,0 +1,17 @@
+# WebPanel privilege delegation
+# The webpanel PHP-FPM user may ONLY invoke these fixed wrapper scripts as root.
+# All argument validation happens inside the scripts themselves.
+Defaults:webpanel !requiretty
+Defaults:webpanel env_reset
+Defaults:webpanel secure_path=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+
+webpanel ALL=(root) NOPASSWD: /usr/local/webpanel/bin/wp-site.sh
+webpanel ALL=(root) NOPASSWD: /usr/local/webpanel/bin/wp-db.sh
+webpanel ALL=(root) NOPASSWD: /usr/local/webpanel/bin/wp-pg.sh
+webpanel ALL=(root) NOPASSWD: /usr/local/webpanel/bin/wp-ssl.sh
+webpanel ALL=(root) NOPASSWD: /usr/local/webpanel/bin/wp-fs.sh
+webpanel ALL=(root) NOPASSWD: /usr/local/webpanel/bin/wp-sys.sh
+webpanel ALL=(root) NOPASSWD: /usr/local/webpanel/bin/wp-wp.sh
+webpanel ALL=(root) NOPASSWD: /usr/local/webpanel/bin/wp-node.sh
+webpanel ALL=(root) NOPASSWD: /usr/local/webpanel/bin/wp-backup.sh
+webpanel ALL=(root) NOPASSWD: /usr/local/webpanel/bin/wp-installatron.sh
