@@ -29,7 +29,7 @@ $publicIp = (string) ($conn['public_ip'] ?? '');
 
 <div class="panel-card">
     <h3>连接本机站点</h3>
-    <ol style="font-size:13px;color:#555;line-height:2;padding-left:20px;margin:0 0 16px">
+    <ol class="itron-steps">
         <li>在 Installatron.com 登录后进入 <span class="mono">https://installatron.com/apps</span>，添加网站。</li>
         <li>协议选 <b>SFTP 或 SSH</b>（不要用明文 FTP：本机未装 FTP 服务，且数据库只监听本机）。</li>
         <li>填入下表主机、端口、用户与文档根路径；网站 URL 填站点域名。</li>
@@ -172,6 +172,9 @@ $publicIp = (string) ($conn['public_ip'] ?? '');
 
 <style>
     .btn-copy { font-size:12px; margin-left:8px; color:#1e9fff; }
+    /* layui reset sets li{list-style:none}; restore numbering for this page */
+    .itron-steps { padding-left: 22px; margin: 0 0 16px; font-size: 13px; color: #555; line-height: 2; }
+    .itron-steps li { list-style: decimal; list-style-position: outside; }
 </style>
 <script>
 layui.use(['layer'], function () {

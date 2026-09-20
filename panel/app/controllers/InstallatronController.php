@@ -16,7 +16,9 @@ class InstallatronController extends Controller
     {
         $this->requireLogin();
 
-        $sites = Db::all('SELECT * FROM sites ORDER BY id DESC');
+        $sites = Db::all(
+            "SELECT * FROM sites ORDER BY CASE WHEN COALESCE(type,'php') = 'node' THEN 1 ELSE 0 END, id DESC"
+        );
         $dbs = Db::all(
             'SELECT id, site_id, name, username, engine FROM databases ORDER BY id DESC'
         );

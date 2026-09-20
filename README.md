@@ -183,7 +183,7 @@ sudo /usr/local/webpanel/bin/wp-pma.sh install
 
 面板对接 **Installatron Remote**（官方云端控制台，不是本机 Installatron Server）——320+ 应用的安装/更新/克隆/备份在 [installatron.com/apps](https://installatron.com/apps) 完成。Remote 免费档可无限安装/导入与每月少量更新；**Remote Premium**（按年订阅）提供无限更新、自动更新、定时备份与克隆。Remote Premium **不能**用来在本机安装 Installatron Server。
 
-1. 导航栏 **Installatron Remote** →「打开 Installatron Remote」进入官方云端控制台（在 installatron.com 登录/注册；面板不保存该账号密码）
+1. 导航栏 **Installatron** →「打开 Installatron Remote」进入官方云端控制台（在 installatron.com 登录/注册；面板不保存该账号密码）
 2. 添加网站时协议选 **SFTP 或 SSH**（本机未提供 FTP 服务；MySQL/PostgreSQL 只监听 127.0.0.1，明文 FTP 无法在远端连库）
 3. 主机填本机**公网 IP** 或已解析域名，端口默认 **22**；用户建议填该站点系统用户（`sysuser`），路径填 `/www/wwwroot/<站点用户>/public`
 4. 需要数据库的应用：先在面板 **数据库** 页建库（密码只显示一次），安装向导里主机填 `127.0.0.1`（PostgreSQL 为 `127.0.0.1:5432`）
