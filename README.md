@@ -16,7 +16,7 @@
 | 文件管理 | 目录浏览、在线编辑文本、上传/下载、新建、重命名、改权限、删除；**严格 jailed 在站点目录内**，拒绝路径穿越与符号链接逃逸 |
 | WordPress | WP-CLI 一键部署中文版 WordPress（wp-config、固定链接、WooCommerce 内存参数、FS_METHOD 全部配好），自动生成管理员密码 |
 | 备份恢复 | **一键备份/恢复**：全量（站点文件+证书+vhost+FPM/Node 配置+MySQL+PostgreSQL+面板库）/仅文件/仅数据库三种范围，后台异步执行、页面实时进度；恢复需输入 RESTORE 二次确认；每日 3:30 自动全量备份，保留最近 10 份自动轮转，支持下载到本地 |
-| Installatron | **一键 Web 应用安装器**（320+ 应用：WordPress/Joomla/Drupal/PrestaShop/phpMyAdmin 等）：页面粘贴 License Key 后台异步安装；复用面板 MySQL、Nginx 配置自动备份/回滚；官方 GUI 一次性会话直达（免二次登录）、一键升级/卸载 |
+| Installatron Remote | 对接官方云端 **Installatron Remote**（[installatron.com/apps](https://installatron.com/apps)）：面板提供本机 SFTP/SSH 连接参数（主机、端口 22、站点 sysuser、文档根 `/www/wwwroot/<站点用户>/public`）；数据库在「数据库」页建好后填入安装向导。**不**在本机安装 Installatron Server，也**不**保存 installatron.com 密码 |
 | 系统 | 仪表盘（CPU/内存/磁盘/负载）、Nginx/MySQL/PostgreSQL/各版本 PHP-FPM/Node 服务启停重载、操作审计日志 |
 
 ## 架构与安全模型
@@ -25,7 +25,7 @@
 浏览器 ──HTTPS:8888──▶ nginx ──unix socket──▶ php-fpm 池 [webpanel 用户]
                                                   │ 仅能调用
                                                   ▼
-                          /etc/sudoers.d/webpanel 白名单（11 个固定脚本，NOPASSWD）
+                          /etc/sudoers.d/webpanel 白名单（10 个固定脚本，NOPASSWD）
                                                   │ 校验全部参数后
                                                   ▼
                           bin/wp-*.sh（root）→ useradd / nginx vhost / fpm 池 / mysql / postgres / systemd / acme.sh
@@ -179,25 +179,32 @@ sudo /usr/local/webpanel/bin/wp-pma.sh install
 - 跨机迁移：新机器装好面板后，把归档放到 `/www/server/backup/` 再在页面恢复即可
 - 快照级容灾建议搭配腾讯云**云硬盘快照**（系统盘+数据盘），可实现整机级回滚
 
-## Installatron（一键 Web 应用安装器）
+## Installatron Remote（云端一键 Web 应用安装器）
 
-面板内置 **Installatron Server**（独立版）集成——320+ 应用一键安装/自动更新/克隆/快照备份
-（WordPress、Joomla、Drupal、PrestaShop、phpMyAdmin……）。已有付费 License，到手即可用：
+面板对接 **Installatron Remote**（官方云端控制台，不是本机 Installatron Server）——320+ 应用的安装/更新/克隆/备份在 [installatron.com/apps](https://installatron.com/apps) 完成。Remote 免费档可无限安装/导入与每月少量更新；**Remote Premium**（按年订阅）提供无限更新、自动更新、定时备份与克隆。Remote Premium **不能**用来在本机安装 Installatron Server。
 
-1. 导航栏 **Installatron** 页 → 粘贴 License Key（installatron.com → My Account）→「一键安装」，
-   约 2-5 分钟，页面实时显示 6 步进度（备份 Nginx → 建库 → 下载 → 安装 → 校验 → 验证）
-2. 完成后点「打开 Installatron 控制台」：每次生成一次性会话 URL，新窗口直达官方 GUI，
-   无需二次登录；在 GUI 里选择站点域名即可给对应站点安装应用
-3. 「立即升级」保持 Installatron 自身最新；卸载需输入 UNINSTALL 二次确认
-   （默认保留 `/var/installatron` 应用数据）
+1. 导航栏 **Installatron** →「打开 Installatron Remote」进入官方云端控制台（在 installatron.com 登录/注册；面板不保存该账号密码）
+2. 添加网站时协议选 **SFTP 或 SSH**（本机未提供 FTP 服务；MySQL/PostgreSQL 只监听 127.0.0.1，明文 FTP 无法在远端连库）
+3. 主机填本机**公网 IP** 或已解析域名，端口默认 **22**；用户建议填该站点系统用户（`sysuser`），路径填 `/www/wwwroot/<站点用户>/public`
+4. 需要数据库的应用：先在面板 **数据库** 页建库（密码只显示一次），安装向导里主机填 `127.0.0.1`（PostgreSQL 为 `127.0.0.1:5432`）
 
-安全与集成细节：
+连接注意：
 
-- **复用面板 MySQL**：安装前面板自动预建 `installatron` 库与专用账号，不另起数据库服务
-- **Nginx 防御**：安装/升级前自动打包 `/etc/nginx` 到备份目录；装完 `nginx -t` 校验失败则自动回滚，
-  面板 Nginx 始终可用
-- License Key 只走 stdin 传递，装完立即从磁盘擦除，不进进程参数
-- 同一时刻仅允许一个安装/升级任务（文件锁互斥），任务异常中断可被检测并报告
+- 站点系统用户默认 shell 为 `/sbin/nologin`，不能交互式 SSH。要用 SFTP 连接，需为该用户配置 OpenSSH 内部 SFTP（chroot 到 `/www/wwwroot/<sysuser>`），或改用已有运维 SSH 账号并填写对应文档根
+- 腾讯云**安全组**需放行入站 TCP `22`，否则 installatron.com 云端连不上
+- WordPress 若只想本机一键部署，仍可用「网站管理」里的 WP-CLI，不必走 Remote
+
+### 若旧环境曾安装 Installatron Server
+
+本面板已移除 Server 的安装/升级/卸载与一次性 GUI 登录。从未装过 Server 的机器（当前 CVM 即是这种情况）无需处理。若 `/usr/local/installatron` 仍在：
+
+```bash
+rpm -e installatron-server
+rm -rf /usr/local/installatron /var/installatron
+rm -f /etc/cron.d/installatron
+nginx -t && systemctl reload nginx   # 检查是否残留其 Nginx 片段
+# 可选：删除当时预建的 MySQL 库/账号 installatron
+```
 
 ## 从 cPanel 迁移到 WebPanel
 
@@ -752,7 +759,6 @@ bin/
   wp-pma.sh                 内置 phpMyAdmin 安装/状态/卸载（官方 tarball + SHA256）
   wp-ssl.sh                 acme.sh 签发/第三方证书部署/删除/列表
   wp-backup.sh              一键备份/恢复（异步任务、文件锁互斥、轮转清理）
-  wp-installatron.sh        Installatron Server 安装/升级/卸载/一次性登录（nginx 防御、复用 MySQL）
   wp-fs.sh + fs-worker.php  文件管理（jail、chown、禁 setuid）
   wp-sys.sh                 主机信息与服务控制
   wp-wp.sh                  WP-CLI 一键部署 WordPress
