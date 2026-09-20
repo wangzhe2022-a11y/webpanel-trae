@@ -27,14 +27,19 @@ $nav = [
     .layui-nav-tree .layui-nav-item a .layui-icon { font-size: 18px; margin-right: 10px; }
     .header-right { float: right; line-height: 60px; padding-right: 20px; }
     .header-right .layui-icon { font-size: 18px; }
-    .stat-card { border-radius: 8px; padding: 20px; color: #fff; position: relative; }
+    .stat-card { border-radius: 8px; padding: 20px; color: #fff !important; position: relative; }
+    .stat-card .num,
+    .stat-card .num span,
+    .stat-card .label,
+    .stat-card .layui-icon { color: #fff !important; }
     .stat-card .num { font-size: 32px; font-weight: 600; }
     .stat-card .label { opacity: .85; font-size: 13px; }
     .stat-card .layui-icon { position: absolute; right: 18px; top: 18px; font-size: 42px; opacity: .35; }
-    .c-blue { background: linear-gradient(135deg,#1e9fff,#0c7cd5); }
-    .c-green { background: linear-gradient(135deg,#16baaa,#0e9a8c); }
-    .c-orange { background: linear-gradient(135deg:#ffb800,#e69500); }
-    .c-purple { background: linear-gradient(135deg:#a233c6,#7d2399); }
+    /* Compound selectors + !important so Layui/theme rules cannot wash cards to grey. */
+    .stat-card.c-blue { background: linear-gradient(135deg,#1e9fff,#0c7cd5) !important; color: #fff !important; }
+    .stat-card.c-green { background: linear-gradient(135deg,#16baaa,#0e9a8c) !important; color: #fff !important; }
+    .stat-card.c-orange { background: linear-gradient(135deg,#ff9800,#e65100) !important; color: #fff !important; }
+    .stat-card.c-purple { background: linear-gradient(135deg,#9c27b0,#6a1b9a) !important; color: #fff !important; }
     .panel-card { background: #fff; border-radius: 8px; padding: 18px 20px; margin-bottom: 16px; }
     .panel-card h3 { margin: 0 0 14px; font-size: 15px; }
     .tag-alias { margin: 2px 4px 2px 0; }
