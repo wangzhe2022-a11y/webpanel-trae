@@ -324,8 +324,13 @@ layui.use(['layer', 'form'], function () {
     });
 
     /* ---------- switch php ---------- */
+    $('.phpsel').each(function () {
+        this.dataset.prev = this.value;
+    });
+
     $('.phpsel').on('change', function () {
         var sel = this, id = $(this).data('id'), ver = this.value;
+        var prev = sel.dataset.prev;
         layer.confirm('将该站点切换到 <b>' + $(this).find('option:selected').text() + '</b>？切换期间有短暂中断。', {
             title: '切换 PHP 版本'
         }, function (idx) {
@@ -333,9 +338,21 @@ layui.use(['layer', 'form'], function () {
             var load = layer.load(2);
             WP.post('/sites/php', { id: id, php_version: ver }).then(function (res) {
                 layer.close(load);
-                if (!res.ok) { layer.msg(res.error, { icon: 2 }); sel.selectedIndex = sel.dataset.oldIdx || 0; return; }
+                if (!res.ok) {
+                    layer.msg(res.error, { icon: 2 });
+                    sel.value = prev;
+                    return;
+                }
+                sel.dataset.prev = ver;
                 layer.msg('已切换', { icon: 1 });
+            }).catch(function () {
+                layer.close(load);
+                layer.msg('请求失败', { icon: 2 });
+                sel.value = prev;
             });
+        }, function (idx) {
+            layer.close(idx);
+            sel.value = prev;
         });
     });
 
