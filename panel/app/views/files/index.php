@@ -1,6 +1,6 @@
 <?php
 /** @var array $sites @var array|null $selected */
-$siteId = $selected['id'] ?? 0;
+$siteId = (int) ($selected['id'] ?? 0);
 ?>
 <div class="panel-card">
     <h3>
@@ -9,7 +9,7 @@ $siteId = $selected['id'] ?? 0;
             <select id="siteSelect" lay-ignore style="height:30px;width:260px">
                 <option value="0">— 请选择站点 —</option>
                 <?php foreach ($sites as $s): ?>
-                <option value="<?= (int) $s['id'] ?>" <?= (int) $siteId === (int) $s['id'] ? 'selected' : '' ?>>
+                <option value="<?= (int) $s['id'] ?>" <?= $siteId === (int) $s['id'] ? 'selected' : '' ?>>
                     <?= e($s['domain']) ?>（/www/wwwroot/<?= e($s['sysuser']) ?>）
                 </option>
                 <?php endforeach; ?>
@@ -44,6 +44,18 @@ $siteId = $selected['id'] ?? 0;
     <?php endif; ?>
 </div>
 
+<script>
+/* Site picker must always be wired: the file listing script below is only
+   rendered after a site is selected, so this handler cannot live there. */
+(function () {
+    var sel = document.getElementById('siteSelect');
+    if (!sel) return;
+    sel.addEventListener('change', function () {
+        var id = parseInt(this.value, 10) || 0;
+        window.location.href = id > 0 ? ('/files?site=' + id) : '/files';
+    });
+})();
+</script>
 <?php if ($siteId): ?>
 <script>
 layui.use(['layer', 'upload'], function () {
