@@ -22,8 +22,12 @@ $siteId = $selected['id'] ?? 0;
     <?php else: ?>
     <div style="margin-bottom:12px">
         <button class="layui-btn layui-btn-sm" id="btnUpload"><span class="layui-icon layui-icon-upload"></span> 上传到当前目录</button>
-        <button class="layui-btn layui-btn-sm layui-btn-normal" id="btnExtract">解压</button>
-        <button class="layui-btn layui-btn-sm layui-btn-normal" id="btnCompress">压缩</button>
+        <button class="layui-btn layui-btn-sm layui-btn-normal" id="btnExtract" title="解压选中的压缩包">
+            <span class="layui-icon layui-icon-screen-full"></span> 解压
+        </button>
+        <button class="layui-btn layui-btn-sm layui-btn-normal" id="btnCompress" title="压缩选中的文件/文件夹">
+            <span class="layui-icon layui-icon-screen-restore"></span> 压缩
+        </button>
         <button class="layui-btn layui-btn-sm layui-btn-primary" id="btnNewFile">新建文件</button>
         <button class="layui-btn layui-btn-sm layui-btn-primary" id="btnNewDir">新建文件夹</button>
         <button class="layui-btn layui-btn-sm layui-btn-primary" id="btnRefresh"><span class="layui-icon layui-icon-refresh"></span> 刷新</button>
