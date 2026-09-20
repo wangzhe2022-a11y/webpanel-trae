@@ -14,5 +14,4 @@ webpanel ALL=(root) NOPASSWD: /usr/local/webpanel/bin/wp-sys.sh
 webpanel ALL=(root) NOPASSWD: /usr/local/webpanel/bin/wp-wp.sh
 webpanel ALL=(root) NOPASSWD: /usr/local/webpanel/bin/wp-node.sh
 webpanel ALL=(root) NOPASSWD: /usr/local/webpanel/bin/wp-backup.sh
-webpanel ALL=(root) NOPASSWD: /usr/local/webpanel/bin/wp-installatron.sh
 webpanel ALL=(root) NOPASSWD: /usr/local/webpanel/bin/wp-pma.sh

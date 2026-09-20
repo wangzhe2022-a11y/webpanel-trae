@@ -1,114 +1,77 @@
 <?php
 declare(strict_types=1);
 
-use WebPanel\Auth;
-use WebPanel\Shell;
+use WebPanel\Db;
 
+/**
+ * Installatron Remote helper page.
+ *
+ * The panel does not install Installatron Server locally and never stores
+ * installatron.com credentials. Operators connect sites from
+ * https://installatron.com/apps using SFTP/SSH plus the hints on this page.
+ */
 class InstallatronController extends Controller
 {
-    private const KEY_RE = '/^[A-Za-z0-9][A-Za-z0-9-]{7,63}$/';
-
     public function index(): void
     {
         $this->requireLogin();
-        $r = Shell::sudo('wp-installatron.sh', ['status']);
-        $installed = $r['ok'] && !empty($r['data']['installed']);
-        // Pre-fetch the one-time console URL so the click handler can open it
-        // synchronously (avoids popup blockers on async window.open).
-        $loginUrl = '';
-        if ($installed) {
-            $lr = Shell::sudo('wp-installatron.sh', ['login']);
-            if ($lr['ok']) {
-                $loginUrl = (string) ($lr['data']['url'] ?? '');
+
+        $sites = Db::all('SELECT * FROM sites ORDER BY id DESC');
+        $dbs = Db::all(
+            'SELECT id, site_id, name, username, engine FROM databases ORDER BY id DESC'
+        );
+        $dbsBySite = [];
+        foreach ($dbs as $d) {
+            $sid = (int) ($d['site_id'] ?? 0);
+            if ($sid > 0) {
+                $dbsBySite[$sid][] = $d;
             }
         }
+        foreach ($sites as &$s) {
+            $isNode = ($s['type'] ?? 'php') === 'node';
+            $s['is_node'] = $isNode;
+            $s['docroot'] = '/www/wwwroot/' . $s['sysuser'] . '/' . ($isNode ? 'app' : 'public');
+            $s['db_list'] = $dbsBySite[(int) $s['id']] ?? [];
+        }
+        unset($s);
+
         $this->render('installatron/index', [
-            'installed' => $installed,
-            'version'  => $r['ok'] ? (string) ($r['data']['version'] ?? '') : '',
-            'loginUrl' => $loginUrl,
-            'job'      => $this->jobStatus(),
+            'sites' => $sites,
+            'conn'  => $this->connectionHints(),
         ]);
     }
 
-    public function status(): void
+    /**
+     * Host/port hints for the operator. Values are derived from this request
+     * and the dashboard cache — no privileged script is invoked.
+     */
+    private function connectionHints(): array
     {
-        $this->requireLogin();
-        $r = Shell::sudo('wp-installatron.sh', ['status']);
-        $this->ok([
-            'installed' => $r['ok'] && !empty($r['data']['installed']),
-            'version'   => $r['ok'] ? (string) ($r['data']['version'] ?? '') : '',
-            'job'       => $this->jobStatus(),
-        ]);
-    }
+        $hostname = gethostname() ?: '';
+        $httpHost = (string) ($_SERVER['HTTP_HOST'] ?? '');
+        $httpHost = (string) preg_replace('/:\d+$/', '', $httpHost);
 
-    /** dry-run stand-in page for the (non-existent) official console */
-    public function demo(): void
-    {
-        $this->requireLogin();
-        require PANEL_APP . '/views/installatron/demo.php';
-    }
+        $publicIp = '';
+        if (filter_var($httpHost, FILTER_VALIDATE_IP)) {
+            $publicIp = $httpHost;
+        }
 
-    public function install(): void
-    {
-        $this->requireLogin();
-        $this->verifyCsrf();
-        $key = (string) $this->input('key', '');
-        if (!preg_match(self::KEY_RE, $key)) {
-            $this->fail('无效的 License Key（在 installatron.com → My Account → License Key 获取）');
+        $cacheFile = PANEL_DATA . '/cache/sys-info.json';
+        if ($hostname === '' && is_file($cacheFile)) {
+            $info = json_decode((string) file_get_contents($cacheFile), true);
+            if (is_array($info) && !empty($info['hostname'])) {
+                $hostname = (string) $info['hostname'];
+            }
         }
-        // key travels to the wrapper via stdin - never in argv
-        $r = Shell::sudo('wp-installatron.sh', ['install'], $key);
-        if (!$r['ok']) {
-            $this->fail('安装任务启动失败：' . $r['error']);
-        }
-        Auth::log('installatron.install', 'key ' . substr($key, 0, 4) . '***');
-        $this->ok();
-    }
 
-    public function login(): void
-    {
-        $this->requireLogin();
-        $this->verifyCsrf();
-        $r = Shell::sudo('wp-installatron.sh', ['login']);
-        if (!$r['ok']) {
-            $this->fail($r['error'] ?: '无法创建控制台会话');
-        }
-        Auth::log('installatron.login', 'console session');
-        $this->ok(['url' => (string) ($r['data']['url'] ?? '')]);
-    }
+        $suggestedHost = $publicIp !== '' ? $publicIp : ($httpHost !== '' ? $httpHost : $hostname);
 
-    public function upgrade(): void
-    {
-        $this->requireLogin();
-        $this->verifyCsrf();
-        $r = Shell::sudo('wp-installatron.sh', ['upgrade']);
-        if (!$r['ok']) {
-            $this->fail('升级任务启动失败：' . $r['error']);
-        }
-        Auth::log('installatron.upgrade', 'manual upgrade');
-        $this->ok();
-    }
-
-    public function uninstall(): void
-    {
-        $this->requireLogin();
-        $this->verifyCsrf();
-        $confirm = (string) $this->input('confirm', '');
-        $purge = $this->input('purge', '') === '1';
-        if ($confirm !== 'UNINSTALL') {
-            $this->fail('请输入 UNINSTALL 以确认卸载');
-        }
-        $r = Shell::sudo('wp-installatron.sh', $purge ? ['uninstall', '--purge'] : ['uninstall']);
-        if (!$r['ok']) {
-            $this->fail('卸载失败：' . $r['error']);
-        }
-        Auth::log('installatron.uninstall', $purge ? 'purge' : 'keep app data');
-        $this->ok();
-    }
-
-    private function jobStatus(): array
-    {
-        $r = Shell::sudo('wp-installatron.sh', ['job']);
-        return $r['ok'] ? ($r['data']['job'] ?? ['state' => 'idle']) : ['state' => 'idle'];
+        return [
+            'hostname'       => $hostname,
+            'public_ip'      => $publicIp,
+            'http_host'      => $httpHost,
+            'suggested_host' => $suggestedHost,
+            'ssh_port'       => 22,
+        ];
     }
 }

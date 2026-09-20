@@ -8,7 +8,7 @@ $nav = [
     '/ssl'     => ['SSL 证书', 'layui-icon-auz'],
     '/files'   => ['文件管理', 'layui-icon-file'],
     '/backup'  => ['备份恢复', 'layui-icon-download-circle'],
-    '/installatron' => ['Installatron', 'layui-icon-app'],
+    '/installatron' => ['Installatron Remote', 'layui-icon-app'],
 ];
 ?><!doctype html>
 <html lang="zh-CN">
