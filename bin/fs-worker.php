@@ -66,7 +66,7 @@ const EXTRACT_MAX_UNCOMP  = 8589934592;      // 8 GiB uncompressed
 const EXTRACT_MAX_FILES   = 20000;
 const EXTRACT_TIMEOUT     = 180;
 
-function cmd_capture(array $argv, int $timeout = 60): array {
+function cmd_capture(array $argv, int $timeout = 60, ?string $cwd = null): array {
     if ($argv === [] || ($argv[0][0] ?? '') !== '/' || !is_file($argv[0])) {
         err('内部错误：命令不可用');
     }
@@ -75,8 +75,8 @@ function cmd_capture(array $argv, int $timeout = 60): array {
         $cmd = '/usr/bin/timeout --signal=KILL ' . (int) $timeout . ' ' . $cmd;
     }
     $desc = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
-    $proc = proc_open($cmd, $desc, $pipes);
-    if (!is_resource($proc)) err('无法执行解压命令');
+    $proc = proc_open($cmd, $desc, $pipes, $cwd);
+    if (!is_resource($proc)) err('无法执行压缩/解压命令');
     fclose($pipes[0]);
     $stdout = (string) stream_get_contents($pipes[1]);
     $stderr = (string) stream_get_contents($pipes[2]);
@@ -317,6 +317,70 @@ function harden_extracted(string $dest, array $rels, string $user, string $jailB
     }
 }
 
+/** Recursively measure a tree; reject symlinks and jail escapes. */
+function tree_size_safe(string $p, string $jailBase, int &$files): int {
+    if (is_link($p)) err('不允许压缩符号链接');
+    $real = realpath($p);
+    if ($real === false || ($real !== $jailBase && strpos($real . '/', $jailBase . '/') !== 0)) {
+        err('路径超出站点目录');
+    }
+    if (is_file($p)) {
+        $files++;
+        if ($files > EXTRACT_MAX_FILES) err('选中的文件过多（最多 ' . EXTRACT_MAX_FILES . ' 个）');
+        return (int) filesize($p);
+    }
+    if (!is_dir($p)) err('无法压缩该类型的文件');
+    $sum = 0;
+    foreach (scandir($p) as $n) {
+        if ($n === '.' || $n === '..') continue;
+        $sum += tree_size_safe($p . '/' . $n, $jailBase, $files);
+        if ($sum > EXTRACT_MAX_UNCOMP) err('待压缩内容超过 8GB，已拒绝');
+    }
+    return $sum;
+}
+
+function zip_add_tree(ZipArchive $z, string $abs, string $local, string $jailBase): void {
+    if (is_link($abs)) err('不允许压缩符号链接');
+    $real = realpath($abs);
+    if ($real === false || ($real !== $jailBase && strpos($real . '/', $jailBase . '/') !== 0)) {
+        err('路径超出站点目录');
+    }
+    if (is_dir($abs)) {
+        if ($local !== '') $z->addEmptyDir($local);
+        foreach (scandir($abs) as $n) {
+            if ($n === '.' || $n === '..') continue;
+            $childLocal = $local === '' ? $n : ($local . '/' . $n);
+            zip_add_tree($z, $abs . '/' . $n, $childLocal, $jailBase);
+        }
+        return;
+    }
+    if (!$z->addFile($abs, $local)) err('写入压缩包失败：' . $local);
+}
+
+function compress_zip_archive(string $dest, string $archiveName, array $names, string $jailBase): void {
+    $zipBin = find_bin(['/usr/bin/zip', '/bin/zip']);
+    $archive = $dest . '/' . $archiveName;
+    if ($zipBin !== null) {
+        $argv = array_merge([$zipBin, '-r', '-q', $archiveName, '--'], $names);
+        $r = cmd_capture($argv, EXTRACT_TIMEOUT, $dest);
+        if (cmd_timed_out($r['code'])) err('压缩超时（最多 ' . EXTRACT_TIMEOUT . ' 秒）');
+        if ($r['code'] !== 0) {
+            @unlink($archive);
+            $hint = trim($r['stderr'] ?: $r['stdout']);
+            err('压缩失败' . ($hint !== '' ? '：' . $hint : ''));
+        }
+        return;
+    }
+    if (!class_exists('ZipArchive')) err('系统未安装 zip，无法压缩');
+    $z = new ZipArchive();
+    $opened = $z->open($archive, ZipArchive::CREATE | ZipArchive::EXCL);
+    if ($opened !== true) err('创建压缩包失败');
+    foreach ($names as $n) {
+        zip_add_tree($z, $dest . '/' . $n, $n, $jailBase);
+    }
+    if (!$z->close()) err('写入压缩包失败');
+}
+
 $action = $argv[1] ?? '';
 $user   = $argv[2] ?? '';
 if (!valid_user($user)) err('invalid site user');
@@ -503,6 +567,59 @@ if ($action === 'extract' || $action === 'unzip') {
 
     $destRel = ($dest === $jailBase) ? '/' : '/' . ltrim(substr($dest, strlen($jailBase)), '/');
     out(['ok' => true, 'extracted' => count($rels), 'dest' => $destRel]);
+}
+
+/* ------------------------------ compress -------------------------------- */
+if ($action === 'compress' || $action === 'zip') {
+    $dirRel = $argv[3] ?? '/';
+    $name   = $argv[4] ?? '';
+    if (!preg_match('/^[A-Za-z0-9._ -]+\.zip$/i', $name) || in_array($name, ['.', '..'], true)) {
+        err('压缩包名须为 .zip，且只含字母、数字、点、下划线、空格和连字符');
+    }
+    $raw = (string) stream_get_contents(STDIN);
+    $names = json_decode($raw, true);
+    if (!is_array($names) || $names === []) err('请选择要压缩的文件或文件夹');
+    if (count($names) > EXTRACT_MAX_FILES) err('选中的文件过多（最多 ' . EXTRACT_MAX_FILES . ' 个）');
+    foreach ($names as $n) {
+        if (!is_string($n) || !preg_match('/^[A-Za-z0-9._ -]+$/u', $n) || in_array($n, ['.', '..', $name], true)) {
+            err('选中的名称不合法');
+        }
+    }
+    $names = array_values(array_unique($names));
+    if ($GLOBALS['DRY']) out(['ok' => true, 'name' => $name, 'size' => 0]);
+    @set_time_limit(EXTRACT_TIMEOUT + 30);
+
+    $jailBase = jail($user, '/');
+    $dest = jail($user, $dirRel);
+    if (!is_dir($dest)) err('目标目录不存在');
+    $archive = $dest . '/' . $name;
+    if (file_exists($archive)) err('压缩包已存在：' . $name);
+
+    $files = 0;
+    $total = 0;
+    foreach ($names as $n) {
+        $p = $dest . '/' . $n;
+        if (is_link($p)) err('不允许压缩符号链接');
+        if (!file_exists($p)) err('文件不存在：' . $n);
+        $real = realpath($p);
+        if ($real === false || ($real !== $jailBase && strpos($real . '/', $jailBase . '/') !== 0)) {
+            err('路径超出站点目录');
+        }
+        // selected entries must live directly in the current directory
+        if (dirname($real) !== $dest) err('只能压缩当前目录中的项目');
+        $total += tree_size_safe($p, $jailBase, $files);
+        if ($total > EXTRACT_MAX_UNCOMP) err('待压缩内容超过 8GB，已拒绝');
+    }
+
+    compress_zip_archive($dest, $name, $names, $jailBase);
+    if (!is_file($archive)) err('压缩包未生成');
+    if (filesize($archive) > EXTRACT_MAX_ARCHIVE) {
+        @unlink($archive);
+        err('生成的压缩包超过 1GB，已删除');
+    }
+    chown_to($archive, $user);
+    chmod($archive, 0644);
+    out(['ok' => true, 'name' => $name, 'size' => filesize($archive)]);
 }
 
 err('unknown action: ' . $action, 64);

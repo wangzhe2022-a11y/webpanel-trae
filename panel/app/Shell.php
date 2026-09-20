@@ -108,6 +108,8 @@ final class Shell
                 ]], 'error' => ''],
             str_starts_with($script, 'wp-fs') && ($a === 'extract' || $a === 'unzip')
                 => ['ok' => true, 'data' => ['ok' => true, 'extracted' => 3, 'dest' => dirname((string) ($args[2] ?? '/')) ?: '/'], 'error' => ''],
+            str_starts_with($script, 'wp-fs') && ($a === 'compress' || $a === 'zip')
+                => ['ok' => true, 'data' => ['ok' => true, 'name' => $args[3] ?? 'archive.zip', 'size' => 4096], 'error' => ''],
             str_starts_with($script, 'wp-fs')
                 => ['ok' => true, 'data' => ['ok' => true], 'error' => ''],
             str_starts_with($script, 'wp-sys') && $a === 'info'

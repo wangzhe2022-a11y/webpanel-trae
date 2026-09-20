@@ -176,6 +176,40 @@ class FileController extends Controller
         ]);
     }
 
+    public function compress(): void
+    {
+        $this->requireLogin();
+        $this->verifyCsrf();
+        $site = $this->siteFromRequest();
+        $dir = (string) $this->input('path', '/');
+        $name = (string) $this->input('name', '');
+        if (!preg_match('/^[A-Za-z0-9._ -]+\.zip$/i', $name)) {
+            $this->fail('压缩包名须为 .zip，且只含字母、数字、点、下划线、空格和连字符');
+        }
+        $filesRaw = $this->input('files', '[]');
+        $files = is_array($filesRaw) ? $filesRaw : json_decode((string) $filesRaw, true);
+        if (!is_array($files) || $files === []) {
+            $this->fail('请先选择要压缩的文件或文件夹');
+        }
+        $clean = [];
+        foreach ($files as $n) {
+            if (!is_string($n) || !preg_match('/^[A-Za-z0-9._ -]+$/u', $n) || in_array($n, ['.', '..', $name], true)) {
+                $this->fail('选中的名称不合法');
+            }
+            $clean[] = $n;
+        }
+        $clean = array_values(array_unique($clean));
+        @set_time_limit(210);
+        $r = Shell::sudo('wp-fs.sh', ['compress', $site['sysuser'], $dir, $name], json_encode($clean, JSON_UNESCAPED_UNICODE));
+        if (!$r['ok']) {
+            $this->fail($this->fsErrorZh($r['error'] !== '' ? $r['error'] : '压缩失败'));
+        }
+        $this->ok([
+            'name' => (string) ($r['data']['name'] ?? $name),
+            'size' => isset($r['data']['size']) ? human_size((int) $r['data']['size']) : '',
+        ]);
+    }
+
     public function download(): void
     {
         $this->requireLogin();
