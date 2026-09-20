@@ -53,6 +53,11 @@ $router->post('/databases/create', [DatabaseController::class, 'create']);
 $router->post('/databases/passwd', [DatabaseController::class, 'resetPassword']);
 $router->post('/databases/delete', [DatabaseController::class, 'delete']);
 
+/* ---- phpMyAdmin (SQL browser; /phpmyadmin/ is served by nginx) ----------- */
+$router->get('/phpmyadmin', [PhpMyAdminController::class, 'index']);
+$router->get('/phpmyadmin-auth', [PhpMyAdminController::class, 'auth']);
+$router->post('/phpmyadmin/install', [PhpMyAdminController::class, 'install']);
+
 /* ---- file manager -------------------------------------------------------- */
 $router->get('/files', [FileController::class, 'index']);
 $router->post('/files/list', [FileController::class, 'ls']);
@@ -79,13 +84,7 @@ $router->post('/backup/delete', [BackupController::class, 'delete']);
 $router->post('/backup/restore', [BackupController::class, 'restore']);
 $router->get('/backup/download', [BackupController::class, 'download']);
 
-/* ---- installatron (one-click web app installer) ---------------------------- */
+/* ---- installatron remote (cloud one-click installer; no local Server) ------ */
 $router->get('/installatron', [InstallatronController::class, 'index']);
-$router->get('/installatron/status', [InstallatronController::class, 'status']);
-$router->get('/installatron/demo', [InstallatronController::class, 'demo']);
-$router->post('/installatron/install', [InstallatronController::class, 'install']);
-$router->post('/installatron/login', [InstallatronController::class, 'login']);
-$router->post('/installatron/upgrade', [InstallatronController::class, 'upgrade']);
-$router->post('/installatron/uninstall', [InstallatronController::class, 'uninstall']);
 
 $router->dispatch();

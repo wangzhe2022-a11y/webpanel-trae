@@ -5,6 +5,9 @@
         <button class="layui-btn layui-btn-sm" style="float:right" id="btnCreateDb">
             <span class="layui-icon layui-icon-add-1"></span> 创建数据库
         </button>
+        <a class="layui-btn layui-btn-sm layui-btn-primary" style="float:right;margin-right:8px" href="/phpmyadmin">
+            <span class="layui-icon layui-icon-fonts-code"></span> phpMyAdmin
+        </a>
     </h3>
     <table class="layui-table" style="margin:0">
         <thead>
