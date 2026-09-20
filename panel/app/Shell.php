@@ -125,6 +125,15 @@ final class Shell
                 => self::itronInstalled()
                     ? ['ok' => true, 'data' => ['ok' => true, 'url' => '/installatron/demo'], 'error' => '']
                     : ['ok' => false, 'data' => [], 'error' => 'Installatron 未安装'],
+            str_starts_with($script, 'wp-pma') && $a === 'status'
+                => ['ok' => true, 'data' => ['ok' => true,
+                    'installed' => self::pmaInstalled(),
+                    'version' => self::pmaInstalled() ? '5.2.3-dryrun' : '',
+                    'url' => '/phpmyadmin/'], 'error' => ''],
+            str_starts_with($script, 'wp-pma') && $a === 'install'
+                => self::pmaInstall(),
+            str_starts_with($script, 'wp-pma') && $a === 'uninstall'
+                => self::pmaUninstall(),
             str_starts_with($script, 'wp-backup') && $a === 'list'
                 => ['ok' => true, 'data' => ['ok' => true, 'dir' => '/www/server/backup', 'keep' => 10, 'backups' => [
                     ['name' => 'webpanel-full-' . date('Ymd') . '-033000.tar.gz', 'scope' => 'full', 'size' => 284569907, 'mtime' => date('Y-m-d') . ' 03:30:00'],
@@ -146,6 +155,7 @@ final class Shell
      * can demo both page states end-to-end. Not used in production mode. */
 
     private const ITRON_MARKER = '/tmp/wp-dry-installatron-installed';
+    private const PMA_MARKER = '/tmp/wp-dry-pma-installed';
 
     private static function itronInstalled(): bool
     {
@@ -199,5 +209,23 @@ final class Shell
         return ['state' => 'running', 'kind' => $job['kind'], 'name' => 'Installatron Server',
             'phase' => $phases[$step - 1], 'progress' => $step, 'total' => $total,
             'started' => date('Y-m-d H:i:s', (int) $job['started']), 'finished' => '', 'error' => ''];
+    }
+
+    private static function pmaInstalled(): bool
+    {
+        return is_file(self::PMA_MARKER);
+    }
+
+    private static function pmaInstall(): array
+    {
+        @touch(self::PMA_MARKER);
+        return ['ok' => true, 'data' => ['ok' => true, 'installed' => true,
+            'version' => '5.2.3-dryrun', 'url' => '/phpmyadmin/'], 'error' => ''];
+    }
+
+    private static function pmaUninstall(): array
+    {
+        @unlink(self::PMA_MARKER);
+        return ['ok' => true, 'data' => ['ok' => true], 'error' => ''];
     }
 }

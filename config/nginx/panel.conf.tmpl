@@ -32,6 +32,10 @@ server {
         fastcgi_param HTTPS on;
     }
 
+    # Built-in phpMyAdmin (session-gated). Snippet is a no-op until
+    # wp-pma.sh install writes files under /www/server/phpmyadmin.
+    include /usr/local/webpanel/config/nginx/phpmyadmin.inc;
+
     location ~ /\.(?!well-known) {
         deny all;
     }
