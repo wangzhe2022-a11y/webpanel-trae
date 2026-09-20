@@ -68,6 +68,8 @@ $router->post('/files/rename', [FileController::class, 'rename']);
 $router->post('/files/chmod', [FileController::class, 'chmod']);
 $router->post('/files/delete', [FileController::class, 'delete']);
 $router->post('/files/upload', [FileController::class, 'upload']);
+$router->post('/files/extract', [FileController::class, 'extract']);
+$router->post('/files/compress', [FileController::class, 'compress']);
 $router->get('/files/download', [FileController::class, 'download']);
 
 /* ---- host / services ----------------------------------------------------- */

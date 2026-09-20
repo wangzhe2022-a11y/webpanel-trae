@@ -156,6 +156,60 @@ class FileController extends Controller
         $this->ok(['name' => $name, 'size' => human_size((int) ($r['data']['size'] ?? $f['size']))]);
     }
 
+    public function extract(): void
+    {
+        $this->requireLogin();
+        $this->verifyCsrf();
+        $site = $this->siteFromRequest();
+        $path = (string) $this->input('path', '');
+        if ($path === '') {
+            $this->fail('请选择要解压的文件');
+        }
+        @set_time_limit(210);
+        $r = Shell::sudo('wp-fs.sh', ['extract', $site['sysuser'], $path]);
+        if (!$r['ok']) {
+            $this->fail($this->fsErrorZh($r['error'] !== '' ? $r['error'] : '解压失败'));
+        }
+        $this->ok([
+            'extracted' => (int) ($r['data']['extracted'] ?? 0),
+            'dest' => (string) ($r['data']['dest'] ?? ''),
+        ]);
+    }
+
+    public function compress(): void
+    {
+        $this->requireLogin();
+        $this->verifyCsrf();
+        $site = $this->siteFromRequest();
+        $dir = (string) $this->input('path', '/');
+        $name = (string) $this->input('name', '');
+        if (!preg_match('/^[A-Za-z0-9._ -]+\.zip$/i', $name)) {
+            $this->fail('压缩包名须为 .zip，且只含字母、数字、点、下划线、空格和连字符');
+        }
+        $filesRaw = $this->input('files', '[]');
+        $files = is_array($filesRaw) ? $filesRaw : json_decode((string) $filesRaw, true);
+        if (!is_array($files) || $files === []) {
+            $this->fail('请先选择要压缩的文件或文件夹');
+        }
+        $clean = [];
+        foreach ($files as $n) {
+            if (!is_string($n) || !preg_match('/^[A-Za-z0-9._ -]+$/u', $n) || in_array($n, ['.', '..', $name], true)) {
+                $this->fail('选中的名称不合法');
+            }
+            $clean[] = $n;
+        }
+        $clean = array_values(array_unique($clean));
+        @set_time_limit(210);
+        $r = Shell::sudo('wp-fs.sh', ['compress', $site['sysuser'], $dir, $name], json_encode($clean, JSON_UNESCAPED_UNICODE));
+        if (!$r['ok']) {
+            $this->fail($this->fsErrorZh($r['error'] !== '' ? $r['error'] : '压缩失败'));
+        }
+        $this->ok([
+            'name' => (string) ($r['data']['name'] ?? $name),
+            'size' => isset($r['data']['size']) ? human_size((int) $r['data']['size']) : '',
+        ]);
+    }
+
     public function download(): void
     {
         $this->requireLogin();
@@ -195,6 +249,25 @@ class FileController extends Controller
         fclose($pipes[0]);
         fclose($pipes[1]);
         proc_close($proc);
+    }
+
+    /** Map a few fs-worker jail errors into the Chinese UI. */
+    private function fsErrorZh(string $msg): string
+    {
+        $map = [
+            'path escapes site jail' => '路径超出站点目录',
+            'symlink rejected' => '不允许操作符号链接',
+            'invalid site user' => '站点用户无效',
+            'site user does not exist' => '站点系统用户不存在',
+            'parent directory does not exist' => '上级目录不存在',
+            'invalid file name' => '文件名不合法',
+            'file not found' => '文件不存在',
+            'not a directory' => '不是目录',
+        ];
+        if (str_starts_with($msg, 'unknown action:')) {
+            return '当前服务器组件不支持解压，请更新 fs-worker.php';
+        }
+        return $map[$msg] ?? $msg;
     }
 }
 

@@ -22,6 +22,12 @@ $siteId = $selected['id'] ?? 0;
     <?php else: ?>
     <div style="margin-bottom:12px">
         <button class="layui-btn layui-btn-sm" id="btnUpload"><span class="layui-icon layui-icon-upload"></span> 上传到当前目录</button>
+        <button class="layui-btn layui-btn-sm layui-btn-normal" id="btnExtract" title="解压选中的压缩包">
+            <span class="layui-icon layui-icon-screen-full"></span> 解压
+        </button>
+        <button class="layui-btn layui-btn-sm layui-btn-normal" id="btnCompress" title="压缩选中的文件/文件夹">
+            <span class="layui-icon layui-icon-screen-restore"></span> 压缩
+        </button>
         <button class="layui-btn layui-btn-sm layui-btn-primary" id="btnNewFile">新建文件</button>
         <button class="layui-btn layui-btn-sm layui-btn-primary" id="btnNewDir">新建文件夹</button>
         <button class="layui-btn layui-btn-sm layui-btn-primary" id="btnRefresh"><span class="layui-icon layui-icon-refresh"></span> 刷新</button>
@@ -35,10 +41,18 @@ $siteId = $selected['id'] ?? 0;
 
     <table class="layui-table" style="margin:0">
         <thead>
-        <tr><th width="36"></th><th>名称</th><th width="110">大小</th><th width="90">权限</th><th width="160">修改时间</th><th width="300">操作</th></tr>
+        <tr>
+            <th width="36"><input type="checkbox" id="selAll" title="全选"></th>
+            <th width="36"></th>
+            <th>名称</th>
+            <th width="110">大小</th>
+            <th width="90">权限</th>
+            <th width="160">修改时间</th>
+            <th width="370">操作</th>
+        </tr>
         </thead>
         <tbody id="fileBody">
-        <tr><td colspan="6" style="text-align:center;color:#999;padding:30px">加载中...</td></tr>
+        <tr><td colspan="7" style="text-align:center;color:#999;padding:30px">加载中...</td></tr>
         </tbody>
     </table>
     <?php endif; ?>
@@ -72,7 +86,7 @@ layui.use(['layer', 'upload'], function () {
                 $('#crumb').text(curPath);
                 render(res.entries || []);
             } else {
-                $('#fileBody').html('<tr><td colspan="6" style="color:#ff5722;padding:20px">' + layui.util.escape(res.error) + '</td></tr>');
+                $('#fileBody').html('<tr><td colspan="7" style="color:#ff5722;padding:20px">' + layui.util.escape(res.error) + '</td></tr>');
             }
         });
     }
@@ -85,11 +99,42 @@ layui.use(['layer', 'upload'], function () {
     }
 
     var EDITABLE = /(\.(php|txt|html?|css|js|json|xml|ya?ml|ini|conf|log|md|sql|svg|po|mo)$|(^|\/)\.htaccess$)/i;
+    var ARCHIVE = /\.(zip|tar\.gz|tgz)$/i;
+
+    function selectedNames() {
+        var names = [];
+        $('#fileBody input.sel:checked').each(function () {
+            names.push($(this).closest('tr').data('name'));
+        });
+        return names;
+    }
+
+    function extractPath(p, name) {
+        layer.confirm(
+            '将 <b>' + layui.util.escape(name) + '</b> 解压到<strong>当前目录</strong>（与压缩包同级）？<br>' +
+            '<span style="color:#ff5722">已存在的同名文件将被覆盖。</span>',
+            { title: '解压确认' },
+            function (idx) {
+                var loadI = layer.load(2);
+                WP.post('/files/extract', { site_id: SITE, path: p }).then(function (r) {
+                    layer.close(loadI);
+                    if (r.ok) {
+                        layer.close(idx);
+                        layer.msg('已解压 ' + (r.extracted || 0) + ' 个条目到当前目录', { icon: 1 });
+                        refresh();
+                    } else {
+                        layer.alert(r.error || '解压失败', { icon: 2, title: '解压失败' });
+                    }
+                });
+            }
+        );
+    }
 
     function render(entries) {
         var rows = '';
+        $('#selAll').prop('checked', false);
         if (curPath !== '/') {
-            rows += '<tr class="is-dir" data-name=".."><td></td><td style="cursor:pointer;color:#1e9fff">..</td>'
+            rows += '<tr class="is-dir" data-name=".."><td></td><td></td><td style="cursor:pointer;color:#1e9fff">..</td>'
                  + '<td></td><td></td><td></td><td></td></tr>';
         }
         entries.forEach(function (f) {
@@ -103,6 +148,9 @@ layui.use(['layer', 'upload'], function () {
             if (f.type !== 'dir' && EDITABLE.test(f.name)) {
                 acts += '<button class="layui-btn layui-btn-xs layui-btn-primary act-edit">编辑</button> ';
             }
+            if (f.type !== 'dir' && ARCHIVE.test(f.name)) {
+                acts += '<button class="layui-btn layui-btn-xs layui-btn-normal act-extract">解压</button> ';
+            }
             if (f.type !== 'dir') {
                 acts += '<button class="layui-btn layui-btn-xs layui-btn-primary act-dl">下载</button> ';
             }
@@ -110,6 +158,7 @@ layui.use(['layer', 'upload'], function () {
                  +  '<button class="layui-btn layui-btn-xs act-chmod">权限</button> '
                  +  '<button class="layui-btn layui-btn-xs layui-btn-danger act-del">删除</button>';
             rows += '<tr data-path="' + layui.util.escape(p) + '" data-name="' + layui.util.escape(f.name) + '" data-type="' + f.type + '">'
+                 +  '<td><input type="checkbox" class="sel"></td>'
                  +  '<td>' + iconOf(f.type, f.name) + '</td>'
                  +  '<td>' + nameHtml + '</td>'
                  +  '<td class="mono" style="font-size:12px">' + size + '</td>'
@@ -117,7 +166,7 @@ layui.use(['layer', 'upload'], function () {
                  +  '<td class="mono" style="font-size:12px">' + layui.util.escape(f.mtime) + '</td>'
                  +  '<td>' + acts + '</td></tr>';
         });
-        if (!rows) rows = '<tr><td colspan="6" style="text-align:center;color:#999;padding:30px">空目录</td></tr>';
+        if (!rows) rows = '<tr><td colspan="7" style="text-align:center;color:#999;padding:30px">空目录</td></tr>';
         $('#fileBody').html(rows);
     }
 
@@ -155,6 +204,53 @@ layui.use(['layer', 'upload'], function () {
         });
     });
 
+    $('#fileBody').on('click', 'input.sel', function (e) { e.stopPropagation(); });
+    $('#selAll').on('click', function () {
+        $('#fileBody input.sel').prop('checked', this.checked);
+    });
+
+    $('#btnExtract').on('click', function () {
+        var names = selectedNames();
+        if (names.length !== 1 || !ARCHIVE.test(names[0])) {
+            layer.msg('请勾选一个 zip / tar.gz / tgz 压缩包', { icon: 0 });
+            return;
+        }
+        extractPath(joinPath(curPath, names[0]), names[0]);
+    });
+
+    $('#btnCompress').on('click', function () {
+        var names = selectedNames();
+        if (!names.length) {
+            layer.msg('请先勾选要压缩的文件或文件夹', { icon: 0 });
+            return;
+        }
+        layer.prompt({ title: '压缩到当前目录（zip 文件名）', value: 'archive.zip' }, function (val, idx) {
+            if (!/^[A-Za-z0-9._ -]+\.zip$/i.test(val)) {
+                layer.msg('文件名须为 .zip，且只含字母、数字、点、下划线、空格和连字符', { icon: 2 });
+                return;
+            }
+            var loadI = layer.load(2);
+            WP.post('/files/compress', {
+                site_id: SITE, path: curPath, name: val, files: JSON.stringify(names)
+            }).then(function (r) {
+                layer.close(loadI);
+                if (r.ok) {
+                    layer.close(idx);
+                    layer.msg('已压缩：' + r.name + (r.size ? '（' + r.size + '）' : ''), { icon: 1 });
+                    refresh();
+                } else {
+                    layer.alert(r.error || '压缩失败', { icon: 2, title: '压缩失败' });
+                }
+            });
+        });
+    });
+
+    /* extract (zip / tar.gz / tgz) into the current directory */
+    $('#fileBody').on('click', '.act-extract', function () {
+        var $tr = $(this).closest('tr');
+        extractPath($tr.data('path'), $tr.data('name'));
+    });
+
     /* download */
     $('#fileBody').on('click', '.act-dl', function () {
         var p = $(this).closest('tr').data('path');
@@ -178,7 +274,7 @@ layui.use(['layer', 'upload'], function () {
     /* chmod */
     $('#fileBody').on('click', '.act-chmod', function () {
         var $tr = $(this).closest('tr'), p = $tr.data('path');
-        var cur = $tr.find('td:eq(3)').text().trim().replace(/^0?/, '');
+        var cur = $tr.find('td:eq(4)').text().trim().replace(/^0?/, '');
         layer.prompt({ title: '权限（三位八进制，如 644 / 755）', value: cur.slice(-3), formType: 0 }, function (val, idx) {
             if (!/^[0-7]{3}$/.test(val)) { layer.msg('格式不正确', { icon: 2 }); return; }
             WP.post('/files/chmod', { site_id: SITE, path: p, mode: val }).then(function (r) {

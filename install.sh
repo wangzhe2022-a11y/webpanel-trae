@@ -47,7 +47,7 @@ grep -Eq 'release 8' /etc/redhat-release || c_warn "未检测到 8.x 版本，�
 [ -d "$SRC_DIR/panel" ] && [ -d "$SRC_DIR/bin" ] || die "源码目录结构不完整，请在仓库根目录执行"
 
 c_blue "==> [1/12] 基础工具与仓库（EPEL / Remi / MySQL / PGDG / NodeSource）"
-dnf install -y epel-release dnf-utils curl wget tar unzip bash-completion \
+dnf install -y epel-release dnf-utils curl wget tar zip unzip bash-completion \
     policycoreutils-python-utils cronie firewalld openssl which
 dnf install -y https://rpms.remirepo.net/enterprise/remi-release-8.rpm || \
     c_warn "Remi 仓库安装失败，稍后多版本 PHP 可能不可用（可检查外网/代理）"
