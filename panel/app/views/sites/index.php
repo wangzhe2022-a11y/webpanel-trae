@@ -54,7 +54,7 @@
             <td>
                 <select class="phpsel" lay-ignore data-id="<?= (int) $s['id'] ?>" style="height:30px">
                     <?php foreach ($phpVersions as $v => $label): ?>
-                        <option value="<?= e($v) ?>" <?= $s['php_version'] === $v ? 'selected' : '' ?>><?= e($label) ?></option>
+                        <option value="<?= e((string) $v) ?>" <?= (string) $s['php_version'] === (string) $v ? 'selected' : '' ?>><?= e($label) ?></option>
                     <?php endforeach; ?>
                 </select>
             </td>
@@ -118,7 +118,7 @@
             <div class="layui-input-inline" style="width:190px">
                 <select name="php_version" lay-ignore class="layui-input">
                     <?php foreach ($phpVersions as $v => $label): ?>
-                    <option value="<?= e($v) ?>" <?= $v === '82' ? 'selected' : '' ?>><?= e($label) ?></option>
+                    <option value="<?= e((string) $v) ?>" <?= (string) $v === '82' ? 'selected' : '' ?>><?= e($label) ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
