@@ -22,9 +22,15 @@ rm -f /etc/nginx/conf.d/00-webpanel.conf
 [ "$PURGE" -eq 1 ] && rm -rf "$VHOST_DIR" || rm -f "$VHOST_DIR"/*.conf 2>/dev/null || true
 systemctl reload nginx 2>/dev/null || true
 
-echo "==> 移除面板 FPM 池与 sudoers"
-rm -f /etc/php-fpm.d/webpanel.conf
+echo "==> 移除面板 FPM 池、phpMyAdmin 与 sudoers"
+rm -f /etc/php-fpm.d/webpanel.conf /etc/php-fpm.d/phpmyadmin.conf
 rm -f /etc/sudoers.d/webpanel
+rm -rf /www/server/phpmyadmin
+if [ -f /root/.my.cnf ]; then
+    mysql --defaults-file=/root/.my.cnf -e \
+        "DROP USER IF EXISTS 'webpanel_pma'@'127.0.0.1'; DROP USER IF EXISTS 'webpanel_pma'@'localhost'; FLUSH PRIVILEGES;" \
+        2>/dev/null || true
+fi
 
 if [ "$PURGE" -eq 1 ]; then
     read -r -p "确认删除所有站点文件、数据库与证书？输入 YES 继续: " ans

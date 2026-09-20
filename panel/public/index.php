@@ -53,6 +53,11 @@ $router->post('/databases/create', [DatabaseController::class, 'create']);
 $router->post('/databases/passwd', [DatabaseController::class, 'resetPassword']);
 $router->post('/databases/delete', [DatabaseController::class, 'delete']);
 
+/* ---- phpMyAdmin (SQL browser; /phpmyadmin/ is served by nginx) ----------- */
+$router->get('/phpmyadmin', [PhpMyAdminController::class, 'index']);
+$router->get('/phpmyadmin-auth', [PhpMyAdminController::class, 'auth']);
+$router->post('/phpmyadmin/install', [PhpMyAdminController::class, 'install']);
+
 /* ---- file manager -------------------------------------------------------- */
 $router->get('/files', [FileController::class, 'index']);
 $router->post('/files/list', [FileController::class, 'ls']);

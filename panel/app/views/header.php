@@ -4,6 +4,7 @@ $nav = [
     '/'        => ['仪表盘', 'layui-icon-console'],
     '/sites'   => ['网站管理', 'layui-icon-website'],
     '/databases' => ['数据库', 'layui-icon-table'],
+    '/phpmyadmin' => ['phpMyAdmin', 'layui-icon-fonts-code'],
     '/ssl'     => ['SSL 证书', 'layui-icon-auz'],
     '/files'   => ['文件管理', 'layui-icon-file'],
     '/backup'  => ['备份恢复', 'layui-icon-download-circle'],

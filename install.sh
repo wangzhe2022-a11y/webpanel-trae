@@ -9,6 +9,7 @@
 #   - PHP 7.4 / 8.0 / 8.1 / 8.2 / 8.3（Remi SCL，各版本独立 FPM 可随时切换）
 #   - Node.js 22 LTS（NodeSource 官方仓库，Node 站点由 systemd 托管 + Nginx 反代）
 #   - 面板本体（PHP 8.2 + SQLite + Layui），HTTPS 端口 8888（自签证书）
+#   - phpMyAdmin（官方发行包，挂在面板 /phpmyadmin/，登录会话保护）
 #   - acme.sh（Let's Encrypt 自动签发/续期）
 #   - WP-CLI（一键部署 WordPress / WooCommerce）
 #
@@ -74,7 +75,7 @@ c_blue "==> [3/12] 安装 PHP（面板运行于 8.2，站点支持多版本切�
 dnf module reset -y php
 dnf module enable -y php:remi-8.2
 dnf install -y php-cli php-fpm php-pdo php-sqlite3 php-mbstring php-gd php-xml \
-    php-json php-curl php-opcache
+    php-json php-curl php-opcache php-mysqlnd php-zip
 
 # 站点多版本：Remi SCL 并行安装，服务名 phpXX-php-fpm
 for v in "${PHP_VERSIONS[@]}"; do
@@ -201,6 +202,13 @@ fi
 sed "s|{{PORT}}|$PANEL_PORT|g" "$INSTALL_DIR/config/nginx/panel.conf.tmpl" \
     > /etc/nginx/conf.d/00-webpanel.conf
 
+# 内置 phpMyAdmin（下载失败不阻断面板安装，可稍后 wp-pma.sh install）
+if "$INSTALL_DIR/bin/wp-pma.sh" install; then
+    c_ok "phpMyAdmin 已安装（/phpmyadmin/，需登录面板）"
+else
+    c_warn "phpMyAdmin 安装失败（外网或校验问题），可稍后执行：$INSTALL_DIR/bin/wp-pma.sh install"
+fi
+
 # 托管站点 vhost 总入口（含 Node.js 反代所需的 websocket upgrade 映射）
 cat >/etc/nginx/conf.d/zz-webpanel-sites.conf <<EOF
 # managed by WebPanel - do not edit
@@ -275,6 +283,8 @@ cat <<EOF
 ============================================================
   面板地址 : https://${PUB_IP:-<服务器公网IP>}:${PANEL_PORT}/
              （自签证书，浏览器提示不安全属正常，选择继续即可）
+  phpMyAdmin: https://${PUB_IP:-<服务器公网IP>}:${PANEL_PORT}/phpmyadmin/
+             （须先登录面板，未登录会跳到登录页）
   账号信息 : 已同时保存到 /root/.webpanel-admin.txt
   运行栈   : Nginx / PHP 7.4-8.3 多版本 / MySQL 8.0$(rpm -q postgresql16-server >/dev/null 2>&1 && echo ' / PostgreSQL 16')$(command -v node >/dev/null 2>&1 && echo " / Node.js $(node -v)")
 
