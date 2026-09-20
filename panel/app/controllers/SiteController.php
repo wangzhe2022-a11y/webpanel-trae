@@ -166,7 +166,7 @@ class SiteController extends Controller
         if (!isset(panel_php_versions()[$phpver])) {
             $this->fail('PHP 版本不支持');
         }
-        if ($site['php_version'] === $phpver) {
+        if (panel_php_version_eq($site['php_version'], $phpver)) {
             $this->ok();
         }
 
