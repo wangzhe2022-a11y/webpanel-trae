@@ -35,7 +35,7 @@ $siteId = $selected['id'] ?? 0;
 
     <table class="layui-table" style="margin:0">
         <thead>
-        <tr><th width="36"></th><th>名称</th><th width="110">大小</th><th width="90">权限</th><th width="160">修改时间</th><th width="300">操作</th></tr>
+        <tr><th width="36"></th><th>名称</th><th width="110">大小</th><th width="90">权限</th><th width="160">修改时间</th><th width="370">操作</th></tr>
         </thead>
         <tbody id="fileBody">
         <tr><td colspan="6" style="text-align:center;color:#999;padding:30px">加载中...</td></tr>
@@ -85,6 +85,7 @@ layui.use(['layer', 'upload'], function () {
     }
 
     var EDITABLE = /(\.(php|txt|html?|css|js|json|xml|ya?ml|ini|conf|log|md|sql|svg|po|mo)$|(^|\/)\.htaccess$)/i;
+    var ARCHIVE = /\.(zip|tar\.gz|tgz)$/i;
 
     function render(entries) {
         var rows = '';
@@ -102,6 +103,9 @@ layui.use(['layer', 'upload'], function () {
             var acts = '';
             if (f.type !== 'dir' && EDITABLE.test(f.name)) {
                 acts += '<button class="layui-btn layui-btn-xs layui-btn-primary act-edit">编辑</button> ';
+            }
+            if (f.type !== 'dir' && ARCHIVE.test(f.name)) {
+                acts += '<button class="layui-btn layui-btn-xs layui-btn-normal act-extract">解压</button> ';
             }
             if (f.type !== 'dir') {
                 acts += '<button class="layui-btn layui-btn-xs layui-btn-primary act-dl">下载</button> ';
@@ -153,6 +157,29 @@ layui.use(['layer', 'upload'], function () {
                 }
             });
         });
+    });
+
+    /* extract (zip / tar.gz / tgz) into the current directory */
+    $('#fileBody').on('click', '.act-extract', function () {
+        var $tr = $(this).closest('tr'), p = $tr.data('path');
+        layer.confirm(
+            '将 <b>' + layui.util.escape($tr.data('name')) + '</b> 解压到<strong>当前目录</strong>（与压缩包同级）？<br>' +
+            '<span style="color:#ff5722">已存在的同名文件将被覆盖。</span>',
+            { title: '解压确认' },
+            function (idx) {
+                var loadI = layer.load(2);
+                WP.post('/files/extract', { site_id: SITE, path: p }).then(function (r) {
+                    layer.close(loadI);
+                    if (r.ok) {
+                        layer.close(idx);
+                        layer.msg('已解压 ' + (r.extracted || 0) + ' 个条目到当前目录', { icon: 1 });
+                        refresh();
+                    } else {
+                        layer.alert(r.error || '解压失败', { icon: 2, title: '解压失败' });
+                    }
+                });
+            }
+        );
     });
 
     /* download */

@@ -74,7 +74,7 @@ c_blue "==> [3/12] 安装 PHP（面板运行于 8.2，站点支持多版本切�
 dnf module reset -y php
 dnf module enable -y php:remi-8.2
 dnf install -y php-cli php-fpm php-pdo php-sqlite3 php-mbstring php-gd php-xml \
-    php-json php-curl php-opcache
+    php-json php-curl php-opcache php-zip
 
 # 站点多版本：Remi SCL 并行安装，服务名 phpXX-php-fpm
 for v in "${PHP_VERSIONS[@]}"; do

@@ -47,7 +47,9 @@ final class Shell
             $msg = $data['error'] ?? '';
             if ($msg === '' && $stderr !== '') {
                 $lines = array_values(array_filter(array_map('trim', explode("\n", $stderr))));
-                $msg = $lines[0] ?? '命令执行失败';
+                $raw = $lines[0] ?? '命令执行失败';
+                $j = json_decode($raw, true);
+                $msg = (is_array($j) && isset($j['error'])) ? (string) $j['error'] : $raw;
             }
             return ['ok' => false, 'data' => $data, 'error' => $msg ?: '命令执行失败'];
         }
@@ -101,8 +103,11 @@ final class Shell
                 => ['ok' => true, 'data' => ['ok' => true, 'path' => $args[2] ?? '/', 'entries' => [
                     ['name' => 'index.php', 'type' => 'file', 'size' => 4521, 'mtime' => date('Y-m-d H:i:s'), 'perms' => '0644'],
                     ['name' => 'wp-config.php', 'type' => 'file', 'size' => 3012, 'mtime' => date('Y-m-d H:i:s'), 'perms' => '0640'],
+                    ['name' => 'theme.zip', 'type' => 'file', 'size' => 204800, 'mtime' => date('Y-m-d H:i:s'), 'perms' => '0644'],
                     ['name' => 'wp-content', 'type' => 'dir', 'size' => 0, 'mtime' => date('Y-m-d H:i:s'), 'perms' => '0755'],
                 ]], 'error' => ''],
+            str_starts_with($script, 'wp-fs') && ($a === 'extract' || $a === 'unzip')
+                => ['ok' => true, 'data' => ['ok' => true, 'extracted' => 3, 'dest' => dirname((string) ($args[2] ?? '/')) ?: '/'], 'error' => ''],
             str_starts_with($script, 'wp-fs')
                 => ['ok' => true, 'data' => ['ok' => true], 'error' => ''],
             str_starts_with($script, 'wp-sys') && $a === 'info'

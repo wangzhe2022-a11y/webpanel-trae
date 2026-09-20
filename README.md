@@ -12,7 +12,7 @@
 | Node.js | **Node.js 22 LTS**（NodeSource 官方仓库），站点应用以独立系统用户跑在 systemd 单元里（崩溃自动拉起），Nginx 反向代理 + WebSocket 支持；页面一键「npm i / 重启」 |
 | 数据库 | **MySQL 8.0** 与 **PostgreSQL 16**（PGDG 官方仓库）双引擎并存，建库/建用户/改密/删除任选；MySQL utf8mb4 账号仅授权本库；PG 仅监听 127.0.0.1（scram-sha-256）；密码自动生成、只显示一次 |
 | SSL | 方式一：acme.sh 自动签发 Let's Encrypt（http-01）+ 自动续签（cron）+ 一键 HTTPS 跳转 + HSTS；方式二：**上传第三方证书**（腾讯云 TrustAsia 等，粘贴 PEM 或选文件，自动校验证书/私钥/域名匹配与有效期）。PHP 与 Node 站点均支持 |
-| 文件管理 | 目录浏览、在线编辑文本、上传/下载、新建、重命名、改权限、删除；**严格 jailed 在站点目录内**，拒绝路径穿越与符号链接逃逸 |
+| 文件管理 | 目录浏览、在线编辑文本、上传/下载、**解压 zip/tar.gz 到当前目录**、新建、重命名、改权限、删除；**严格 jailed 在站点目录内**，拒绝路径穿越、zip-slip 与符号链接逃逸 |
 | WordPress | WP-CLI 一键部署中文版 WordPress（wp-config、固定链接、WooCommerce 内存参数、FS_METHOD 全部配好），自动生成管理员密码 |
 | 备份恢复 | **一键备份/恢复**：全量（站点文件+证书+vhost+FPM/Node 配置+MySQL+PostgreSQL+面板库）/仅文件/仅数据库三种范围，后台异步执行、页面实时进度；恢复需输入 RESTORE 二次确认；每日 3:30 自动全量备份，保留最近 10 份自动轮转，支持下载到本地 |
 | Installatron | **一键 Web 应用安装器**（320+ 应用：WordPress/Joomla/Drupal/PrestaShop/phpMyAdmin 等）：页面粘贴 License Key 后台异步安装；复用面板 MySQL、Nginx 配置自动备份/回滚；官方 GUI 一次性会话直达（免二次登录）、一键升级/卸载 |
