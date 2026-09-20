@@ -43,7 +43,9 @@ JSON
 
     disk_json="["
     while read -r fs size used avail pct mount; do
-        [ "$mount" = "/www" ] || [ "$mount" = "/" ] || continue
+        # Real block devices only (/dev/vda1, /dev/vdb1, /dev/mapper/..., etc.).
+        # Skip tmpfs, overlay, proc, and other virtual filesystems.
+        [[ "$fs" == /dev/* ]] || continue
         disk_json+="$(printf '{"fs":"%s","size":"%s","used":"%s","avail":"%s","use_pct":%d},' "$mount" "$size" "$used" "$avail" "${pct%\%}")"
     done < <(df -hP 2>/dev/null | awk 'NR>1')
     disk_json="${disk_json%,}]"
