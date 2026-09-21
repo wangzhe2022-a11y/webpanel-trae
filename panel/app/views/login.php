@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>WebPanel 登录</title>
+<title>Login</title>
 <link rel="stylesheet" href="/static/layui/css/layui.css">
 <style>
     body { background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); height: 100vh; margin: 0; }
@@ -13,9 +13,7 @@
         box-shadow: 0 18px 60px rgba(0,0,0,.35); overflow: hidden;
     }
     .login-head { padding: 34px 30px 18px; text-align: center; }
-    .login-head .logo { font-size: 30px; color: #1e9fff; }
-    .login-head h1 { font-size: 20px; margin: 10px 0 4px; }
-    .login-head p { color: #999; font-size: 13px; margin: 0; }
+    .login-head h1 { font-size: 20px; margin: 0; }
     .login-body { padding: 10px 30px 34px; }
     .login-tip { color: #ff5722; font-size: 12px; min-height: 18px; }
 </style>
@@ -23,9 +21,7 @@
 <body>
 <div class="login-box">
     <div class="login-head">
-        <div class="logo layui-icon layui-icon-template-1"></div>
-        <h1>WebPanel 服务器管理面板</h1>
-        <p>Nginx · 多版本 PHP · MySQL 8 · SSL</p>
+        <h1>Login</h1>
     </div>
     <div class="login-body">
         <form class="layui-form" id="loginForm">
@@ -34,7 +30,7 @@
                 <label class="layui-form-label">账号</label>
                 <div class="layui-input-block">
                     <input type="text" name="username" required lay-verify="required"
-                           placeholder="管理员账号" autocomplete="username"
+                           placeholder="Username" autocomplete="username"
                            class="layui-input" autofocus>
                 </div>
             </div>
@@ -42,7 +38,7 @@
                 <label class="layui-form-label">密码</label>
                 <div class="layui-input-block">
                     <input type="password" name="password" required lay-verify="required"
-                           placeholder="登录密码" autocomplete="current-password"
+                           placeholder="Password" autocomplete="current-password"
                            class="layui-input">
                 </div>
             </div>

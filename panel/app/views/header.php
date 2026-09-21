@@ -16,7 +16,7 @@ $nav = [
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="csrf" content="<?= e($csrf) ?>">
-<title>WebPanel 管理面板</title>
+<title>Console</title>
 <link rel="stylesheet" href="/static/layui/css/layui.css">
 <style>
     .layui-layout-admin .layui-header { background: #23262E; color: #fff; }
@@ -81,8 +81,7 @@ window.WP = (function () {
 <div class="layui-layout layui-layout-admin">
     <div class="layui-header">
         <div class="layui-logo layui-elip">
-            <span class="layui-icon layui-icon-template-1" style="color:#1e9fff"></span>
-            WebPanel 管理面板
+            Console
         </div>
         <div class="header-right">
             <span class="layui-elip" style="display:inline-block;max-width:160px;vertical-align:middle">
