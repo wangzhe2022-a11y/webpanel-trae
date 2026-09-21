@@ -152,16 +152,16 @@ final class Shell
         $entries = match ($rel) {
             '/', '' => [$dir('public'), $dir('app'), $dir('logs')],
             '/public' => [
+                $dir('wp-content'),
                 $file('index.php', 4521),
                 $file('wp-config.php', 3012, '0640'),
                 $file('theme.zip', 204800),
-                $dir('wp-content'),
             ],
             '/public/wp-content' => [$dir('plugins'), $dir('themes'), $dir('uploads')],
             '/public/wp-content/plugins' => [$dir('akismet'), $file('index.php', 28)],
             '/public/wp-content/themes' => [$dir('twentytwentyfour'), $file('index.php', 28)],
             '/public/wp-content/uploads' => [$dir('2026'), $file('.htaccess', 64)],
-            '/app' => [$file('package.json', 812), $file('index.js', 1204), $dir('node_modules')],
+            '/app' => [$dir('node_modules'), $file('index.js', 1204), $file('package.json', 812)],
             '/app/node_modules' => [$dir('express')],
             '/logs' => [$file('access.log', 2048), $file('error.log', 512)],
             default => [],

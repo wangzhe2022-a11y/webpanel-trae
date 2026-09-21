@@ -398,15 +398,15 @@ if ($action === 'list') {
                 ['name' => 'logs', 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => '0755'],
             ],
             '/public' => [
+                ['name' => 'wp-content', 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => '0755'],
                 ['name' => 'index.php', 'type' => 'file', 'size' => 4521, 'mtime' => $now, 'perms' => '0644'],
                 ['name' => 'wp-config.php', 'type' => 'file', 'size' => 3012, 'mtime' => $now, 'perms' => '0640'],
                 ['name' => 'theme.zip', 'type' => 'file', 'size' => 204800, 'mtime' => $now, 'perms' => '0644'],
-                ['name' => 'wp-content', 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => '0755'],
             ],
             '/app' => [
-                ['name' => 'package.json', 'type' => 'file', 'size' => 812, 'mtime' => $now, 'perms' => '0644'],
-                ['name' => 'index.js', 'type' => 'file', 'size' => 1204, 'mtime' => $now, 'perms' => '0644'],
                 ['name' => 'node_modules', 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => '0755'],
+                ['name' => 'index.js', 'type' => 'file', 'size' => 1204, 'mtime' => $now, 'perms' => '0644'],
+                ['name' => 'package.json', 'type' => 'file', 'size' => 812, 'mtime' => $now, 'perms' => '0644'],
             ],
             default => [],
         };

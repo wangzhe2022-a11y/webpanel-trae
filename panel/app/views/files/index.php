@@ -244,10 +244,11 @@ layui.use(['layer', 'upload'], function () {
     }
 
     function iconOf(t, n) {
-        if (t === 'dir') return '<span class="layui-icon" style="color:#ffb800">&#xe64e;</span>';
-        if (/\.(jpg|jpeg|png|gif|webp|svg|ico)$/i.test(n)) return '<span class="layui-icon" style="color:#16baaa">&#xe64d;</span>';
-        if (/\.(php|html?|js|css|json)$/i.test(n)) return '<span class="layui-icon" style="color:#1e9fff">&#xe64d;</span>';
-        return '<span class="layui-icon">&#xe64d;</span>';
+        if (t === 'dir') return '<span class="layui-icon layui-icon-folder" style="color:#ffb800;font-size:18px"></span>';
+        if (/\.(jpg|jpeg|png|gif|webp|svg|ico)$/i.test(n)) return '<span class="layui-icon layui-icon-picture" style="color:#16baaa;font-size:16px"></span>';
+        if (/\.(zip|tar\.gz|tgz|gz)$/i.test(n)) return '<span class="layui-icon layui-icon-file-b" style="color:#ff5722;font-size:16px"></span>';
+        if (/\.(php|html?|js|css|json)$/i.test(n)) return '<span class="layui-icon layui-icon-file" style="color:#1e9fff;font-size:16px"></span>';
+        return '<span class="layui-icon layui-icon-file" style="font-size:16px"></span>';
     }
     function typeLabel(t) {
         if (t === 'dir') return '文件夹';
@@ -344,7 +345,9 @@ layui.use(['layer', 'upload'], function () {
         var html = '<li data-path="' + esc(path) + '">';
         html += '<div class="fm-tree-row' + (path === curPath ? ' active' : '') + '" data-path="' + esc(path) + '">';
         html += twistHtml(path);
-        html += '<span class="layui-icon" style="color:#ffb800">&#xe64e;</span>';
+        html += expanded[path]
+            ? '<span class="layui-icon layui-icon-folder-open" style="color:#ffb800"></span>'
+            : '<span class="layui-icon layui-icon-folder" style="color:#ffb800"></span>';
         html += '<span class="fm-tname">' + esc(name) + '</span></div>';
         html += '<ul class="fm-tree-ul"' + (open ? '' : ' style="display:none"') + '>';
         if (open && kids) {
