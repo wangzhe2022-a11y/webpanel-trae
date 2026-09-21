@@ -85,3 +85,12 @@ function human_size(int $bytes): string
     }
     return round($v, $i === 0 ? 0 : 1) . ' ' . $units[$i];
 }
+
+/**
+ * Default relative folder inside a site jail for the file manager.
+ * PHP sites open the web docroot; Node sites open the app directory.
+ */
+function site_default_rel(array $site): string
+{
+    return (($site['type'] ?? 'php') === 'node') ? '/app' : '/public';
+}
