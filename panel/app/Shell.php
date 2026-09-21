@@ -100,12 +100,7 @@ final class Shell
             str_starts_with($script, 'wp-ssl')
                 => ['ok' => true, 'data' => ['ok' => true], 'error' => ''],
             str_starts_with($script, 'wp-fs') && $a === 'list'
-                => ['ok' => true, 'data' => ['ok' => true, 'path' => $args[2] ?? '/', 'entries' => [
-                    ['name' => 'index.php', 'type' => 'file', 'size' => 4521, 'mtime' => date('Y-m-d H:i:s'), 'perms' => '0644'],
-                    ['name' => 'wp-config.php', 'type' => 'file', 'size' => 3012, 'mtime' => date('Y-m-d H:i:s'), 'perms' => '0640'],
-                    ['name' => 'theme.zip', 'type' => 'file', 'size' => 204800, 'mtime' => date('Y-m-d H:i:s'), 'perms' => '0644'],
-                    ['name' => 'wp-content', 'type' => 'dir', 'size' => 0, 'mtime' => date('Y-m-d H:i:s'), 'perms' => '0755'],
-                ]], 'error' => ''],
+                => self::dryFsList((string) ($args[2] ?? '/')),
             str_starts_with($script, 'wp-fs') && ($a === 'extract' || $a === 'unzip')
                 => ['ok' => true, 'data' => ['ok' => true, 'extracted' => 3, 'dest' => dirname((string) ($args[2] ?? '/')) ?: '/'], 'error' => ''],
             str_starts_with($script, 'wp-fs') && ($a === 'compress' || $a === 'zip')
@@ -138,6 +133,40 @@ final class Shell
                 => ['ok' => true, 'data' => ['ok' => true], 'error' => ''],
             default => ['ok' => true, 'data' => ['ok' => true], 'error' => ''],
         };
+    }
+
+    /** Path-aware demo listing so the file-manager tree/browse UI is clickable. */
+    private static function dryFsList(string $rel): array
+    {
+        $rel = '/' . trim(str_replace('\\', '/', $rel), '/');
+        if ($rel === '//') {
+            $rel = '/';
+        }
+        $now = date('Y-m-d H:i:s');
+        $file = static function (string $name, int $size = 4096, string $perms = '0644') use ($now): array {
+            return ['name' => $name, 'type' => 'file', 'size' => $size, 'mtime' => $now, 'perms' => $perms];
+        };
+        $dir = static function (string $name, string $perms = '0755') use ($now): array {
+            return ['name' => $name, 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => $perms];
+        };
+        $entries = match ($rel) {
+            '/', '' => [$dir('public'), $dir('app'), $dir('logs')],
+            '/public' => [
+                $file('index.php', 4521),
+                $file('wp-config.php', 3012, '0640'),
+                $file('theme.zip', 204800),
+                $dir('wp-content'),
+            ],
+            '/public/wp-content' => [$dir('plugins'), $dir('themes'), $dir('uploads')],
+            '/public/wp-content/plugins' => [$dir('akismet'), $file('index.php', 28)],
+            '/public/wp-content/themes' => [$dir('twentytwentyfour'), $file('index.php', 28)],
+            '/public/wp-content/uploads' => [$dir('2026'), $file('.htaccess', 64)],
+            '/app' => [$file('package.json', 812), $file('index.js', 1204), $dir('node_modules')],
+            '/app/node_modules' => [$dir('express')],
+            '/logs' => [$file('access.log', 2048), $file('error.log', 512)],
+            default => [],
+        };
+        return ['ok' => true, 'data' => ['ok' => true, 'path' => $rel === '' ? '/' : $rel, 'entries' => $entries], 'error' => ''];
     }
 
     /* ---- phpMyAdmin dry-run demo ----------------------------------------- */

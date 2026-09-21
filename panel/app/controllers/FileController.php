@@ -18,10 +18,37 @@ class FileController extends Controller
     public function index(): void
     {
         $this->requireLogin();
-        $selected = isset($_GET['site']) ? $this->findSite((int) $_GET['site']) : null;
+        $sites = $this->sites();
+        $selected = null;
+        if (isset($_GET['site'])) {
+            $selected = $this->findSite((int) $_GET['site']);
+        }
+        if (!$selected) {
+            $cookieId = (int) ($_COOKIE['wp_files_site'] ?? 0);
+            if ($cookieId > 0) {
+                $selected = $this->findSite($cookieId);
+            }
+        }
+        if (!$selected && $sites) {
+            $selected = $sites[0];
+        }
+
+        $sitesClient = [];
+        foreach ($sites as $s) {
+            $sitesClient[] = [
+                'id' => (int) $s['id'],
+                'domain' => (string) $s['domain'],
+                'sysuser' => (string) $s['sysuser'],
+                'type' => (($s['type'] ?? 'php') === 'node') ? 'node' : 'php',
+                'defaultPath' => site_default_rel($s),
+            ];
+        }
+
         $this->render('files/index', [
-            'sites' => $this->sites(),
+            'sites' => $sites,
+            'sitesClient' => $sitesClient,
             'selected' => $selected,
+            'defaultPath' => $selected ? site_default_rel($selected) : '/',
         ]);
     }
 

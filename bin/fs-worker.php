@@ -389,10 +389,28 @@ if (!valid_user($user)) err('invalid site user');
 if ($action === 'list') {
     $rel = $argv[3] ?? '/';
     if ($GLOBALS['DRY']) {
-        out(['ok' => true, 'path' => '/', 'entries' => [
-            ['name' => 'index.php', 'type' => 'file', 'size' => 4096, 'mtime' => date('Y-m-d H:i:s'), 'perms' => '0644'],
-            ['name' => 'wp-content', 'type' => 'dir', 'size' => 0, 'mtime' => date('Y-m-d H:i:s'), 'perms' => '0755'],
-        ]]);
+        $now = date('Y-m-d H:i:s');
+        $norm = '/' . trim(str_replace('\\', '/', (string) $rel), '/');
+        $entries = match ($norm) {
+            '/', '' => [
+                ['name' => 'public', 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => '0755'],
+                ['name' => 'app', 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => '0755'],
+                ['name' => 'logs', 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => '0755'],
+            ],
+            '/public' => [
+                ['name' => 'index.php', 'type' => 'file', 'size' => 4521, 'mtime' => $now, 'perms' => '0644'],
+                ['name' => 'wp-config.php', 'type' => 'file', 'size' => 3012, 'mtime' => $now, 'perms' => '0640'],
+                ['name' => 'theme.zip', 'type' => 'file', 'size' => 204800, 'mtime' => $now, 'perms' => '0644'],
+                ['name' => 'wp-content', 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => '0755'],
+            ],
+            '/app' => [
+                ['name' => 'package.json', 'type' => 'file', 'size' => 812, 'mtime' => $now, 'perms' => '0644'],
+                ['name' => 'index.js', 'type' => 'file', 'size' => 1204, 'mtime' => $now, 'perms' => '0644'],
+                ['name' => 'node_modules', 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => '0755'],
+            ],
+            default => [],
+        };
+        out(['ok' => true, 'path' => $norm === '' ? '/' : $norm, 'entries' => $entries]);
     }
     $dir = jail($user, $rel);
     if (!is_dir($dir)) err('not a directory');
