@@ -37,6 +37,16 @@ $nav = [
     .c-purple { background: linear-gradient(135deg:#a233c6,#7d2399); }
     .panel-card { background: #fff; border-radius: 8px; padding: 18px 20px; margin-bottom: 16px; }
     .panel-card h3 { margin: 0 0 14px; font-size: 15px; }
+    .mon-row { margin-bottom: 16px; }
+    .mon-row:last-child { margin-bottom: 0; }
+    .mon-k { font-size: 13px; margin-bottom: 6px; overflow: hidden; }
+    .mon-k .right { float: right; color: #666; font-size: 12px; }
+    .mon-meta { color: #888; font-size: 12px; margin-top: 6px; }
+    .mon-updated { color: #999; font-size: 12px; font-weight: 400; float: right; line-height: 22px; }
+    .warn-text { color: #ff5722; }
+    .mon-top { width: 100%; margin-top: 8px; }
+    .mon-top td { padding: 2px 0; font-size: 12px; color: #555; }
+    .mon-top td:last-child { text-align: right; color: #888; }
     .tag-alias { margin: 2px 4px 2px 0; }
     .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
     .secret-box { background: #f7f7f7; border: 1px dashed #bbb; border-radius: 6px; padding: 12px; margin: 10px 0; word-break: break-all; }

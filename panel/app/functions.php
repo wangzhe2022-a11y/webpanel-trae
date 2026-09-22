@@ -74,6 +74,47 @@ function format_bytes(int|float $kb): string
     return $kb . ' KB';
 }
 
+/**
+ * Host snapshot from wp-sys.sh info, cached a few seconds so the dashboard
+ * page load and /sys/info auto-refresh share one sudo call.
+ */
+function panel_sys_info(int $ttl = 5): array
+{
+    $cacheFile = PANEL_DATA . '/cache/sys-info.json';
+    if (is_file($cacheFile) && time() - filemtime($cacheFile) < $ttl) {
+        $info = json_decode((string) file_get_contents($cacheFile), true);
+        if (is_array($info)) {
+            return $info;
+        }
+    }
+    $res = WebPanel\Shell::sudo('wp-sys.sh', ['info']);
+    if ($res['ok'] && is_array($res['data'])) {
+        @file_put_contents($cacheFile, json_encode($res['data'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        return $res['data'];
+    }
+    return ['error' => $res['error'] !== '' ? $res['error'] : '获取主机信息失败'];
+}
+
+function panel_sys_info_forget(): void
+{
+    $cacheFile = PANEL_DATA . '/cache/sys-info.json';
+    if (is_file($cacheFile)) {
+        @unlink($cacheFile);
+    }
+}
+
+/** Layui progress bar color: warn (orange) then crit (red). */
+function panel_gauge_class(float $pct, float $warn = 85.0, float $crit = 95.0): string
+{
+    if ($pct >= $crit) {
+        return 'layui-bg-red';
+    }
+    if ($pct >= $warn) {
+        return 'layui-bg-orange';
+    }
+    return '';
+}
+
 function human_size(int $bytes): string
 {
     $units = ['B', 'KB', 'MB', 'GB'];
