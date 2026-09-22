@@ -21,12 +21,12 @@ class ServiceController extends Controller
     public function info(): void
     {
         $this->requireLogin();
-        $r = Shell::sudo('wp-sys.sh', ['info']);
-        if (!$r['ok']) {
-            $this->fail($r['error'], 502);
+        $info = panel_sys_info();
+        if (isset($info['error']) && !isset($info['hostname'])) {
+            $this->fail((string) $info['error'], 502);
         }
-        unset($r['data']['ok']);
-        $this->ok($r['data']);
+        unset($info['ok']);
+        $this->ok($info);
     }
 
     public function svc(): void
@@ -51,6 +51,7 @@ class ServiceController extends Controller
         if (!$r['ok']) {
             $this->fail('操作失败：' . $r['error']);
         }
+        panel_sys_info_forget();
         Auth::log('sys.svc', $unit . ' ' . $action);
         $this->ok();
     }

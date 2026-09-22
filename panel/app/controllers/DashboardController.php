@@ -2,7 +2,6 @@
 declare(strict_types=1);
 
 use WebPanel\Db;
-use WebPanel\Shell;
 
 class DashboardController extends Controller
 {
@@ -10,20 +9,7 @@ class DashboardController extends Controller
     {
         $this->requireLogin();
 
-        $cacheFile = PANEL_DATA . '/cache/sys-info.json';
-        $info = null;
-        if (is_file($cacheFile) && time() - filemtime($cacheFile) < 5) {
-            $info = json_decode((string) file_get_contents($cacheFile), true);
-        }
-        if (!is_array($info)) {
-            $res = Shell::sudo('wp-sys.sh', ['info']);
-            if ($res['ok']) {
-                $info = $res['data'];
-                @file_put_contents($cacheFile, json_encode($info, JSON_UNESCAPED_UNICODE));
-            } else {
-                $info = ['error' => $res['error']];
-            }
-        }
+        $info = panel_sys_info();
 
         $stats = [
             'sites' => (int) Db::one('SELECT COUNT(*) c FROM sites')['c'],
