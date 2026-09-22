@@ -85,6 +85,7 @@ $loadRatio = $cpuCores > 0 ? $load1 / $cpuCores : $load1;
                 <tr><td>内核</td><td class="mono" id="hostKernel"><?= e((string) ($info['kernel'] ?? '-')) ?></td></tr>
                 <tr><td>运行时间</td><td id="hostUptime"><?= e((string) ($info['uptime'] ?? '-')) ?></td></tr>
             </table>
+            <div class="mon-meta" id="topLabel" <?= empty($info['top']) ? 'style="display:none"' : '' ?>>占用内存最多</div>
             <table class="mon-top" id="topTable" <?= empty($info['top']) ? 'style="display:none"' : '' ?>>
                 <tbody>
                 <?php foreach (($info['top'] ?? []) as $p): ?>
@@ -252,8 +253,10 @@ layui.use(['element', 'layer', 'table'], function () {
                 $top.find('tr:last td:eq(1)').text(p.rss_kb != null ? fmtKb(p.rss_kb) : '');
             });
             $('#topTable').show();
+            $('#topLabel').show();
         } else {
             $('#topTable').hide();
+            $('#topLabel').hide();
         }
 
         var map = { nginx: 'nginx', mysqld: 'mysql', 'php-fpm': 'phpfpm' };
