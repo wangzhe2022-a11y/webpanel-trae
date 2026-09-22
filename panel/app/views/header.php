@@ -27,20 +27,23 @@ $nav = [
     .layui-nav-tree .layui-nav-item a .layui-icon { font-size: 18px; margin-right: 10px; }
     .header-right { float: right; line-height: 60px; padding-right: 20px; }
     .header-right .layui-icon { font-size: 18px; }
-    .stat-card { border-radius: 8px; padding: 20px; color: #fff; position: relative; }
-    .stat-card .num { font-size: 32px; font-weight: 600; }
-    .stat-card .label { opacity: .85; font-size: 13px; }
-    .stat-card .layui-icon { position: absolute; right: 18px; top: 18px; font-size: 42px; opacity: .35; }
-    .c-blue { background: linear-gradient(135deg,#1e9fff,#0c7cd5); }
-    .c-green { background: linear-gradient(135deg,#16baaa,#0e9a8c); }
-    .c-orange { background: linear-gradient(135deg:#ffb800,#e69500); }
-    .c-purple { background: linear-gradient(135deg:#a233c6,#7d2399); }
+    .stat-card { border-radius: 8px; padding: 20px; color: #fff !important; position: relative; }
+    .stat-card .num { font-size: 32px; font-weight: 600; color: #fff !important; }
+    .stat-card .label { opacity: .95; font-size: 13px; color: #fff !important; }
+    .stat-card .layui-icon { position: absolute; right: 18px; top: 18px; font-size: 42px; opacity: .45; color: #fff !important; }
+    .stat-card.c-blue { background: linear-gradient(135deg,#1e9fff,#0c7cd5) !important; }
+    .stat-card.c-green { background: linear-gradient(135deg,#16baaa,#0e9a8c) !important; }
+    .stat-card.c-orange { background: linear-gradient(135deg,#ff9800,#e65100) !important; }
+    .stat-card.c-purple { background: linear-gradient(135deg,#9c27b0,#6a1b9a) !important; }
+    .site-ops { display: flex; flex-wrap: nowrap; align-items: center; gap: 4px; white-space: nowrap; max-width: none; }
+    .site-ops .layui-btn { flex: 0 0 auto; margin-left: 0 !important; margin-right: 0 !important; }
+    .site-ops .layui-icon { overflow: visible; line-height: 1; }
     .panel-card { background: #fff; border-radius: 8px; padding: 18px 20px; margin-bottom: 16px; }
     .panel-card h3 { margin: 0 0 14px; font-size: 15px; }
     .mon-row { margin-bottom: 16px; }
     .mon-row:last-child { margin-bottom: 0; }
     .mon-k { font-size: 13px; margin-bottom: 6px; overflow: hidden; }
-    .mon-k .right { float: right; color: #666; font-size: 12px; }
+    .mon-k .right { float: right; max-width: 70%; color: #666; font-size: 12px; text-align: right; white-space: normal; word-break: break-word; }
     .mon-meta { color: #888; font-size: 12px; margin-top: 6px; }
     .mon-updated { color: #999; font-size: 12px; font-weight: 400; float: right; line-height: 22px; }
     .warn-text { color: #ff5722; }
