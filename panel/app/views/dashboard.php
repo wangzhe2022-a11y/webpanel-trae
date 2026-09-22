@@ -18,25 +18,25 @@ $loadRatio = $cpuCores > 0 ? $load1 / $cpuCores : $load1;
 ?>
 <div class="layui-row layui-col-space15">
     <div class="layui-col-md3">
-        <div class="stat-card c-blue">
+        <div class="stat-card c-blue" style="background:linear-gradient(135deg,#1e9fff,#0c7cd5)">
             <span class="layui-icon layui-icon-website"></span>
             <div class="num"><?= (int) $stats['sites'] ?></div><div class="label">托管网站</div>
         </div>
     </div>
     <div class="layui-col-md3">
-        <div class="stat-card c-green">
+        <div class="stat-card c-green" style="background:linear-gradient(135deg,#16baaa,#0e9a8c)">
             <span class="layui-icon layui-icon-table"></span>
             <div class="num"><?= (int) $stats['databases'] ?></div><div class="label">MySQL 数据库</div>
         </div>
     </div>
     <div class="layui-col-md3">
-        <div class="stat-card c-orange">
+        <div class="stat-card c-orange" style="background:linear-gradient(135deg,#ff9800,#e65100)">
             <span class="layui-icon layui-icon-auz"></span>
             <div class="num"><?= (int) $stats['ssl'] ?></div><div class="label">已启用 HTTPS</div>
         </div>
     </div>
     <div class="layui-col-md3">
-        <div class="stat-card c-purple">
+        <div class="stat-card c-purple" style="background:linear-gradient(135deg,#9c27b0,#6a1b9a)">
             <span class="layui-icon layui-icon-cpu"></span>
             <div class="num" id="statCpuPct"><?= isset($info['cpu_usage_pct']) ? e(rtrim(rtrim(number_format($cpuPct, 1, '.', ''), '0'), '.')) . '%' : e((string) ($cpuCores ?: '-')) ?></div>
             <div class="label" id="statCpuLabel">CPU<?= $cpuCores ? ' · ' . $cpuCores . ' 核' : '' ?> · <?= e((string) ($info['hostname'] ?? '')) ?></div>
@@ -55,7 +55,7 @@ $loadRatio = $cpuCores > 0 ? $load1 / $cpuCores : $load1;
                 <div class="mon-k">内存 <span class="right mono" id="memText">
                     <?= $memTotal ? e(format_bytes($memUsed) . ' / ' . format_bytes($memTotal) . ' · 可用 ' . format_bytes($memAvail) . ' · ' . rtrim(rtrim(number_format($memPct, 1, '.', ''), '0'), '.') . '%') : '-' ?>
                 </span></div>
-                <div class="layui-progress layui-progress-big" lay-filter="memBar" lay-showpercent="true">
+                <div class="layui-progress layui-progress-big" lay-filter="memBar">
                     <div class="layui-progress-bar <?= e(panel_gauge_class($memPct, 85, 95)) ?>" lay-percent="<?= e((string) $memPct) ?>%"></div>
                 </div>
             </div>
@@ -63,7 +63,7 @@ $loadRatio = $cpuCores > 0 ? $load1 / $cpuCores : $load1;
                 <div class="mon-k">交换分区 <span class="right mono" id="swapText">
                     <?= $swapTotal ? e(format_bytes($swapUsed) . ' / ' . format_bytes($swapTotal) . ' · ' . rtrim(rtrim(number_format($swapPct, 1, '.', ''), '0'), '.') . '%') : '' ?>
                 </span></div>
-                <div class="layui-progress" lay-filter="swapBar" lay-showpercent="true">
+                <div class="layui-progress" lay-filter="swapBar">
                     <div class="layui-progress-bar <?= e(panel_gauge_class($swapPct, 50, 80)) ?>" lay-percent="<?= e((string) $swapPct) ?>%"></div>
                 </div>
             </div>
@@ -71,7 +71,7 @@ $loadRatio = $cpuCores > 0 ? $load1 / $cpuCores : $load1;
                 <div class="mon-k">CPU / 负载 <span class="right mono" id="cpuText">
                     <?= e(($cpuPct > 0 ? rtrim(rtrim(number_format($cpuPct, 1, '.', ''), '0'), '.') . '% · ' : '') . '负载 ' . $loadavg . ($cpuCores ? ' · ' . $cpuCores . ' 核' : '')) ?>
                 </span></div>
-                <div class="layui-progress" lay-filter="cpuBar" lay-showpercent="true">
+                <div class="layui-progress" lay-filter="cpuBar">
                     <div class="layui-progress-bar <?= e(panel_gauge_class($cpuPct, 85, 95)) ?>" lay-percent="<?= e((string) $cpuPct) ?>%"></div>
                 </div>
                 <div class="mon-meta" id="loadText">

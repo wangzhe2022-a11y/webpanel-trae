@@ -68,6 +68,7 @@
             </td>
             <td class="mono" style="font-size:12px"><?= e($s['created_at']) ?></td>
             <td>
+                <div class="site-ops">
                 <a class="layui-btn layui-btn-xs layui-btn-primary" href="/files?site=<?= (int) $s['id'] ?>">
                     <span class="layui-icon layui-icon-file"></span> 文件
                 </a>
@@ -81,6 +82,7 @@
                     <span class="layui-icon layui-icon-auz"></span> SSL
                 </a>
                 <button class="layui-btn layui-btn-xs layui-btn-danger btn-del">删除</button>
+                </div>
             </td>
         </tr>
         <?php endforeach; ?>
