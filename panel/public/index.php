@@ -31,6 +31,11 @@ $router->post('/logout', [AuthController::class, 'logout']);
 /* ---- dashboard ----------------------------------------------------------- */
 $router->get('/', [DashboardController::class, 'index']);
 
+/* ---- appearance (dark-theme wallpaper; no schema change) ----------------- */
+$router->get('/appearance', [AppearanceController::class, 'info']);
+$router->post('/appearance/wallpaper', [AppearanceController::class, 'wallpaper']);
+$router->post('/appearance/clear', [AppearanceController::class, 'clear']);
+
 /* ---- websites ------------------------------------------------------------ */
 $router->get('/sites', [SiteController::class, 'index']);
 $router->post('/sites/create', [SiteController::class, 'create']);

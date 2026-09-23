@@ -1,5 +1,6 @@
     </div>
 </div>
+<script src="/static/js/panel-shell.js"></script>
 <script>
 layui.use(['element', 'layer'], function () {
     var layer = layui.layer, $ = layui.$;

@@ -40,6 +40,10 @@ foreach ([PANEL_DATA, PANEL_DATA . '/sessions', PANEL_DATA . '/tmp', PANEL_DATA 
         @mkdir($d, 0700, true);
     }
 }
+$uploads = PANEL_BASE . '/public/static/uploads';
+if (!is_dir($uploads)) {
+    @mkdir($uploads, 0775, true);
+}
 
 set_exception_handler(function (Throwable $e): void {
     error_log('[webpanel] ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
