@@ -39,14 +39,16 @@ $nav = [
     .site-ops .layui-btn { flex: 0 0 auto; margin-left: 0 !important; margin-right: 0 !important; }
     .site-ops .layui-icon { overflow: visible; line-height: 1; }
     .panel-card { background: #fff; border-radius: 8px; padding: 18px 20px; margin-bottom: 16px; }
-    .panel-card h3 { margin: 0 0 14px; font-size: 15px; }
-    /* Same 15px space15 gutter as other dashboard two-column rows; hide Layui
-       row clearfix so it does not become extra flex items. */
-    .login-grid-row { display: flex; flex-wrap: wrap; }
+    .panel-card h3 { margin: 0 0 14px; font-size: 15px; overflow: hidden; }
+    /* Login pair is its own full-width block; contain floats so atop cannot
+       wrap beside it. 15px gutter comes from layui-col-space15, same as the
+       host-monitor row. Do not clip card titles or table bodies. */
+    .dash-login-section, .dash-atop-row { display: flow-root; width: 100%; clear: both; }
+    .login-grid-row { display: flex; flex-wrap: wrap; width: 100%; }
     .login-grid-row:before, .login-grid-row:after { content: none; display: none; }
-    .login-grid-row > .layui-col-md6 { float: none; min-width: 0; }
-    .login-grid-row .panel-card { overflow: hidden; }
-    .login-grid-row .layui-table { width: 100%; table-layout: fixed; }
+    .login-grid-row > .layui-col-md6 {
+        float: none; flex: 0 0 50%; max-width: 50%; width: 50%; box-sizing: border-box;
+    }
     .mon-row { margin-bottom: 16px; }
     .mon-row:last-child { margin-bottom: 0; }
     .mon-k { font-size: 13px; margin-bottom: 6px; overflow: hidden; }
