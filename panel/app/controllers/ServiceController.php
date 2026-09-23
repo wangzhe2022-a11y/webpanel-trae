@@ -81,6 +81,7 @@ class ServiceController extends Controller
                 'recent' => [],
                 'top_cpu' => [],
                 'top_mem' => [],
+                'proc_error' => '',
                 'error' => '无法读取 atop：' . ($r['error'] !== '' ? $r['error'] : '请确认已部署 wp-atop.sh 并更新 sudoers'),
             ]);
         }

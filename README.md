@@ -194,7 +194,7 @@ sudo visudo -cf /etc/sudoers.d/webpanel
 
 ```bash
 atop -r /var/log/atop/FILE -Z -P CPU,CPL,MEM,SWP,DSK
-atop -r /var/log/atop/FILE -Z -b HH:MM -e HH:MM+1min -P PRC,PRM,PRD
+atop -r /var/log/atop/FILE -Z -b YYYYMMDDHH:MM -e YYYYMMDDHH:MM -P PRC,PRM,PRD
 ```
 
 登录仪表盘后应看到 **atop 历史** 卡片（实时「主机监控」不变）。未安装 atop 或日志为空时显示说明，不会 500。

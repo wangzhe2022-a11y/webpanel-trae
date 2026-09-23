@@ -11,7 +11,7 @@
 #
 # Parseable atop 2.7.1 commands (never the interactive TUI):
 #   atop -r FILE -Z -P CPU,CPL,MEM,SWP,DSK
-#   atop -r FILE -Z -b HH:MM -e HH:MM+1min -P PRC,PRM,PRD
+#   atop -r FILE -Z -b YYYYMMDDHH:MM -e YYYYMMDDHH:MM -P PRC,PRM,PRD
 # ============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -318,8 +318,10 @@ sample_json="$(cat "$tmp_sample" 2>/dev/null || echo 'null')"
 [ -n "$sample_json" ] || sample_json='null'
 
 chosen_time="$time_arg"
+chosen_epoch=""
 if [ "$sample_json" != "null" ]; then
     chosen_time="$(printf '%s' "$sample_json" | sed -n 's/.*"time":"\([^"]*\)".*/\1/p' | head -n1)"
+    chosen_epoch="$(printf '%s' "$sample_json" | sed -n 's/.*"epoch":\([0-9][0-9]*\).*/\1/p' | head -n1)"
 fi
 [ -n "$chosen_time" ] || chosen_time=""
 
@@ -327,26 +329,49 @@ if [ "$sample_json" = "null" ] || [ -z "$chosen_time" ]; then
     emit "${status_prefix},\"file\":\"$(jesc "$file_name")\",\"time\":\"\",\"times\":${times_json},\"sample\":null,\"recent\":[],\"top_cpu\":[],\"top_mem\":[],\"error\":\"日志尚无可用采样（或指定时间不存在）\""
 fi
 
-# ---- processes for the chosen minute --------------------------------------
-# -b/-e only accept hh:mm; widen the end by 1 minute so 14:00:03 still matches.
+# ---- processes for the chosen sample --------------------------------------
+# atop 2.7.1 remaps bare hh:mm onto the raw file's first-record date.
+# A post-midnight sample (00:02 after 23:52 in atop_YYYYMMDD) then misses.
+# Prefer absolute YYYYMMDDHH:MM from the sample epoch (host timezone).
 hh="${chosen_time%%:*}"
 mm="${chosen_time##*:}"
 hh=$((10#$hh)); mm=$((10#$mm))
 end_m=$((mm + 1)); end_h=$hh
 if [ "$end_m" -ge 60 ]; then end_m=0; end_h=$((end_h + 1)); fi
 if [ "$end_h" -ge 24 ]; then end_h=23; end_m=59; fi
-begin_s="$(printf '%02d:%02d' "$hh" "$mm")"
-end_s="$(printf '%02d:%02d' "$end_h" "$end_m")"
+begin_hm="$(printf '%02d:%02d' "$hh" "$mm")"
+end_hm="$(printf '%02d:%02d' "$end_h" "$end_m")"
+begin_s="$begin_hm"
+end_s="$end_hm"
+if [[ "$chosen_epoch" =~ ^[0-9]+$ ]] && [ "$chosen_epoch" -gt 0 ]; then
+    tz="${TIMEZONE:-Asia/Shanghai}"
+    begin_abs="$(TZ="$tz" date -d "@${chosen_epoch}" '+%Y%m%d%H:%M' 2>/dev/null || true)"
+    end_abs="$(TZ="$tz" date -d "@$((chosen_epoch + 90))" '+%Y%m%d%H:%M' 2>/dev/null || true)"
+    if [ -n "$begin_abs" ] && [ -n "$end_abs" ]; then
+        begin_s="$begin_abs"
+        end_s="$end_abs"
+    fi
+fi
 
-tmp_prc="$(mktemp)"
-top_cpu_json='[]'
-top_mem_json='[]'
-if run_atop -r "$log_file" -Z -b "$begin_s" -e "$end_s" -P PRC,PRM,PRD >"$tmp_prc" 2>"$tmp_err"; then
+parse_proc_labels() {
+    local src="$1"
     tmp_cpu="$(mktemp)"
     tmp_mem="$(mktemp)"
-    awk -v top_n="$top_n" -v cpu_file="$tmp_cpu" -v mem_file="$tmp_mem" '
+    awk -v top_n="$top_n" -v target_epoch="${chosen_epoch:-0}" \
+        -v cpu_file="$tmp_cpu" -v mem_file="$tmp_mem" '
     function jesc(s,    t) { t=s; gsub(/\\/, "\\\\", t); gsub(/"/, "\\\"", t); return t }
     function r1(x) { return sprintf("%.1f", x+0) }
+    function isproc_y(    f) {
+        for (f = NF; f >= 7; f--) {
+            if ($f == "y") return 1
+            if ($f == "n") return 0
+        }
+        return 1
+    }
+    function same_sample() {
+        if (target_epoch+0 <= 0) return 1
+        return ($3+0 == target_epoch+0)
+    }
     function dump(order, limit,    i, pid, out, c) {
         out = "["
         c = 0
@@ -362,8 +387,9 @@ if run_atop -r "$log_file" -Z -b "$begin_s" -e "$end_s" -P PRC,PRM,PRD >"$tmp_pr
     $1 == "RESET" { skip=1; next }
     $1 == "SEP" { skip=0; next }
     skip { next }
+    !same_sample() { next }
     $1 == "PRC" {
-        if ($20 != "y") next
+        if (!isproc_y()) next
         pid=$7
         if (interval == 0) interval=$6+0
         hz=$10+0; if (hz <= 0) hz=100
@@ -375,16 +401,16 @@ if run_atop -r "$log_file" -Z -b "$begin_s" -e "$end_s" -P PRC,PRM,PRD >"$tmp_pr
         next
     }
     $1 == "PRM" {
-        if ($23 != "y") next
+        if (!isproc_y()) next
         pid=$7
-        ps=$10+0; if (ps <= 0) ps=4096
-        rss[pid] = $12 * ps / 1024
+        # rmem is already KiB in atop 2.7.1 parseable output
+        rss[pid] = $12+0
         if (!(pid in pname)) pname[pid] = $8
         pids[pid] = 1
         next
     }
     $1 == "PRD" {
-        if ($19 != "y") next
+        if (!isproc_y()) next
         pid=$7
         # rsz/wsz are 512-byte sectors in atop 2.7.1
         disk[pid] = ($13 + $15) / 2
@@ -414,11 +440,35 @@ if run_atop -r "$log_file" -Z -b "$begin_s" -e "$end_s" -P PRC,PRM,PRD >"$tmp_pr
         print dump(corder, top_n) > cpu_file
         print dump(morder, top_n) > mem_file
     }
-    ' "$tmp_prc"
+    ' "$src"
     top_cpu_json="$(cat "$tmp_cpu" 2>/dev/null || echo '[]')"
     top_mem_json="$(cat "$tmp_mem" 2>/dev/null || echo '[]')"
+    [ -n "$top_cpu_json" ] || top_cpu_json='[]'
+    [ -n "$top_mem_json" ] || top_mem_json='[]'
+}
+
+tmp_prc="$(mktemp)"
+top_cpu_json='[]'
+top_mem_json='[]'
+proc_error=""
+if ! run_atop -r "$log_file" -Z -b "$begin_s" -e "$end_s" -P PRC,PRM,PRD >"$tmp_prc" 2>"$tmp_err"; then
+    # Older atop rejects YYYYMMDDHH:MM; retry the bare hh:mm window.
+    if [ "$begin_s" != "$begin_hm" ]; then
+        begin_s="$begin_hm"
+        end_s="$end_hm"
+        if ! run_atop -r "$log_file" -Z -b "$begin_s" -e "$end_s" -P PRC,PRM,PRD >"$tmp_prc" 2>"$tmp_err"; then
+            proc_error="$(head -n1 "$tmp_err" | tr -d '\r')"
+            [ -n "$proc_error" ] || proc_error="读取进程采样失败"
+        fi
+    else
+        proc_error="$(head -n1 "$tmp_err" | tr -d '\r')"
+        [ -n "$proc_error" ] || proc_error="读取进程采样失败"
+    fi
+fi
+if [ -z "$proc_error" ]; then
+    parse_proc_labels "$tmp_prc"
 fi
 [ -n "$top_cpu_json" ] || top_cpu_json='[]'
 [ -n "$top_mem_json" ] || top_mem_json='[]'
 
-emit "${status_prefix},\"file\":\"$(jesc "$file_name")\",\"time\":\"$(jesc "$chosen_time")\",\"times\":${times_json},\"sample\":${sample_json},\"recent\":${recent_json},\"top_cpu\":${top_cpu_json},\"top_mem\":${top_mem_json},\"error\":\"\""
+emit "${status_prefix},\"file\":\"$(jesc "$file_name")\",\"time\":\"$(jesc "$chosen_time")\",\"times\":${times_json},\"sample\":${sample_json},\"recent\":${recent_json},\"top_cpu\":${top_cpu_json},\"top_mem\":${top_mem_json},\"proc_error\":\"$(jesc "$proc_error")\",\"error\":\"\""

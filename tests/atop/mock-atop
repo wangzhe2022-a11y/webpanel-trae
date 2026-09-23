@@ -1,0 +1,157 @@
+#!/usr/bin/env python3
+"""Minimal atop 2.7.1 stand-in for wp-atop.sh parser tests.
+
+Emits parseable (-P / -Z) lines. Bare hh:mm -b/-e windows are remapped onto
+the first record's calendar day — the same rule as rawlog.c in atop 2.7.1.
+"""
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import os
+import sys
+
+TZ = dt.timezone(dt.timedelta(hours=8), name="CST")
+
+
+def epoch_of(y, m, d, hh, mm, ss=0) -> int:
+    return int(dt.datetime(y, m, d, hh, mm, ss, tzinfo=TZ).timestamp())
+
+
+def fmt(epoch: int) -> tuple[str, str]:
+    t = dt.datetime.fromtimestamp(epoch, TZ)
+    return t.strftime("%Y/%m/%d"), t.strftime("%H:%M:%S")
+
+
+# First record is a RESET at 00:02 on Sep 23. Latest real sample is 00:02:57
+# the next day — the live-dashboard case (atop_20260923 · 00:02 after 23:52).
+SAMPLES = [
+    {"epoch": epoch_of(2026, 9, 23, 0, 2, 0), "reset": True},
+    {"epoch": epoch_of(2026, 9, 23, 0, 12, 0), "reset": False, "kind": "early"},
+    {"epoch": epoch_of(2026, 9, 23, 23, 42, 0), "reset": False, "kind": "late"},
+    {"epoch": epoch_of(2026, 9, 23, 23, 52, 0), "reset": False, "kind": "late"},
+    {"epoch": epoch_of(2026, 9, 24, 0, 2, 57), "reset": False, "kind": "midnight"},
+]
+FIRST_EPOCH = SAMPLES[0]["epoch"]
+HOST = "testhost"
+IV = 600
+
+
+def parse_branch(raw: str, first_epoch: int) -> int | None:
+    """Match atop 2.7.1 getbranchtime + rawlog first-record normalize."""
+    if not raw:
+        return None
+    if len(raw) in (12, 13) and raw[:8].isdigit():
+        ymd, hm = raw[:8], raw[8:]
+        if hm[0] != ":" and ":" in hm:
+            pass
+        if ":" in hm:
+            hh, mm = hm.split(":")
+        else:
+            hh, mm = hm[:2], hm[2:]
+        t = dt.datetime(int(ymd[:4]), int(ymd[4:6]), int(ymd[6:8]), int(hh), int(mm), tzinfo=TZ)
+        return int(t.timestamp())
+    if ":" in raw:
+        hh, mm = raw.split(":")
+    elif len(raw) == 4 and raw.isdigit():
+        hh, mm = raw[:2], raw[2:]
+    else:
+        return None
+    first = dt.datetime.fromtimestamp(first_epoch, TZ)
+    t = first.replace(hour=int(hh), minute=int(mm), second=0, microsecond=0)
+    return int(t.timestamp())
+
+
+def in_window(epoch: int, begin: int | None, end: int | None) -> bool:
+    if begin is not None and epoch < begin:
+        return False
+    if end is not None and epoch > end:
+        return False
+    return True
+
+
+def emit_sys(s: dict) -> None:
+    epoch = s["epoch"]
+    date, time = fmt(epoch)
+    hp = f"{HOST} {epoch} {date} {time} {IV}"
+    if s["reset"]:
+        print("RESET")
+        print("SEP")
+        return
+    # CPU: hp hertz nrcpu stime utime ntime itime wtime irq sirq steal guest ...
+    print(f"CPU {hp} 100 2 120 480 0 54000 60 0 0 0 0 2000 100 0 0")
+    print(f"CPL {hp} 2 0.20 0.18 0.10 10 4")
+    # MEM: pagesize + page counts (wp-atop multiplies by pagesize/1024)
+    print(f"MEM {hp} 4096 2097152 1048576 262144 65536 0 0 32768 0 0 0 0 0 0 0 0 0 0")
+    print(f"SWP {hp} 4096 1048576 1024000 0 0 0 0 0 0")
+    print(f"DSK {hp} vda 3000 10 20 5 8 0 0")
+    print("SEP")
+
+
+def emit_prc_line(epoch: int, date: str, time: str, pid: int, name: str,
+                  utime: int, stime: int, rss_kb: int, rsz: int, wsz: int) -> None:
+    hp = f"{HOST} {epoch} {date} {time} {IV}"
+    # PRC: pid name state hertz utime stime nice prio rtprio policy curcpu sleepavg tgid isproc rundelay wchan
+    print(f"PRC {hp} {pid} {name} S 100 {utime} {stime} 0 20 0 0 0 0 {pid} y 0 -")
+    # PRM: pid name state pagesize vmem rmem(KB) ... tgid isproc pmem vlock
+    print(f"PRM {hp} {pid} {name} S 4096 {rss_kb * 2} {rss_kb} 0 0 0 0 0 0 0 0 0 {pid} y 0 0")
+    # PRD: pid name state n iostat rio rsz wio wsz cwsz tgid n isproc
+    print(f"PRD {hp} {pid} {name} S n y 4 {rsz} 2 {wsz} 0 {pid} n y")
+
+
+def emit_procs(s: dict) -> None:
+    epoch = s["epoch"]
+    date, time = fmt(epoch)
+    kind = s.get("kind")
+    if s["reset"]:
+        print("RESET")
+        print("SEP")
+        return
+    if kind == "midnight":
+        rows = [
+            (1842, "mysqld", 3720, 2480, 412000, 16384, 0),
+            (2201, "php-fpm", 1860, 0, 186000, 2048, 0),
+            (991, "nginx", 480, 0, 42000, 512, 0),
+        ]
+    elif kind == "early":
+        rows = [(1, "systemd", 10, 5, 9800, 0, 0)]
+    else:
+        rows = [(440, "sshd", 80, 20, 12000, 0, 0)]
+    for pid, name, utime, stime, rss, rsz, wsz in rows:
+        emit_prc_line(epoch, date, time, pid, name, utime, stime, rss, rsz, wsz)
+    print("SEP")
+
+
+def main() -> int:
+    os.environ.setdefault("TZ", "Asia/Shanghai")
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-r", dest="raw")
+    ap.add_argument("-Z", action="store_true")
+    ap.add_argument("-b", dest="begin")
+    ap.add_argument("-e", dest="end")
+    ap.add_argument("-P", dest="labels")
+    ap.add_argument("-V", action="store_true")
+    args, _ = ap.parse_known_args()
+    if args.V:
+        print("Version: atop-2.7.1-mock")
+        return 0
+    if not args.labels:
+        print("flag -P required", file=sys.stderr)
+        return 1
+    begin = parse_branch(args.begin, FIRST_EPOCH) if args.begin else None
+    end = parse_branch(args.end, FIRST_EPOCH) if args.end else None
+    want_sys = any(x in args.labels for x in ("CPU", "CPL", "MEM", "SWP", "DSK"))
+    want_prc = any(x in args.labels for x in ("PRC", "PRM", "PRD"))
+    for s in SAMPLES:
+        if begin is not None or end is not None:
+            if not in_window(s["epoch"], begin, end):
+                continue
+        if want_sys:
+            emit_sys(s)
+        if want_prc:
+            emit_procs(s)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
