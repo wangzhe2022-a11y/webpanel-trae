@@ -46,7 +46,7 @@ $nav = [
     .panel-card { background: #fff; border-radius: 8px; padding: 18px 20px; margin-bottom: 16px; }
     .panel-card h3 { margin: 0 0 14px; font-size: 15px; }
     /* Same layui-row + col-md6 + space15 as the host/services row. clear:both
-       keeps this pair on its own full-width band so atop cannot float beside it.
+       keeps each pair on its own full-width band (login above, atop below).
        No flex/gap/overflow:hidden — those clipped the left h3 (“最近登录”)
        and fought space15 padding. */
     .dash-login-row, .dash-atop-row { clear: both; }
@@ -85,8 +85,6 @@ $nav = [
     .atop-proc th:last-child, .atop-proc td:last-child { text-align: right; }
     .atop-proc td { padding: 2px 6px 2px 0; font-size: 12px; color: #555; }
     .atop-proc td:last-child { color: #888; }
-    .atop-split { display: flex; flex-wrap: wrap; gap: 16px; }
-    .atop-split > div { flex: 1 1 280px; min-width: 0; }
 </style>
 </head>
 <body class="layui-layout-body">
