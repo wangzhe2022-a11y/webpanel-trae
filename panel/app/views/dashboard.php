@@ -15,6 +15,19 @@ if ($load1 == 0.0 && $loadavg !== '-' && $loadavg !== '') {
     $load1 = (float) explode(' ', $loadavg)[0];
 }
 $loadRatio = $cpuCores > 0 ? $load1 / $cpuCores : $load1;
+$rootDisk = null;
+foreach (($info['disk'] ?? []) as $d) {
+    if (($d['fs'] ?? '') === '/') {
+        $rootDisk = $d;
+        break;
+    }
+}
+if ($rootDisk === null && !empty($info['disk'][0]) && is_array($info['disk'][0])) {
+    $rootDisk = $info['disk'][0];
+}
+$storagePct = (float) (is_array($rootDisk) ? ($rootDisk['use_pct'] ?? 0) : 0);
+$cpuRing = max(0.0, min(100.0, $cpuPct));
+$memRing = max(0.0, min(100.0, $memPct));
 ?>
 <div class="layui-row layui-col-space15">
     <div class="layui-col-md3">
@@ -51,6 +64,36 @@ $loadRatio = $cpuCores > 0 ? $load1 / $cpuCores : $load1;
                 主机监控
                 <span class="mon-updated" id="monUpdated">每 15 秒自动刷新</span>
             </h3>
+            <div class="wp-perf" id="wpPerf">
+                <div class="wp-ring-wrap">
+                    <div class="wp-ring<?= $cpuRing >= 95 ? ' is-crit' : ($cpuRing >= 85 ? ' is-warn' : '') ?>" id="ringCpu">
+                        <svg viewBox="0 0 36 36" aria-hidden="true">
+                            <circle class="wp-ring-track" cx="18" cy="18" r="15.9155"></circle>
+                            <circle class="wp-ring-value" cx="18" cy="18" r="15.9155"
+                                stroke-dasharray="<?= e(rtrim(rtrim(number_format($cpuRing, 1, '.', ''), '0'), '.') ?: '0') ?> 100"></circle>
+                        </svg>
+                        <div class="wp-ring-center">
+                            <span class="wp-ring-num" id="ringCpuNum"><?= e(rtrim(rtrim(number_format($cpuRing, 1, '.', ''), '0'), '.') ?: '0') ?>%</span>
+                        </div>
+                    </div>
+                    <div class="wp-ring-label">CPU</div>
+                    <div class="wp-ring-sub mono" id="ringCpuSub"><?= e($loadavg) ?><?= $cpuCores ? ' · ' . $cpuCores . ' 核' : '' ?></div>
+                </div>
+                <div class="wp-ring-wrap">
+                    <div class="wp-ring<?= $memRing >= 95 ? ' is-crit' : ($memRing >= 85 ? ' is-warn' : '') ?>" id="ringMem">
+                        <svg viewBox="0 0 36 36" aria-hidden="true">
+                            <circle class="wp-ring-track" cx="18" cy="18" r="15.9155"></circle>
+                            <circle class="wp-ring-value" cx="18" cy="18" r="15.9155"
+                                stroke-dasharray="<?= e(rtrim(rtrim(number_format($memRing, 1, '.', ''), '0'), '.') ?: '0') ?> 100"></circle>
+                        </svg>
+                        <div class="wp-ring-center">
+                            <span class="wp-ring-num" id="ringMemNum"><?= e(rtrim(rtrim(number_format($memRing, 1, '.', ''), '0'), '.') ?: '0') ?>%</span>
+                        </div>
+                    </div>
+                    <div class="wp-ring-label">RAM</div>
+                    <div class="wp-ring-sub mono" id="ringMemSub"><?= $memTotal ? e(format_bytes($memUsed) . ' / ' . format_bytes($memTotal)) : '-' ?></div>
+                </div>
+            </div>
             <div class="mon-row">
                 <div class="mon-k">内存 <span class="right mono" id="memText">
                     <?= $memTotal ? e(format_bytes($memUsed) . ' / ' . format_bytes($memTotal) . ' · 可用 ' . format_bytes($memAvail) . ' · ' . rtrim(rtrim(number_format($memPct, 1, '.', ''), '0'), '.') . '%') : '-' ?>
@@ -99,6 +142,21 @@ $loadRatio = $cpuCores > 0 ? $load1 / $cpuCores : $load1;
         </div>
         <div class="panel-card">
             <h3>磁盘</h3>
+            <div class="wp-storage" id="wpStorage">
+                <div class="wp-storage-head">
+                    <span class="wp-storage-state" id="storageState"><?= $storagePct >= 90 ? '紧张' : ($storagePct >= 80 ? '注意' : '正常') ?></span>
+                    <span class="wp-storage-meta mono" id="storageMeta"><?php
+                        if ($rootDisk) {
+                            echo e('已用 ' . (string) ($rootDisk['used'] ?? '') . ' / 总量 ' . (string) ($rootDisk['size'] ?? ''));
+                        } else {
+                            echo '暂无磁盘数据';
+                        }
+                    ?></span>
+                </div>
+                <div class="layui-progress layui-progress-big" lay-filter="storageBar">
+                    <div class="layui-progress-bar <?= e(panel_gauge_class($storagePct, 80, 90)) ?>" lay-percent="<?= (int) $storagePct ?>%"></div>
+                </div>
+            </div>
             <table class="layui-table" style="margin:0">
                 <thead><tr><th>挂载点</th><th>总量</th><th>已用</th><th>可用</th><th>使用率</th></tr></thead>
                 <tbody id="diskBody">
@@ -182,6 +240,31 @@ layui.use(['element', 'layer', 'table'], function () {
         $bar.removeClass('layui-bg-red layui-bg-orange').addClass(gaugeCls(pct, warn, crit));
         element.progress(filter, trimPct(pct) + '%');
     }
+    function setRing(id, pct, warn, crit) {
+        pct = Math.max(0, Math.min(100, Number(pct) || 0));
+        var $el = $('#' + id);
+        $el.removeClass('is-warn is-crit');
+        if (pct >= crit) $el.addClass('is-crit');
+        else if (pct >= warn) $el.addClass('is-warn');
+        $el.find('.wp-ring-value').attr('stroke-dasharray', trimPct(pct) + ' 100');
+        $el.find('.wp-ring-num').text(trimPct(pct) + '%');
+    }
+    function applyStorage(disks) {
+        disks = disks || [];
+        var d = disks[0] || null;
+        disks.forEach(function (row) {
+            if (row && row.fs === '/') d = row;
+        });
+        if (!d) {
+            $('#storageMeta').text('暂无磁盘数据');
+            $('#storageState').text('—');
+            return;
+        }
+        var pct = Number(d.use_pct) || 0;
+        $('#storageMeta').text('已用 ' + (d.used || '') + ' / 总量 ' + (d.size || ''));
+        $('#storageState').text(pct >= 90 ? '紧张' : (pct >= 80 ? '注意' : '正常'));
+        setBar('storageBar', pct, 80, 90);
+    }
 
     function applyInfo(res) {
         var memTotal = Number(res.mem_total_kb) || 0;
@@ -219,6 +302,10 @@ layui.use(['element', 'layer', 'table'], function () {
             + (cores ? ' · 每核 1 分钟 ' + loadRatio.toFixed(2) : ''));
         $('#statCpuPct').text(res.cpu_usage_pct != null ? trimPct(cpuPct) + '%' : (cores || '-'));
         $('#statCpuLabel').text('CPU' + (cores ? ' · ' + cores + ' 核' : '') + ' · ' + (res.hostname || ''));
+        setRing('ringCpu', cpuPct, 85, 95);
+        $('#ringCpuSub').text(loadavg + (cores ? ' · ' + cores + ' 核' : ''));
+        setRing('ringMem', memPct, 85, 95);
+        $('#ringMemSub').text(memTotal ? (fmtKb(memUsed) + ' / ' + fmtKb(memTotal)) : '-');
 
         if (res.hostname) $('#hostName').text(res.hostname);
         if (res.os) $('#hostOs').text(res.os);
@@ -243,6 +330,7 @@ layui.use(['element', 'layer', 'table'], function () {
         });
         element.render('progress');
         disks.forEach(function (d, i) { setBar('diskBar' + i, Number(d.use_pct) || 0, 80, 90); });
+        applyStorage(disks);
 
         var top = res.top || [];
         var $top = $('#topTable tbody').empty();

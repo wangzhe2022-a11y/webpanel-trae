@@ -10,6 +10,10 @@
 panel/uploads/
 panel/data/uploads/
 
+# User wallpaper for the dark glass theme (runtime; keep the folder)
+panel/public/static/uploads/*
+!panel/public/static/uploads/.gitkeep
+
 # CVM-only ops history — never commit to GitHub
 /BUGFIXES.md
 

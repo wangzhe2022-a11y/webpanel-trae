@@ -135,3 +135,81 @@ function site_default_rel(array $site): string
 {
     return (($site['type'] ?? 'php') === 'node') ? '/app' : '/public';
 }
+
+/** Public static dir for the dark-theme wallpaper (served as /static/uploads/...). */
+function panel_uploads_dir(): string
+{
+    $dir = PANEL_BASE . '/public/static/uploads';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0775, true);
+    }
+    return $dir;
+}
+
+function panel_appearance_path(): string
+{
+    return panel_uploads_dir() . '/appearance.json';
+}
+
+/**
+ * @return array{kind: string, file: string, url: string, updated: int}
+ */
+function panel_appearance(): array
+{
+    $defaults = ['kind' => '', 'file' => '', 'url' => '', 'updated' => 0];
+    $path = panel_appearance_path();
+    if (!is_file($path)) {
+        return $defaults;
+    }
+    $data = json_decode((string) file_get_contents($path), true);
+    if (!is_array($data)) {
+        return $defaults;
+    }
+    return [
+        'kind' => (string) ($data['kind'] ?? ''),
+        'file' => (string) ($data['file'] ?? ''),
+        'url' => (string) ($data['url'] ?? ''),
+        'updated' => (int) ($data['updated'] ?? 0),
+    ];
+}
+
+function panel_appearance_save(array $data): void
+{
+    $payload = [
+        'kind' => (string) ($data['kind'] ?? ''),
+        'file' => (string) ($data['file'] ?? ''),
+        'url' => (string) ($data['url'] ?? ''),
+        'updated' => (int) ($data['updated'] ?? time()),
+    ];
+    @file_put_contents(
+        panel_appearance_path(),
+        json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT),
+        LOCK_EX
+    );
+}
+
+/** Browser URL for the current wallpaper, or empty when unset. */
+function panel_appearance_src(): string
+{
+    $a = panel_appearance();
+    if ($a['kind'] === 'file' && $a['file'] !== '' && preg_match('/^wallpaper\.(jpe?g|png|webp)$/', $a['file'])) {
+        $full = panel_uploads_dir() . '/' . $a['file'];
+        if (is_file($full)) {
+            $t = $a['updated'] > 0 ? $a['updated'] : (int) filemtime($full);
+            return '/static/uploads/' . $a['file'] . '?t=' . $t;
+        }
+    }
+    if ($a['kind'] === 'url' && $a['url'] !== '' && preg_match('#^https?://#i', $a['url'])) {
+        return $a['url'];
+    }
+    return '';
+}
+
+function panel_appearance_clear_files(): void
+{
+    foreach (glob(panel_uploads_dir() . '/wallpaper.*') ?: [] as $f) {
+        if (is_file($f)) {
+            @unlink($f);
+        }
+    }
+}

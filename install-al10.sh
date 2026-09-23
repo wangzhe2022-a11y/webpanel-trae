@@ -183,6 +183,8 @@ find "$INSTALL_DIR/panel" -type f -exec chmod 640 {} \;
 install -d -o webpanel -g webpanel -m 700 \
     "$INSTALL_DIR/panel/data" "$INSTALL_DIR/panel/data/sessions" \
     "$INSTALL_DIR/panel/data/tmp" "$INSTALL_DIR/panel/data/cache"
+install -d -o webpanel -g webpanel -m 775 \
+    "$INSTALL_DIR/panel/public/static/uploads"
 
 # sudoers 白名单（先 visudo 语法校验再落地）
 install -m 440 "$INSTALL_DIR/config/sudoers.d/webpanel" /etc/sudoers.d/webpanel

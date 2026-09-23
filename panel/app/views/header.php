@@ -10,13 +10,26 @@ $nav = [
     '/backup'  => ['备份恢复', 'layui-icon-download-circle'],
     '/installatron' => ['Installatron', 'layui-icon-app'],
 ];
+$wallpaperSrc = panel_appearance_src();
 ?><!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN"<?php if ($wallpaperSrc !== ''): ?> data-wallpaper="<?= e($wallpaperSrc) ?>"<?php endif; ?>>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="csrf" content="<?= e($csrf) ?>">
 <title>WebPanel 管理面板</title>
+<script>
+(function () {
+    var t = 'light';
+    try { t = localStorage.getItem('wp.theme') || t; } catch (e) {}
+    if (t !== 'dark') t = 'light';
+    document.documentElement.setAttribute('data-theme', t);
+    var src = document.documentElement.getAttribute('data-wallpaper') || '';
+    if (t === 'dark' && src) {
+        document.documentElement.style.setProperty('--wp-wallpaper-image', 'url("' + String(src).replace(/"/g, '') + '")');
+    }
+})();
+</script>
 <link rel="stylesheet" href="/static/layui/css/layui.css">
 <link rel="stylesheet" href="/static/css/panel.css">
 </head>
@@ -58,9 +71,47 @@ window.WP = (function () {
     <div class="layui-header">
         <div class="layui-logo layui-elip">
             <span class="layui-icon layui-icon-template-1 wp-logo-icon"></span>
-            WebPanel 管理面板
+            WebPanel<span class="wp-logo-rest"> 管理面板</span>
         </div>
+        <div class="wp-clock" id="wpClock" aria-hidden="true">
+            <div class="wp-clock-time" id="wpClockTime">--:--</div>
+            <div class="wp-clock-date" id="wpClockDate"></div>
+        </div>
+        <ul class="wp-top-nav">
+            <?php foreach ($nav as $path => [$label, $icon]): ?>
+            <li class="<?= $uri === $path ? 'is-active' : '' ?>">
+                <a href="<?= e($path) ?>"><span class="layui-icon <?= e($icon) ?>"></span><span><?= e($label) ?></span></a>
+            </li>
+            <?php endforeach; ?>
+        </ul>
         <div class="header-right">
+            <button type="button" class="wp-icon-btn" id="btnTheme" title="切换浅色 / 深色玻璃" aria-label="切换主题">
+                <span class="layui-icon layui-icon-moon" id="btnThemeIcon"></span>
+            </button>
+            <div class="wp-appear-wrap">
+                <button type="button" class="wp-icon-btn" id="btnAppearance" title="外观" aria-label="外观">
+                    <span class="layui-icon layui-icon-set"></span>
+                </button>
+                <div class="wp-appear" id="wpAppear" hidden>
+                    <div class="wp-appear-title">外观</div>
+                    <p class="wp-appear-hint">壁纸仅在深色玻璃主题下显示。未设置时使用深色渐变。</p>
+                    <div class="wp-appear-row">
+                        <button type="button" class="layui-btn layui-btn-sm" id="btnWpUpload">上传壁纸</button>
+                        <button type="button" class="layui-btn layui-btn-sm layui-btn-primary" id="btnWpClear">清除</button>
+                        <input type="file" id="wpFile" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" hidden>
+                    </div>
+                    <div class="wp-appear-row">
+                        <input type="url" id="wpUrl" class="layui-input" placeholder="或填写图片 URL（http/https）">
+                        <button type="button" class="layui-btn layui-btn-sm layui-btn-normal" id="btnWpUrl">应用</button>
+                    </div>
+                    <p class="wp-appear-hint">jpg / png / webp，最大 8MB</p>
+                    <div class="wp-appear-preview" id="wpPreview" <?= $wallpaperSrc === '' ? 'hidden' : '' ?>>
+                        <?php if ($wallpaperSrc !== ''): ?>
+                        <img src="<?= e($wallpaperSrc) ?>" alt="当前壁纸">
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
             <span class="wp-user layui-elip">
                 <span class="layui-icon layui-icon-username"></span>
                 <?= e($currentUser['username'] ?? 'admin') ?>
