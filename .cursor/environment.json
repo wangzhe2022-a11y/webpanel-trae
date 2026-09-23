@@ -1,0 +1,14 @@
+{
+  "name": "webpanel-trae (dry-run dev)",
+  "install": "bash .cursor/install.sh",
+  "terminals": [
+    {
+      "name": "panel",
+      "command": "cd \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)\" && PANEL_DRYRUN=1 PANEL_COOKIE_SECURE=0 php -S 0.0.0.0:8888 -t panel/public panel/public/index.php",
+      "description": "webpanel PHP dev server on http://localhost:8888 in dry-run mode (all privileged host operations are mocked). Login with admin / Admin!Passw0rd."
+    }
+  ],
+  "ports": [
+    { "name": "panel", "port": 8888 }
+  ]
+}
