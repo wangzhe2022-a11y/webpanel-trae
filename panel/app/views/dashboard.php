@@ -156,8 +156,7 @@ $loadRatio = $cpuCores > 0 ? $load1 / $cpuCores : $load1;
         </div>
     </div>
 </div>
-<div class="dash-login-section">
-<div class="layui-row layui-col-space15 login-grid-row" style="margin-top:2px">
+<div class="layui-row layui-col-space15 dash-login-row" style="margin-top:2px">
     <div class="layui-col-md6">
         <div class="panel-card">
             <h3>
@@ -215,7 +214,6 @@ $loadRatio = $cpuCores > 0 ? $load1 / $cpuCores : $load1;
             </table>
         </div>
     </div>
-</div>
 </div>
 
 <script>

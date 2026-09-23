@@ -40,15 +40,10 @@ $nav = [
     .site-ops .layui-icon { overflow: visible; line-height: 1; }
     .panel-card { background: #fff; border-radius: 8px; padding: 18px 20px; margin-bottom: 16px; }
     .panel-card h3 { margin: 0 0 14px; font-size: 15px; overflow: hidden; }
-    /* Login pair is its own full-width block; contain floats so atop cannot
-       wrap beside it. 15px gutter comes from layui-col-space15, same as the
-       host-monitor row. Do not clip card titles or table bodies. */
-    .dash-login-section, .dash-atop-row { display: flow-root; width: 100%; clear: both; }
-    .login-grid-row { display: flex; flex-wrap: wrap; width: 100%; }
-    .login-grid-row:before, .login-grid-row:after { content: none; display: none; }
-    .login-grid-row > .layui-col-md6 {
-        float: none; flex: 0 0 50%; max-width: 50%; width: 50%; box-sizing: border-box;
-    }
+    /* Same layui-row + col-md6 + space15 as the host/services row. clear:both
+       keeps this pair on its own full-width band so atop cannot float beside it.
+       No flex/gap — that fights space15 padding and misaligns card edges. */
+    .dash-login-row, .dash-atop-row { clear: both; }
     .mon-row { margin-bottom: 16px; }
     .mon-row:last-child { margin-bottom: 0; }
     .mon-k { font-size: 13px; margin-bottom: 6px; overflow: hidden; }
