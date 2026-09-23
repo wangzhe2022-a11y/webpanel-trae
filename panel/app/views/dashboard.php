@@ -65,8 +65,7 @@ $memRing = max(0.0, min(100.0, $memPct));
 </div>
 
 <div class="layui-row layui-col-space15 wp-mon-band" style="margin-top:2px">
-    <div class="layui-col-md6">
-        <div class="wp-host-disk-split">
+    <div class="layui-col-md4">
         <div class="panel-card">
             <h3>
                 主机监控
@@ -123,6 +122,8 @@ $memRing = max(0.0, min(100.0, $memPct));
                 </tbody>
             </table>
         </div>
+    </div>
+    <div class="layui-col-md4">
         <div class="panel-card">
             <h3>磁盘</h3>
             <div class="wp-perf wp-perf-single">
@@ -175,10 +176,9 @@ $memRing = max(0.0, min(100.0, $memPct));
                 <?php endforeach; ?>
             </div>
         </div>
-        </div>
     </div>
-    <div class="layui-col-md6">
-        <div class="panel-card">
+    <div class="layui-col-md4">
+        <div class="panel-card wp-svc-card">
             <h3>
                 服务状态
                 <button class="layui-btn layui-btn-sm layui-btn-primary" style="float:right" id="btnRefreshSvc">
@@ -186,7 +186,7 @@ $memRing = max(0.0, min(100.0, $memPct));
                 </button>
             </h3>
             <table class="layui-table" style="margin:0">
-                <thead><tr><th>服务</th><th>状态</th><th style="width:210px">操作</th></tr></thead>
+                <thead><tr><th>服务</th><th>状态</th><th>操作</th></tr></thead>
                 <tbody id="svcBody">
                 <?php foreach (($info['services'] ?? []) as $s): ?>
                     <tr data-name="<?= e(str_replace(['php74-php-fpm','php80-php-fpm','php81-php-fpm','php82-php-fpm','php83-php-fpm'], ['php74fpm','php80fpm','php81fpm','php82fpm','php83fpm'], str_replace(['nginx','mysqld','php-fpm'], ['nginx','mysql','phpfpm'], $s['unit']))) ?>">

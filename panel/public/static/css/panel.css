@@ -295,17 +295,21 @@ body.layui-layout-body {
     border-color: var(--wp-border);
 }
 
-/* Host + disk sit side by side (left of 服务状态). Each column owns one ring
-   so CPU/RAM stay a compact pair across the split instead of stretched. */
-.wp-host-disk-split {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    align-items: start;
-}
-.wp-host-disk-split > .panel-card {
+/* Three equal columns: 主机监控 | 磁盘 | 服务状态. Each card owns its own
+   ring / storage / service table instead of nesting host+disk in one half. */
+.wp-mon-band > [class*="layui-col"] > .panel-card {
     min-width: 0;
     margin-bottom: 0;
+}
+.wp-svc-card {
+    overflow-x: auto;
+}
+.wp-svc-card .layui-table td:last-child {
+    white-space: normal;
+    width: auto;
+}
+.wp-svc-card .svc-act {
+    margin: 2px 2px 2px 0;
 }
 
 /* ---- CasaOS-style performance rings / storage (both themes) -------------- */
@@ -834,5 +838,4 @@ html[data-theme="dark"] .fm-empty .layui-icon { color: rgba(255, 255, 255, 0.35)
     .wp-clock .wp-clock-date { font-size: 11px; }
     .wp-dash-clock { min-width: 0; max-width: none; display: flex; }
     .wp-dash-clock .wp-clock-time { font-size: 40px; }
-    .wp-host-disk-split { grid-template-columns: 1fr; }
 }
