@@ -64,14 +64,15 @@ $memRing = max(0.0, min(100.0, $memPct));
     </div>
 </div>
 
-<div class="layui-row layui-col-space15" style="margin-top:2px">
+<div class="layui-row layui-col-space15 wp-mon-band" style="margin-top:2px">
     <div class="layui-col-md6">
+        <div class="wp-host-disk-split">
         <div class="panel-card">
             <h3>
                 主机监控
                 <span class="mon-updated" id="monUpdated">每 15 秒自动刷新</span>
             </h3>
-            <div class="wp-perf" id="wpPerf">
+            <div class="wp-perf wp-perf-single" id="wpPerf">
                 <div class="wp-ring-wrap">
                     <div class="wp-ring<?= $cpuRing >= 95 ? ' is-crit' : ($cpuRing >= 85 ? ' is-warn' : '') ?>" id="ringCpu">
                         <svg viewBox="0 0 36 36" aria-hidden="true">
@@ -86,27 +87,11 @@ $memRing = max(0.0, min(100.0, $memPct));
                     <div class="wp-ring-label">CPU</div>
                     <div class="wp-ring-sub mono" id="ringCpuSub"><?= e($loadavg) ?><?= $cpuCores ? ' · ' . $cpuCores . ' 核' : '' ?></div>
                 </div>
-                <div class="wp-ring-wrap">
-                    <div class="wp-ring<?= $memRing >= 95 ? ' is-crit' : ($memRing >= 85 ? ' is-warn' : '') ?>" id="ringMem">
-                        <svg viewBox="0 0 36 36" aria-hidden="true">
-                            <circle class="wp-ring-track" cx="18" cy="18" r="15.9155"></circle>
-                            <circle class="wp-ring-value" cx="18" cy="18" r="15.9155"
-                                stroke-dasharray="<?= e(rtrim(rtrim(number_format($memRing, 1, '.', ''), '0'), '.') ?: '0') ?> 100"></circle>
-                        </svg>
-                        <div class="wp-ring-center">
-                            <span class="wp-ring-num" id="ringMemNum"><?= e(rtrim(rtrim(number_format($memRing, 1, '.', ''), '0'), '.') ?: '0') ?>%</span>
-                        </div>
-                    </div>
-                    <div class="wp-ring-label">RAM</div>
-                    <div class="wp-ring-sub mono" id="ringMemSub"><?= $memTotal ? e(format_bytes($memUsed) . ' / ' . format_bytes($memTotal)) : '-' ?></div>
-                </div>
             </div>
             <div class="wp-host-meta">
                 <div class="wp-host-line"><span>主机</span><b id="hostName"><?= e((string) ($info['hostname'] ?? '-')) ?></b></div>
-                <div class="wp-host-line"><span>系统</span><b id="hostOs"><?= e((string) ($info['os'] ?? '-')) ?></b></div>
                 <div class="wp-host-line"><span>内核</span><b class="mono" id="hostKernel"><?= e((string) ($info['kernel'] ?? '-')) ?></b></div>
-                <div class="wp-host-line"><span>运行</span><b id="hostUptime"><?= e((string) ($info['uptime'] ?? '-')) ?></b></div>
-                <div class="wp-host-line" style="grid-column:1 / -1">
+                <div class="wp-host-line">
                     <span>负载</span>
                     <span id="loadText">
                         1/5/15：<span class="mono <?= $loadRatio >= 1.5 ? 'warn-text' : '' ?>"><?= e($loadavg) ?></span>
@@ -115,6 +100,8 @@ $memRing = max(0.0, min(100.0, $memPct));
                     <span id="cpuText" hidden><?= e(($cpuPct > 0 ? rtrim(rtrim(number_format($cpuPct, 1, '.', ''), '0'), '.') . '% · ' : '') . '负载 ' . $loadavg . ($cpuCores ? ' · ' . $cpuCores . ' 核' : '')) ?></span>
                     <span id="memText" hidden><?= $memTotal ? e(format_bytes($memUsed) . ' / ' . format_bytes($memTotal) . ' · 可用 ' . format_bytes($memAvail) . ' · ' . rtrim(rtrim(number_format($memPct, 1, '.', ''), '0'), '.') . '%') : '-' ?></span>
                 </div>
+                <div class="wp-host-line"><span>系统</span><b id="hostOs"><?= e((string) ($info['os'] ?? '-')) ?></b></div>
+                <div class="wp-host-line"><span>运行</span><b id="hostUptime"><?= e((string) ($info['uptime'] ?? '-')) ?></b></div>
             </div>
             <div class="mon-row" id="swapRow" <?= $swapTotal > 0 ? '' : 'style="display:none"' ?>>
                 <div class="mon-k">交换分区 <span class="right mono" id="swapText">
@@ -138,6 +125,22 @@ $memRing = max(0.0, min(100.0, $memPct));
         </div>
         <div class="panel-card">
             <h3>磁盘</h3>
+            <div class="wp-perf wp-perf-single">
+                <div class="wp-ring-wrap">
+                    <div class="wp-ring<?= $memRing >= 95 ? ' is-crit' : ($memRing >= 85 ? ' is-warn' : '') ?>" id="ringMem">
+                        <svg viewBox="0 0 36 36" aria-hidden="true">
+                            <circle class="wp-ring-track" cx="18" cy="18" r="15.9155"></circle>
+                            <circle class="wp-ring-value" cx="18" cy="18" r="15.9155"
+                                stroke-dasharray="<?= e(rtrim(rtrim(number_format($memRing, 1, '.', ''), '0'), '.') ?: '0') ?> 100"></circle>
+                        </svg>
+                        <div class="wp-ring-center">
+                            <span class="wp-ring-num" id="ringMemNum"><?= e(rtrim(rtrim(number_format($memRing, 1, '.', ''), '0'), '.') ?: '0') ?>%</span>
+                        </div>
+                    </div>
+                    <div class="wp-ring-label">RAM</div>
+                    <div class="wp-ring-sub mono" id="ringMemSub"><?= $memTotal ? e(format_bytes($memUsed) . ' / ' . format_bytes($memTotal)) : '-' ?></div>
+                </div>
+            </div>
             <div class="wp-storage" id="wpStorage">
                 <div class="wp-storage-head">
                     <span class="wp-storage-state" id="storageState"><?= ($storagePct >= 90 ? '紧张' : ($storagePct >= 80 ? '注意' : '正常')) . ' · ' . (int) $storagePct . '%' ?></span>
@@ -171,6 +174,7 @@ $memRing = max(0.0, min(100.0, $memPct));
                     </div>
                 <?php endforeach; ?>
             </div>
+        </div>
         </div>
     </div>
     <div class="layui-col-md6">

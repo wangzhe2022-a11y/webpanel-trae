@@ -291,6 +291,19 @@ body.layui-layout-body {
     border-color: var(--wp-border);
 }
 
+/* Host + disk sit side by side (left of 服务状态). Each column owns one ring
+   so CPU/RAM stay a compact pair across the split instead of stretched. */
+.wp-host-disk-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    align-items: start;
+}
+.wp-host-disk-split > .panel-card {
+    min-width: 0;
+    margin-bottom: 0;
+}
+
 /* ---- CasaOS-style performance rings / storage (both themes) -------------- */
 .wp-perf {
     display: flex;
@@ -299,10 +312,17 @@ body.layui-layout-body {
     gap: 16px;
     margin: 2px 0 14px;
 }
+.wp-perf-single {
+    justify-content: center;
+    gap: 0;
+}
 .wp-ring-wrap {
     flex: 1;
     text-align: center;
     min-width: 0;
+}
+.wp-perf-single .wp-ring-wrap {
+    flex: 0 0 auto;
 }
 .wp-ring {
     position: relative;
@@ -379,9 +399,9 @@ body.layui-layout-body {
 .wp-storage-meta { color: var(--wp-text-secondary); }
 
 .wp-host-meta {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
     margin: 4px 0 10px;
     padding: 10px 12px;
     border-radius: var(--wp-radius-sm);
@@ -390,7 +410,7 @@ body.layui-layout-body {
     font-size: 12px;
     color: var(--wp-text-secondary);
 }
-.wp-host-line { min-width: 0; line-height: 1.45; }
+.wp-host-line { min-width: 0; line-height: 1.45; word-break: break-word; }
 .wp-host-line span { color: var(--wp-text-muted); margin-right: 6px; }
 .wp-host-line b { font-weight: 600; color: var(--wp-text); }
 
@@ -813,5 +833,5 @@ html[data-theme="dark"] .fm-empty .layui-icon { color: rgba(255, 255, 255, 0.35)
     .wp-clock .wp-clock-date { font-size: 11px; }
     .wp-dash-clock { min-width: 0; max-width: none; display: flex; }
     .wp-dash-clock .wp-clock-time { font-size: 40px; }
-    .wp-host-meta { grid-template-columns: 1fr; }
+    .wp-host-disk-split { grid-template-columns: 1fr; }
 }
