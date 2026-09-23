@@ -311,22 +311,19 @@ body.layui-layout-body {
 /* ---- CasaOS-style performance rings / storage (both themes) -------------- */
 .wp-perf {
     display: flex;
-    justify-content: space-around;
+    justify-content: flex-start;
     align-items: flex-start;
-    gap: 16px;
+    gap: 28px;
     margin: 2px 0 14px;
 }
-.wp-perf-single {
+.wp-perf-pair {
     justify-content: center;
-    gap: 0;
+    gap: 36px;
 }
 .wp-ring-wrap {
-    flex: 1;
+    flex: 0 0 auto;
     text-align: center;
     min-width: 0;
-}
-.wp-perf-single .wp-ring-wrap {
-    flex: 0 0 auto;
 }
 .wp-ring {
     position: relative;

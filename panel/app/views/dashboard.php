@@ -65,14 +65,13 @@ $memRing = max(0.0, min(100.0, $memPct));
 </div>
 
 <div class="layui-row layui-col-space15 wp-mon-band" style="margin-top:2px">
-    <div class="layui-col-md6">
-        <div class="wp-host-disk-split">
+    <div class="layui-col-md4">
         <div class="panel-card">
             <h3>
                 主机监控
                 <span class="mon-updated" id="monUpdated">每 15 秒自动刷新</span>
             </h3>
-            <div class="wp-perf wp-perf-single" id="wpPerf">
+            <div class="wp-perf wp-perf-pair" id="wpPerf">
                 <div class="wp-ring-wrap">
                     <div class="wp-ring<?= $cpuRing >= 95 ? ' is-crit' : ($cpuRing >= 85 ? ' is-warn' : '') ?>" id="ringCpu">
                         <svg viewBox="0 0 36 36" aria-hidden="true">
@@ -86,6 +85,20 @@ $memRing = max(0.0, min(100.0, $memPct));
                     </div>
                     <div class="wp-ring-label">CPU</div>
                     <div class="wp-ring-sub mono" id="ringCpuSub"><?= e($loadavg) ?><?= $cpuCores ? ' · ' . $cpuCores . ' 核' : '' ?></div>
+                </div>
+                <div class="wp-ring-wrap">
+                    <div class="wp-ring<?= $memRing >= 95 ? ' is-crit' : ($memRing >= 85 ? ' is-warn' : '') ?>" id="ringMem">
+                        <svg viewBox="0 0 36 36" aria-hidden="true">
+                            <circle class="wp-ring-track" cx="18" cy="18" r="15.9155"></circle>
+                            <circle class="wp-ring-value" cx="18" cy="18" r="15.9155"
+                                stroke-dasharray="<?= e(rtrim(rtrim(number_format($memRing, 1, '.', ''), '0'), '.') ?: '0') ?> 100"></circle>
+                        </svg>
+                        <div class="wp-ring-center">
+                            <span class="wp-ring-num" id="ringMemNum"><?= e(rtrim(rtrim(number_format($memRing, 1, '.', ''), '0'), '.') ?: '0') ?>%</span>
+                        </div>
+                    </div>
+                    <div class="wp-ring-label">RAM</div>
+                    <div class="wp-ring-sub mono" id="ringMemSub"><?= $memTotal ? e(format_bytes($memUsed) . ' / ' . format_bytes($memTotal)) : '-' ?></div>
                 </div>
             </div>
             <div class="wp-host-meta">
@@ -123,24 +136,10 @@ $memRing = max(0.0, min(100.0, $memPct));
                 </tbody>
             </table>
         </div>
+    </div>
+    <div class="layui-col-md4">
         <div class="panel-card">
             <h3>磁盘</h3>
-            <div class="wp-perf wp-perf-single">
-                <div class="wp-ring-wrap">
-                    <div class="wp-ring<?= $memRing >= 95 ? ' is-crit' : ($memRing >= 85 ? ' is-warn' : '') ?>" id="ringMem">
-                        <svg viewBox="0 0 36 36" aria-hidden="true">
-                            <circle class="wp-ring-track" cx="18" cy="18" r="15.9155"></circle>
-                            <circle class="wp-ring-value" cx="18" cy="18" r="15.9155"
-                                stroke-dasharray="<?= e(rtrim(rtrim(number_format($memRing, 1, '.', ''), '0'), '.') ?: '0') ?> 100"></circle>
-                        </svg>
-                        <div class="wp-ring-center">
-                            <span class="wp-ring-num" id="ringMemNum"><?= e(rtrim(rtrim(number_format($memRing, 1, '.', ''), '0'), '.') ?: '0') ?>%</span>
-                        </div>
-                    </div>
-                    <div class="wp-ring-label">RAM</div>
-                    <div class="wp-ring-sub mono" id="ringMemSub"><?= $memTotal ? e(format_bytes($memUsed) . ' / ' . format_bytes($memTotal)) : '-' ?></div>
-                </div>
-            </div>
             <div class="wp-storage" id="wpStorage">
                 <div class="wp-storage-head">
                     <span class="wp-storage-state" id="storageState"><?= ($storagePct >= 90 ? '紧张' : ($storagePct >= 80 ? '注意' : '正常')) . ' · ' . (int) $storagePct . '%' ?></span>
@@ -175,9 +174,8 @@ $memRing = max(0.0, min(100.0, $memPct));
                 <?php endforeach; ?>
             </div>
         </div>
-        </div>
     </div>
-    <div class="layui-col-md6">
+    <div class="layui-col-md4">
         <div class="panel-card">
             <h3>
                 服务状态
