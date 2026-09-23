@@ -40,6 +40,13 @@ $nav = [
     .site-ops .layui-icon { overflow: visible; line-height: 1; }
     .panel-card { background: #fff; border-radius: 8px; padding: 18px 20px; margin-bottom: 16px; }
     .panel-card h3 { margin: 0 0 14px; font-size: 15px; }
+    /* Same 15px space15 gutter as other dashboard two-column rows; hide Layui
+       row clearfix so it does not become extra flex items. */
+    .login-grid-row { display: flex; flex-wrap: wrap; }
+    .login-grid-row:before, .login-grid-row:after { content: none; display: none; }
+    .login-grid-row > .layui-col-md6 { float: none; min-width: 0; }
+    .login-grid-row .panel-card { overflow: hidden; }
+    .login-grid-row .layui-table { width: 100%; table-layout: fixed; }
     .mon-row { margin-bottom: 16px; }
     .mon-row:last-child { margin-bottom: 0; }
     .mon-k { font-size: 13px; margin-bottom: 6px; overflow: hidden; }
