@@ -45,6 +45,10 @@ $nav = [
        No flex/gap/overflow:hidden — those clipped the left h3 (“最近登录”)
        and fought space15 padding. */
     .dash-login-row, .dash-atop-row { clear: both; }
+    /* Match the 16px band gap used between stacked panel-cards (主机监控 → 磁盘)
+       and the host/services → login section. Inline margin-top:2px on this row
+       would override, so keep spacing here. */
+    .dash-atop-row { margin-top: 16px; }
     .mon-row { margin-bottom: 16px; }
     .mon-row:last-child { margin-bottom: 0; }
     .mon-k { font-size: 13px; margin-bottom: 6px; overflow: hidden; }
