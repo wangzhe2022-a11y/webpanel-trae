@@ -197,7 +197,9 @@ if [ "$action" = "logins" ]; then
     case "$n" in ''|*[!0-9]*) fail "usage: logins [limit]" ;; esac
     [ "$n" -gt 100 ] && n=100
     if is_dry_run; then
-        printf '{"ok":true,"logins":[]}\n'
+        cat <<'JSON'
+{"ok":true,"logins":[{"time":"Sep 23 13:51:08","user":"root","ip":"203.0.113.10","method":"publickey"},{"time":"Sep 23 12:08:41","user":"trae_solo","ip":"203.0.113.10","method":"publickey"},{"time":"Sep 23 09:22:15","user":"demo","ip":"198.51.100.24","method":"password"},{"time":"Sep 22 22:14:03","user":"root","ip":"203.0.113.10","method":"publickey"}]}
+JSON
         exit 0
     fi
     printf '{"ok":true,"logins":['
