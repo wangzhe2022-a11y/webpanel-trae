@@ -39,10 +39,11 @@ $nav = [
     .site-ops .layui-btn { flex: 0 0 auto; margin-left: 0 !important; margin-right: 0 !important; }
     .site-ops .layui-icon { overflow: visible; line-height: 1; }
     .panel-card { background: #fff; border-radius: 8px; padding: 18px 20px; margin-bottom: 16px; }
-    .panel-card h3 { margin: 0 0 14px; font-size: 15px; overflow: hidden; }
+    .panel-card h3 { margin: 0 0 14px; font-size: 15px; }
     /* Same layui-row + col-md6 + space15 as the host/services row. clear:both
        keeps this pair on its own full-width band so atop cannot float beside it.
-       No flex/gap — that fights space15 padding and misaligns card edges. */
+       No flex/gap/overflow:hidden — those clipped the left h3 (“最近登录”)
+       and fought space15 padding. */
     .dash-login-row, .dash-atop-row { clear: both; }
     .mon-row { margin-bottom: 16px; }
     .mon-row:last-child { margin-bottom: 0; }
