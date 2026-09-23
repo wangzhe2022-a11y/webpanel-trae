@@ -156,7 +156,7 @@ $loadRatio = $cpuCores > 0 ? $load1 / $cpuCores : $load1;
         </div>
     </div>
 </div>
-<div class="layui-row layui-col-space15 login-grid-row" style="margin-top:2px">
+<div class="layui-row layui-col-space15 dash-login-row" style="margin-top:2px">
     <div class="layui-col-md6">
         <div class="panel-card">
             <h3>
@@ -384,7 +384,7 @@ layui.use(['element', 'layer', 'table'], function () {
 });
 </script>
 
-<div class="layui-row layui-col-space15" style="margin-top:2px">
+<div class="layui-row layui-col-space15 dash-atop-row" style="margin-top:2px">
     <div class="layui-col-md12">
         <div class="panel-card" id="atopCard">
             <h3>
