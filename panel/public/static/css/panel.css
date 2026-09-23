@@ -443,6 +443,10 @@ html[data-theme="dark"] .wp-dash-clock .wp-clock-date { color: rgba(255, 255, 25
 html[data-theme="dark"] .wp-clock-tz { color: rgba(255, 255, 255, 0.48); }
 
 /* ---- header chrome: clock + top nav (both themes) ------------------------ */
+/* Dashboard already has the large CasaOS clock card — hide the header companion. */
+body.wp-page-dashboard .layui-header > .wp-clock {
+    display: none;
+}
 .wp-clock {
     display: flex;
     flex-direction: column;
