@@ -22,6 +22,11 @@ $nav = [
     .layui-layout-admin .layui-header { background: #23262E; color: #fff; }
     .layui-layout-admin .layui-logo { color: #fff; font-weight: 600; width: 220px; }
     .layui-side { background: #2F4056; top: 60px; }
+    /* Layui's .layui-body is position:absolute and only paints the viewport.
+       Paint the admin scroll chrome the same gray so long pages (atop, etc.)
+       do not show default white html/body. Login is a separate document. */
+    html, body.layui-layout-body,
+    .layui-layout-admin { background: #f2f2f2; }
     .layui-body { top: 60px; background: #f2f2f2; padding: 16px; }
     .layui-nav-tree .layui-nav-item a { height: 48px; line-height: 48px; }
     .layui-nav-tree .layui-nav-item a .layui-icon { font-size: 18px; margin-right: 10px; }
