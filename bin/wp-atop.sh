@@ -134,7 +134,7 @@ else
 fi
 
 if [ -z "$file_name" ]; then
-    emit "${status_prefix},${empty_tail},\"error\":\"/var/log/atop 下没有 atop_YYYYMMDD 日志\""
+    emit "${status_prefix},${empty_tail},\"error\":\"$(jesc "$ATOP_LOGPATH") 下没有 atop_YYYYMMDD 日志\""
 fi
 
 log_file="$ATOP_LOGPATH/$file_name"
