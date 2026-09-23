@@ -13,7 +13,7 @@
 #   webpanel-<scope>-YYYYmmdd-HHMMSS[-N].tar.gz
 # Archive layout:
 #   ./manifest.txt                  scope / host / date
-#   ./panel.db                      panel sqlite snapshot (VACUUM INTO)
+#   ./panel.db                      panel sqlite snapshot (VACUUM INTO / .backup / cp)
 #   ./mysql/<db>.sql.gz             per-database MySQL dumps
 #   ./postgres/<db>.sql.gz          per-database PostgreSQL dumps
 #   ./fpm/phpXX/<user>.conf         site PHP-FPM pools
@@ -252,13 +252,26 @@ _job_backup() { # name scope
     mkdir -p "$stage/mysql" "$stage/postgres" "$stage/fpm" "$stage/node-units"
 
     # 1. panel sqlite (atomic snapshot, safe while panel is running)
+    # VACUUM INTO needs SQLite >= 3.27; AlmaLinux 8 ships 3.26.0 ("near INTO:
+    # syntax error"), so fall back to sqlite3 .backup, then cp -a.
     nextstep "备份面板数据"
     if [ -f "$PANEL_DB" ]; then
+        local snap="$stage/panel.db" snap_ok=0
         if command -v php >/dev/null 2>&1; then
-            php -r 'try { $d = new PDO("sqlite:" . $argv[1]); $d->exec("VACUUM INTO " . $d->quote($argv[2])); } catch (Throwable $e) { fwrite(STDERR, $e->getMessage()); exit(1); }' \
-                "$PANEL_DB" "$stage/panel.db" || jfail "面板数据库快照失败"
-        else
-            cp -a "$PANEL_DB" "$stage/panel.db" || jfail "面板数据库快照失败"
+            if php -r 'try { $d = new PDO("sqlite:" . $argv[1]); $d->exec("VACUUM INTO " . $d->quote($argv[2])); } catch (Throwable $e) { fwrite(STDERR, $e->getMessage()); exit(1); }' \
+                "$PANEL_DB" "$snap" && [ -s "$snap" ]; then
+                snap_ok=1
+            fi
+        fi
+        if [ "$snap_ok" -eq 0 ] && command -v sqlite3 >/dev/null 2>&1; then
+            rm -f "$snap"
+            if sqlite3 "$PANEL_DB" ".backup '$snap'" && [ -s "$snap" ]; then
+                snap_ok=1
+            fi
+        fi
+        if [ "$snap_ok" -eq 0 ]; then
+            rm -f "$snap"
+            cp -a "$PANEL_DB" "$snap" || jfail "面板数据库快照失败"
         fi
     fi
 
