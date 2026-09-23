@@ -408,6 +408,40 @@ body.layui-layout-body {
 .wp-disk-state { font-weight: 650; color: var(--wp-text); }
 .wp-disk-meta { margin-left: auto; color: var(--wp-text-secondary); font-size: 12px; }
 
+/* CasaOS-style date/time card at the top of the dashboard. */
+.wp-dash-clock-row {
+    margin: 0 0 16px;
+}
+.wp-dash-clock {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 300px;
+    max-width: 420px;
+    padding: 18px 26px 16px;
+    margin-bottom: 0;
+    line-height: 1.05;
+}
+.wp-dash-clock .wp-clock-time {
+    font-size: 52px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1;
+}
+.wp-dash-clock .wp-clock-date {
+    font-size: 15px;
+    margin-top: 8px;
+    white-space: nowrap;
+}
+.wp-clock-tz {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--wp-text-muted);
+}
+html[data-theme="dark"] .wp-dash-clock .wp-clock-time { color: #fff; }
+html[data-theme="dark"] .wp-dash-clock .wp-clock-date { color: rgba(255, 255, 255, 0.72); }
+html[data-theme="dark"] .wp-clock-tz { color: rgba(255, 255, 255, 0.48); }
+
 /* ---- header chrome: clock + top nav (both themes) ------------------------ */
 .wp-clock {
     display: flex;
@@ -765,12 +799,15 @@ html[data-theme="dark"] .fm-empty .layui-icon { color: rgba(255, 255, 255, 0.35)
 
 @media (max-width: 1100px) {
     .wp-clock { min-width: 132px; padding-right: 10px; }
-    .wp-clock-time { font-size: 26px; }
+    .wp-clock .wp-clock-time { font-size: 26px; }
+    .wp-dash-clock .wp-clock-time { font-size: 44px; }
     .wp-top-nav a span:not(.layui-icon) { display: none; }
     .wp-top-nav a { padding: 0 9px; }
 }
 @media (max-width: 720px) {
-    .wp-clock-time { font-size: 22px; }
-    .wp-clock-date { font-size: 11px; }
+    .wp-clock .wp-clock-time { font-size: 22px; }
+    .wp-clock .wp-clock-date { font-size: 11px; }
+    .wp-dash-clock { min-width: 0; max-width: none; display: flex; }
+    .wp-dash-clock .wp-clock-time { font-size: 40px; }
     .wp-host-meta { grid-template-columns: 1fr; }
 }

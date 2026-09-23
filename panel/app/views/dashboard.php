@@ -29,6 +29,13 @@ $storagePct = (float) (is_array($rootDisk) ? ($rootDisk['use_pct'] ?? 0) : 0);
 $cpuRing = max(0.0, min(100.0, $cpuPct));
 $memRing = max(0.0, min(100.0, $memPct));
 ?>
+<div class="wp-dash-clock-row">
+    <div class="panel-card wp-dash-clock" id="wpDashClock">
+        <div class="wp-clock-time" id="wpDashClockTime">--:--:--</div>
+        <div class="wp-clock-date" id="wpDashClockDate"></div>
+        <div class="wp-clock-tz">本地时间</div>
+    </div>
+</div>
 <div class="layui-row layui-col-space15">
     <div class="layui-col-md3">
         <div class="stat-card c-blue">
