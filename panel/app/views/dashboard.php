@@ -422,7 +422,7 @@ layui.use(['element', 'layer', 'table'], function () {
 </script>
 
 <div class="layui-row layui-col-space15 dash-atop-row">
-    <div class="layui-col-md6">
+    <div class="layui-col-md4">
         <div class="panel-card" id="atopCard">
             <h3>
                 atop 历史
@@ -494,7 +494,25 @@ layui.use(['element', 'layer', 'table'], function () {
             </div>
         </div>
     </div>
-    <div class="layui-col-md6">
+    <div class="layui-col-md4">
+        <div class="panel-card" id="atopProcCard">
+            <h3>
+                占用最高进程
+                <span class="mon-updated" id="atopProcUpdated">所选采样的进程快照</span>
+            </h3>
+            <div class="mon-meta">CPU 占用最高</div>
+            <table class="atop-proc" id="atopTopCpu">
+                <thead><tr><th>PID</th><th>名称</th><th>CPU</th><th>内存</th><th>磁盘</th></tr></thead>
+                <tbody></tbody>
+            </table>
+            <div class="mon-meta" style="margin-top:16px">内存占用最高</div>
+            <table class="atop-proc" id="atopTopMem">
+                <thead><tr><th>PID</th><th>名称</th><th>CPU</th><th>内存</th><th>磁盘</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+    <div class="layui-col-md4">
         <div class="wp-login-stack">
         <div class="panel-card">
             <h3>
