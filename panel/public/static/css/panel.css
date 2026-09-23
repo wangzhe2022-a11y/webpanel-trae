@@ -4,7 +4,7 @@
     --wp-bg: #f5f7fb;
     --wp-surface: #ffffff;
     --wp-surface-soft: #f8fafd;
-    --wp-border: #e6ebf2;
+    --wp-border: #e2e8f0;
     --wp-text: #1e293b;
     --wp-text-secondary: #5b677a;
     --wp-text-muted: #8b95a7;
@@ -13,13 +13,13 @@
     --wp-accent-soft: #eaf1ff;
     --wp-header-bg: #ffffff;
     --wp-header-text: #1e293b;
-    --wp-sidebar-bg: #eef2f7;
+    --wp-sidebar-bg: #e8edf5;
     --wp-sidebar-text: #445066;
     --wp-sidebar-hover: rgba(64, 128, 255, 0.08);
     --wp-sidebar-active-bg: #ffffff;
     --wp-sidebar-active-text: #4080ff;
-    --wp-shadow: 0 6px 20px rgba(31, 42, 68, 0.06);
-    --wp-shadow-sm: 0 2px 8px rgba(31, 42, 68, 0.045);
+    --wp-shadow: 0 8px 28px rgba(31, 42, 68, 0.07);
+    --wp-shadow-sm: 0 2px 10px rgba(31, 42, 68, 0.05);
     --wp-radius: 14px;
     --wp-radius-sm: 10px;
     --wp-side-w: 220px;
@@ -80,14 +80,22 @@ body.layui-layout-body {
 
 /* ---- sidebar nav --------------------------------------------------------- */
 .layui-nav-tree .layui-nav-item {
+    box-sizing: border-box;
     padding: 2px 12px;
+    width: 100%;
 }
-.layui-nav-tree .layui-nav-item a {
+.layui-nav-tree .layui-nav-item a,
+.layui-nav-tree .layui-nav-item > a {
     height: 44px;
     line-height: 44px;
+    padding-top: 0;
+    padding-bottom: 0;
     color: var(--wp-sidebar-text) !important;
     border-radius: var(--wp-radius-sm);
     transition: background .15s ease, color .15s ease, box-shadow .15s ease;
+}
+.layui-nav-tree .layui-nav-more {
+    display: none;
 }
 .layui-nav-tree .layui-nav-item a .layui-icon {
     font-size: 18px;
