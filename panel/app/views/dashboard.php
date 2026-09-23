@@ -133,7 +133,7 @@ $memRing = max(0.0, min(100.0, $memPct));
             <h3>磁盘</h3>
             <div class="wp-storage" id="wpStorage">
                 <div class="wp-storage-head">
-                    <span class="wp-storage-state" id="storageState"><?= $storagePct >= 90 ? '紧张' : ($storagePct >= 80 ? '注意' : '正常') ?></span>
+                    <span class="wp-storage-state" id="storageState"><?= ($storagePct >= 90 ? '紧张' : ($storagePct >= 80 ? '注意' : '正常')) . ' · ' . (int) $storagePct . '%' ?></span>
                     <span class="wp-storage-meta mono" id="storageMeta"><?php
                         if ($rootDisk) {
                             echo e('已用 ' . (string) ($rootDisk['used'] ?? '') . ' / 总量 ' . (string) ($rootDisk['size'] ?? ''));
@@ -155,7 +155,7 @@ $memRing = max(0.0, min(100.0, $memPct));
                     <div class="wp-disk-row">
                         <div class="wp-disk-head">
                             <span class="mono wp-disk-fs"><?= e((string) ($d['fs'] ?? '')) ?></span>
-                            <span class="wp-disk-state"><?= $dp >= 90 ? '紧张' : ($dp >= 80 ? '注意' : '正常') ?></span>
+                            <span class="wp-disk-state"><?= ($dp >= 90 ? '紧张' : ($dp >= 80 ? '注意' : '正常')) . ' · ' . (int) $dp . '%' ?></span>
                             <span class="mono wp-disk-meta"><?= e('已用 ' . (string) ($d['used'] ?? '') . ' / 总量 ' . (string) ($d['size'] ?? '') . ' · 可用 ' . (string) ($d['avail'] ?? '')) ?></span>
                         </div>
                         <div class="layui-progress layui-progress-big" lay-filter="diskBar<?= (int) $i ?>">
@@ -250,7 +250,7 @@ layui.use(['element', 'layer', 'table'], function () {
         }
         var pct = Number(d.use_pct) || 0;
         $('#storageMeta').text('已用 ' + (d.used || '') + ' / 总量 ' + (d.size || ''));
-        $('#storageState').text(pct >= 90 ? '紧张' : (pct >= 80 ? '注意' : '正常'));
+        $('#storageState').text((pct >= 90 ? '紧张' : (pct >= 80 ? '注意' : '正常')) + ' · ' + parseInt(pct, 10) + '%');
         setBar('storageBar', pct, 80, 90);
     }
 
@@ -308,7 +308,7 @@ layui.use(['element', 'layer', 'table'], function () {
         disks.forEach(function (d, i) {
             var dp = Number(d.use_pct) || 0;
             var filter = 'diskBar' + i;
-            var state = dp >= 90 ? '紧张' : (dp >= 80 ? '注意' : '正常');
+            var state = (dp >= 90 ? '紧张' : (dp >= 80 ? '注意' : '正常')) + ' · ' + parseInt(dp, 10) + '%';
             var $row = $('<div class="wp-disk-row">');
             $row.append(
                 '<div class="wp-disk-head">'

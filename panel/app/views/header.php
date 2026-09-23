@@ -69,13 +69,13 @@ window.WP = (function () {
 </script>
 <div class="layui-layout layui-layout-admin">
     <div class="layui-header">
+        <div class="wp-clock" id="wpClock">
+            <div class="wp-clock-time" id="wpClockTime">--:--</div>
+            <div class="wp-clock-date" id="wpClockDate"></div>
+        </div>
         <div class="layui-logo layui-elip">
             <span class="layui-icon layui-icon-template-1 wp-logo-icon"></span>
             WebPanel<span class="wp-logo-rest"> 管理面板</span>
-        </div>
-        <div class="wp-clock" id="wpClock" aria-hidden="true">
-            <div class="wp-clock-time" id="wpClockTime">--:--</div>
-            <div class="wp-clock-date" id="wpClockDate"></div>
         </div>
         <ul class="wp-top-nav">
             <?php foreach ($nav as $path => [$label, $icon]): ?>

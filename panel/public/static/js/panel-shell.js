@@ -61,8 +61,9 @@
         var d = new Date();
         var hh = ('0' + d.getHours()).slice(-2);
         var mm = ('0' + d.getMinutes()).slice(-2);
-        timeEl.textContent = hh + ':' + mm;
-        dateEl.textContent = (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + WEEK[d.getDay()];
+        var ss = ('0' + d.getSeconds()).slice(-2);
+        timeEl.textContent = hh + ':' + mm + ':' + ss;
+        dateEl.textContent = d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + WEEK[d.getDay()];
     }
 
     applyTheme(currentTheme());
