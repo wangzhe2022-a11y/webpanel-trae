@@ -33,7 +33,7 @@ $wallpaperSrc = panel_appearance_src();
 <link rel="stylesheet" href="/static/layui/css/layui.css">
 <link rel="stylesheet" href="/static/css/panel.css">
 </head>
-<body class="layui-layout-body">
+<body class="layui-layout-body<?= $uri === '/' ? ' wp-page-dashboard' : '' ?>">
 <script src="/static/layui/layui.js"></script>
 <script>
 /* Shared helpers for every panel page - loaded BEFORE view scripts so inline
@@ -69,10 +69,12 @@ window.WP = (function () {
 </script>
 <div class="layui-layout layui-layout-admin">
     <div class="layui-header">
+        <?php if ($uri !== '/'): ?>
         <div class="wp-clock" id="wpClock">
             <div class="wp-clock-time" id="wpClockTime">--:--</div>
             <div class="wp-clock-date" id="wpClockDate"></div>
         </div>
+        <?php endif; ?>
         <div class="layui-logo layui-elip">
             <span class="layui-icon layui-icon-template-1 wp-logo-icon"></span>
             WebPanel<span class="wp-logo-rest"> 管理面板</span>

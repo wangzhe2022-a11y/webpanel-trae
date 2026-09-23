@@ -36,26 +36,26 @@ $memRing = max(0.0, min(100.0, $memPct));
         <div class="wp-clock-tz">本地时间</div>
     </div>
 </div>
-<div class="layui-row layui-col-space15">
-    <div class="layui-col-md3">
+<div class="layui-row layui-col-space15 wp-stat-row">
+    <div class="layui-col-sm6 layui-col-md6">
         <div class="stat-card c-blue">
             <span class="layui-icon layui-icon-website"></span>
             <div class="num"><?= (int) $stats['sites'] ?></div><div class="label">托管网站</div>
         </div>
     </div>
-    <div class="layui-col-md3">
+    <div class="layui-col-sm6 layui-col-md6">
         <div class="stat-card c-green">
             <span class="layui-icon layui-icon-table"></span>
             <div class="num"><?= (int) $stats['databases'] ?></div><div class="label">MySQL 数据库</div>
         </div>
     </div>
-    <div class="layui-col-md3">
+    <div class="layui-col-sm6 layui-col-md6">
         <div class="stat-card c-orange">
             <span class="layui-icon layui-icon-auz"></span>
             <div class="num"><?= (int) $stats['ssl'] ?></div><div class="label">已启用 HTTPS</div>
         </div>
     </div>
-    <div class="layui-col-md3">
+    <div class="layui-col-sm6 layui-col-md6">
         <div class="stat-card c-purple">
             <span class="layui-icon layui-icon-cpu"></span>
             <div class="num" id="statCpuPct"><?= isset($info['cpu_usage_pct']) ? e(rtrim(rtrim(number_format($cpuPct, 1, '.', ''), '0'), '.')) . '%' : e((string) ($cpuCores ?: '-')) ?></div>
@@ -64,14 +64,15 @@ $memRing = max(0.0, min(100.0, $memPct));
     </div>
 </div>
 
-<div class="layui-row layui-col-space15" style="margin-top:2px">
+<div class="layui-row layui-col-space15 wp-mon-band" style="margin-top:2px">
     <div class="layui-col-md6">
+        <div class="wp-host-disk-split">
         <div class="panel-card">
             <h3>
                 主机监控
                 <span class="mon-updated" id="monUpdated">每 15 秒自动刷新</span>
             </h3>
-            <div class="wp-perf" id="wpPerf">
+            <div class="wp-perf wp-perf-single" id="wpPerf">
                 <div class="wp-ring-wrap">
                     <div class="wp-ring<?= $cpuRing >= 95 ? ' is-crit' : ($cpuRing >= 85 ? ' is-warn' : '') ?>" id="ringCpu">
                         <svg viewBox="0 0 36 36" aria-hidden="true">
@@ -86,27 +87,11 @@ $memRing = max(0.0, min(100.0, $memPct));
                     <div class="wp-ring-label">CPU</div>
                     <div class="wp-ring-sub mono" id="ringCpuSub"><?= e($loadavg) ?><?= $cpuCores ? ' · ' . $cpuCores . ' 核' : '' ?></div>
                 </div>
-                <div class="wp-ring-wrap">
-                    <div class="wp-ring<?= $memRing >= 95 ? ' is-crit' : ($memRing >= 85 ? ' is-warn' : '') ?>" id="ringMem">
-                        <svg viewBox="0 0 36 36" aria-hidden="true">
-                            <circle class="wp-ring-track" cx="18" cy="18" r="15.9155"></circle>
-                            <circle class="wp-ring-value" cx="18" cy="18" r="15.9155"
-                                stroke-dasharray="<?= e(rtrim(rtrim(number_format($memRing, 1, '.', ''), '0'), '.') ?: '0') ?> 100"></circle>
-                        </svg>
-                        <div class="wp-ring-center">
-                            <span class="wp-ring-num" id="ringMemNum"><?= e(rtrim(rtrim(number_format($memRing, 1, '.', ''), '0'), '.') ?: '0') ?>%</span>
-                        </div>
-                    </div>
-                    <div class="wp-ring-label">RAM</div>
-                    <div class="wp-ring-sub mono" id="ringMemSub"><?= $memTotal ? e(format_bytes($memUsed) . ' / ' . format_bytes($memTotal)) : '-' ?></div>
-                </div>
             </div>
             <div class="wp-host-meta">
                 <div class="wp-host-line"><span>主机</span><b id="hostName"><?= e((string) ($info['hostname'] ?? '-')) ?></b></div>
-                <div class="wp-host-line"><span>系统</span><b id="hostOs"><?= e((string) ($info['os'] ?? '-')) ?></b></div>
                 <div class="wp-host-line"><span>内核</span><b class="mono" id="hostKernel"><?= e((string) ($info['kernel'] ?? '-')) ?></b></div>
-                <div class="wp-host-line"><span>运行</span><b id="hostUptime"><?= e((string) ($info['uptime'] ?? '-')) ?></b></div>
-                <div class="wp-host-line" style="grid-column:1 / -1">
+                <div class="wp-host-line">
                     <span>负载</span>
                     <span id="loadText">
                         1/5/15：<span class="mono <?= $loadRatio >= 1.5 ? 'warn-text' : '' ?>"><?= e($loadavg) ?></span>
@@ -115,6 +100,8 @@ $memRing = max(0.0, min(100.0, $memPct));
                     <span id="cpuText" hidden><?= e(($cpuPct > 0 ? rtrim(rtrim(number_format($cpuPct, 1, '.', ''), '0'), '.') . '% · ' : '') . '负载 ' . $loadavg . ($cpuCores ? ' · ' . $cpuCores . ' 核' : '')) ?></span>
                     <span id="memText" hidden><?= $memTotal ? e(format_bytes($memUsed) . ' / ' . format_bytes($memTotal) . ' · 可用 ' . format_bytes($memAvail) . ' · ' . rtrim(rtrim(number_format($memPct, 1, '.', ''), '0'), '.') . '%') : '-' ?></span>
                 </div>
+                <div class="wp-host-line"><span>系统</span><b id="hostOs"><?= e((string) ($info['os'] ?? '-')) ?></b></div>
+                <div class="wp-host-line"><span>运行</span><b id="hostUptime"><?= e((string) ($info['uptime'] ?? '-')) ?></b></div>
             </div>
             <div class="mon-row" id="swapRow" <?= $swapTotal > 0 ? '' : 'style="display:none"' ?>>
                 <div class="mon-k">交换分区 <span class="right mono" id="swapText">
@@ -138,6 +125,22 @@ $memRing = max(0.0, min(100.0, $memPct));
         </div>
         <div class="panel-card">
             <h3>磁盘</h3>
+            <div class="wp-perf wp-perf-single">
+                <div class="wp-ring-wrap">
+                    <div class="wp-ring<?= $memRing >= 95 ? ' is-crit' : ($memRing >= 85 ? ' is-warn' : '') ?>" id="ringMem">
+                        <svg viewBox="0 0 36 36" aria-hidden="true">
+                            <circle class="wp-ring-track" cx="18" cy="18" r="15.9155"></circle>
+                            <circle class="wp-ring-value" cx="18" cy="18" r="15.9155"
+                                stroke-dasharray="<?= e(rtrim(rtrim(number_format($memRing, 1, '.', ''), '0'), '.') ?: '0') ?> 100"></circle>
+                        </svg>
+                        <div class="wp-ring-center">
+                            <span class="wp-ring-num" id="ringMemNum"><?= e(rtrim(rtrim(number_format($memRing, 1, '.', ''), '0'), '.') ?: '0') ?>%</span>
+                        </div>
+                    </div>
+                    <div class="wp-ring-label">RAM</div>
+                    <div class="wp-ring-sub mono" id="ringMemSub"><?= $memTotal ? e(format_bytes($memUsed) . ' / ' . format_bytes($memTotal)) : '-' ?></div>
+                </div>
+            </div>
             <div class="wp-storage" id="wpStorage">
                 <div class="wp-storage-head">
                     <span class="wp-storage-state" id="storageState"><?= ($storagePct >= 90 ? '紧张' : ($storagePct >= 80 ? '注意' : '正常')) . ' · ' . (int) $storagePct . '%' ?></span>
@@ -171,6 +174,7 @@ $memRing = max(0.0, min(100.0, $memPct));
                     </div>
                 <?php endforeach; ?>
             </div>
+        </div>
         </div>
     </div>
     <div class="layui-col-md6">
@@ -418,7 +422,7 @@ layui.use(['element', 'layer', 'table'], function () {
 </script>
 
 <div class="layui-row layui-col-space15 dash-atop-row">
-    <div class="layui-col-md6">
+    <div class="layui-col-md4">
         <div class="panel-card" id="atopCard">
             <h3>
                 atop 历史
@@ -460,6 +464,7 @@ layui.use(['element', 'layer', 'table'], function () {
                     </table>
                 </div>
                 <div class="mon-meta" id="atopSampleLabel" style="margin:0 0 10px">采样详情</div>
+                <div class="wp-atop-sample">
                 <div class="mon-row">
                     <div class="mon-k">CPU <span class="right mono" id="atopCpuText">-</span></div>
                     <div class="layui-progress" lay-filter="atopCpuBar">
@@ -485,10 +490,11 @@ layui.use(['element', 'layer', 'table'], function () {
                     </div>
                     <div class="mon-meta" id="atopDiskText"></div>
                 </div>
+                </div>
             </div>
         </div>
     </div>
-    <div class="layui-col-md6">
+    <div class="layui-col-md4">
         <div class="panel-card" id="atopProcCard">
             <h3>
                 占用最高进程
@@ -504,6 +510,63 @@ layui.use(['element', 'layer', 'table'], function () {
                 <thead><tr><th>PID</th><th>名称</th><th>CPU</th><th>内存</th><th>磁盘</th></tr></thead>
                 <tbody></tbody>
             </table>
+        </div>
+    </div>
+    <div class="layui-col-md4">
+        <div class="wp-login-stack">
+        <div class="panel-card">
+            <h3>
+                最近登录
+                <span class="mon-updated">最近 10 条登录记录</span>
+            </h3>
+            <table class="layui-table" style="margin:0">
+                <thead><tr><th>用户</th><th>IP 地址</th><th>登录时间</th></tr></thead>
+                <tbody>
+                <?php if (empty($recentLogins)): ?>
+                    <tr><td colspan="3" style="text-align:center;color:#999">暂无登录记录</td></tr>
+                <?php else: ?>
+                    <?php foreach ($recentLogins as $log): ?>
+                        <tr>
+                            <td><?= e($log['actor'] ?? '-') ?></td>
+                            <td class="mono"><?= e($log['ip'] ?? '-') ?></td>
+                            <td class="mono"><?= e($log['ts'] ?? '-') ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+        <div class="panel-card">
+            <h3>
+                SSH / 系统登录
+                <span class="mon-updated">SSH 认证成功记录 · 最近 10 条</span>
+            </h3>
+            <table class="layui-table" style="margin:0">
+                <thead><tr><th>用户</th><th>来源 IP</th><th style="width:80px">认证</th><th>登录时间</th></tr></thead>
+                <tbody>
+                <?php if (empty($sshLogins)): ?>
+                    <tr><td colspan="4" style="text-align:center;color:#999">暂无 SSH 登录记录</td></tr>
+                <?php else: ?>
+                    <?php foreach ($sshLogins as $sl): ?>
+                        <tr>
+                            <td><?= e($sl['user'] ?? '-') ?></td>
+                            <td class="mono"><?= e($sl['ip'] ?? '-') ?></td>
+                            <td>
+                                <?php if (($sl['method'] ?? '') === 'publickey'): ?>
+                                    <span class="layui-badge layui-bg-blue">密钥</span>
+                                <?php elseif (($sl['method'] ?? '') === 'password'): ?>
+                                    <span class="layui-badge layui-bg-orange">密码</span>
+                                <?php else: ?>
+                                    <?= e($sl['method'] ?? '-') ?>
+                                <?php endif; ?>
+                            </td>
+                            <td class="mono"><?= e($sl['time'] ?? '-') ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
         </div>
     </div>
 </div>
@@ -560,6 +623,7 @@ layui.use(['element', 'layer'], function () {
         return Array.isArray(rows) ? rows : [];
     }
     function fillProc($tb, rows, err) {
+        if (!$tb || !$tb.length) return;
         $tb.empty();
         rows = asProcRows(rows);
         if (!rows.length) {
@@ -652,12 +716,14 @@ layui.use(['element', 'layer'], function () {
             $('#atopCpuText,#atopMemText,#atopSwapText,#atopLoadText,#atopDiskText').text('-');
             fillProc($('#atopTopCpu tbody'), [], res.proc_error);
             fillProc($('#atopTopMem tbody'), [], res.proc_error);
-            $('#atopProcUpdated').text('所选采样的进程快照');
+            if ($('#atopProcUpdated').length) $('#atopProcUpdated').text('所选采样的进程快照');
             return;
         }
 
         $('#atopSampleLabel').text('采样详情 · ' + (res.file || '') + ' · ' + (s.time || '') + (s.interval_s ? ' · 间隔 ' + s.interval_s + 's' : ''));
-        $('#atopProcUpdated').text((s.time || '所选采样') + (res.file ? ' · ' + res.file : '') + (s.interval_s ? ' · 间隔 ' + s.interval_s + 's' : ''));
+        if ($('#atopProcUpdated').length) {
+            $('#atopProcUpdated').text((s.time || '所选采样') + (res.file ? ' · ' + res.file : '') + (s.interval_s ? ' · 间隔 ' + s.interval_s + 's' : ''));
+        }
         $('#atopCpuText').text(trimPct(s.cpu_busy_pct) + '%（user ' + trimPct(s.cpu_user_pct) + '% / sys ' + trimPct(s.cpu_sys_pct) + '% / wait ' + trimPct(s.cpu_wait_pct) + '%）' + (s.nrcpu ? ' · ' + s.nrcpu + ' 核' : ''));
         setBar('atopCpuBar', Number(s.cpu_busy_pct) || 0, 85, 95);
         $('#atopMemText').text(fmtKb(s.mem_used_kb) + ' / ' + fmtKb(s.mem_total_kb) + ' · 可用 ' + fmtKb(s.mem_avail_kb) + ' · ' + trimPct(s.mem_used_pct) + '%');
@@ -728,62 +794,3 @@ layui.use(['element', 'layer'], function () {
 });
 </script>
 
-<div class="layui-row layui-col-space15 dash-login-row">
-    <div class="layui-col-md6">
-        <div class="panel-card">
-            <h3>
-                最近登录
-                <span class="mon-updated">最近 10 条登录记录</span>
-            </h3>
-            <table class="layui-table" style="margin:0">
-                <thead><tr><th>用户</th><th>IP 地址</th><th>登录时间</th></tr></thead>
-                <tbody>
-                <?php if (empty($recentLogins)): ?>
-                    <tr><td colspan="3" style="text-align:center;color:#999">暂无登录记录</td></tr>
-                <?php else: ?>
-                    <?php foreach ($recentLogins as $log): ?>
-                        <tr>
-                            <td><?= e($log['actor'] ?? '-') ?></td>
-                            <td class="mono"><?= e($log['ip'] ?? '-') ?></td>
-                            <td class="mono"><?= e($log['ts'] ?? '-') ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <div class="layui-col-md6">
-        <div class="panel-card">
-            <h3>
-                SSH / 系统登录
-                <span class="mon-updated">SSH 认证成功记录 · 最近 10 条</span>
-            </h3>
-            <table class="layui-table" style="margin:0">
-                <thead><tr><th>用户</th><th>来源 IP</th><th style="width:80px">认证</th><th>登录时间</th></tr></thead>
-                <tbody>
-                <?php if (empty($sshLogins)): ?>
-                    <tr><td colspan="4" style="text-align:center;color:#999">暂无 SSH 登录记录</td></tr>
-                <?php else: ?>
-                    <?php foreach ($sshLogins as $sl): ?>
-                        <tr>
-                            <td><?= e($sl['user'] ?? '-') ?></td>
-                            <td class="mono"><?= e($sl['ip'] ?? '-') ?></td>
-                            <td>
-                                <?php if (($sl['method'] ?? '') === 'publickey'): ?>
-                                    <span class="layui-badge layui-bg-blue">密钥</span>
-                                <?php elseif (($sl['method'] ?? '') === 'password'): ?>
-                                    <span class="layui-badge layui-bg-orange">密码</span>
-                                <?php else: ?>
-                                    <?= e($sl['method'] ?? '-') ?>
-                                <?php endif; ?>
-                            </td>
-                            <td class="mono"><?= e($sl['time'] ?? '-') ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
