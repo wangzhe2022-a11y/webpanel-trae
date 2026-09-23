@@ -316,9 +316,9 @@ body.layui-layout-body {
     gap: 28px;
     margin: 2px 0 14px;
 }
-.wp-perf-pair {
+.wp-perf-single {
     justify-content: center;
-    gap: 36px;
+    gap: 0;
 }
 .wp-ring-wrap {
     flex: 0 0 auto;
