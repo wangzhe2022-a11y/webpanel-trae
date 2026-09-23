@@ -333,6 +333,7 @@ body.layui-layout-body {
     width: 108px;
     height: 108px;
 }
+.wp-perf-pair .wp-ring-num { font-size: 20px; }
 .wp-ring-wrap {
     flex: 0 0 auto;
     text-align: center;
