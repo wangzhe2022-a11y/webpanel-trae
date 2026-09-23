@@ -27,59 +27,7 @@ $memRing = max(0.0, min(100.0, $memPct));
 </div>
 <div class="layui-row layui-col-space15 wp-mon-band">
     <div class="layui-col-md4">
-        <div class="panel-card">
-            <h3>
-                主机监控
-                <span class="mon-updated" id="monUpdated">每 15 秒自动刷新</span>
-            </h3>
-            <div class="wp-host-meta">
-                <div class="wp-host-line"><span>主机</span><b id="hostName"><?= e((string) ($info['hostname'] ?? '-')) ?></b></div>
-                <div class="wp-host-line"><span>内核</span><b class="mono" id="hostKernel"><?= e((string) ($info['kernel'] ?? '-')) ?></b></div>
-                <div class="wp-host-line">
-                    <span>负载</span>
-                    <span id="loadText">
-                        1/5/15：<span class="mono <?= $loadRatio >= 1.5 ? 'warn-text' : '' ?>"><?= e($loadavg) ?></span>
-                        <?php if ($cpuCores): ?> · 每核 1 分钟 <?= e(number_format($loadRatio, 2)) ?><?php endif; ?>
-                    </span>
-                    <span id="cpuText" hidden><?= e(($cpuPct > 0 ? rtrim(rtrim(number_format($cpuPct, 1, '.', ''), '0'), '.') . '% · ' : '') . '负载 ' . $loadavg . ($cpuCores ? ' · ' . $cpuCores . ' 核' : '')) ?></span>
-                    <span id="memText" hidden><?= $memTotal ? e(format_bytes($memUsed) . ' / ' . format_bytes($memTotal) . ' · 可用 ' . format_bytes($memAvail) . ' · ' . rtrim(rtrim(number_format($memPct, 1, '.', ''), '0'), '.') . '%') : '-' ?></span>
-                </div>
-                <div class="wp-host-line"><span>系统</span><b id="hostOs"><?= e((string) ($info['os'] ?? '-')) ?></b></div>
-                <div class="wp-host-line"><span>运行</span><b id="hostUptime"><?= e((string) ($info['uptime'] ?? '-')) ?></b></div>
-            </div>
-            <div class="mon-meta" id="topLabel" <?= empty($info['top']) ? 'style="display:none"' : '' ?>>占用内存最多</div>
-            <table class="mon-top" id="topTable" <?= empty($info['top']) ? 'style="display:none"' : '' ?>>
-                <tbody>
-                <?php foreach (($info['top'] ?? []) as $p): ?>
-                    <tr>
-                        <td class="mono"><?= e((string) ($p['name'] ?? '')) ?></td>
-                        <td class="mono"><?= isset($p['rss_kb']) ? e(format_bytes((int) $p['rss_kb'])) : '' ?></td>
-                    </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
-            <div class="wp-host-stats">
-                <div class="stat-card c-blue">
-                    <span class="layui-icon layui-icon-website"></span>
-                    <div class="num"><?= (int) $stats['sites'] ?></div><div class="label">托管网站</div>
-                </div>
-                <div class="stat-card c-green">
-                    <span class="layui-icon layui-icon-table"></span>
-                    <div class="num"><?= (int) $stats['databases'] ?></div><div class="label">MySQL 数据库</div>
-                </div>
-                <div class="stat-card c-orange">
-                    <span class="layui-icon layui-icon-auz"></span>
-                    <div class="num"><?= (int) $stats['ssl'] ?></div><div class="label">已启用 HTTPS</div>
-                </div>
-                <div class="stat-card c-purple">
-                    <span class="layui-icon layui-icon-cpu"></span>
-                    <div class="num" id="statCpuPct"><?= isset($info['cpu_usage_pct']) ? e(rtrim(rtrim(number_format($cpuPct, 1, '.', ''), '0'), '.')) . '%' : e((string) ($cpuCores ?: '-')) ?></div>
-                    <div class="label" id="statCpuLabel">CPU<?= $cpuCores ? ' · ' . $cpuCores . ' 核' : '' ?> · <?= e((string) ($info['hostname'] ?? '')) ?></div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="layui-col-md4">
+        <div class="wp-mon-stack">
         <div class="panel-card">
             <h3>磁盘</h3>
             <div class="wp-perf wp-perf-pair" id="wpPerf">
@@ -139,6 +87,58 @@ $memRing = max(0.0, min(100.0, $memPct));
                 <?php endforeach; ?>
             </div>
         </div>
+        <div class="panel-card">
+            <h3>
+                主机监控
+                <span class="mon-updated" id="monUpdated">每 15 秒自动刷新</span>
+            </h3>
+            <div class="wp-host-meta">
+                <div class="wp-host-line"><span>主机</span><b id="hostName"><?= e((string) ($info['hostname'] ?? '-')) ?></b></div>
+                <div class="wp-host-line"><span>内核</span><b class="mono" id="hostKernel"><?= e((string) ($info['kernel'] ?? '-')) ?></b></div>
+                <div class="wp-host-line">
+                    <span>负载</span>
+                    <span id="loadText">
+                        1/5/15：<span class="mono <?= $loadRatio >= 1.5 ? 'warn-text' : '' ?>"><?= e($loadavg) ?></span>
+                        <?php if ($cpuCores): ?> · 每核 1 分钟 <?= e(number_format($loadRatio, 2)) ?><?php endif; ?>
+                    </span>
+                    <span id="cpuText" hidden><?= e(($cpuPct > 0 ? rtrim(rtrim(number_format($cpuPct, 1, '.', ''), '0'), '.') . '% · ' : '') . '负载 ' . $loadavg . ($cpuCores ? ' · ' . $cpuCores . ' 核' : '')) ?></span>
+                    <span id="memText" hidden><?= $memTotal ? e(format_bytes($memUsed) . ' / ' . format_bytes($memTotal) . ' · 可用 ' . format_bytes($memAvail) . ' · ' . rtrim(rtrim(number_format($memPct, 1, '.', ''), '0'), '.') . '%') : '-' ?></span>
+                </div>
+                <div class="wp-host-line"><span>系统</span><b id="hostOs"><?= e((string) ($info['os'] ?? '-')) ?></b></div>
+                <div class="wp-host-line"><span>运行</span><b id="hostUptime"><?= e((string) ($info['uptime'] ?? '-')) ?></b></div>
+            </div>
+            <div class="mon-meta" id="topLabel" <?= empty($info['top']) ? 'style="display:none"' : '' ?>>占用内存最多</div>
+            <table class="mon-top" id="topTable" <?= empty($info['top']) ? 'style="display:none"' : '' ?>>
+                <tbody>
+                <?php foreach (($info['top'] ?? []) as $p): ?>
+                    <tr>
+                        <td class="mono"><?= e((string) ($p['name'] ?? '')) ?></td>
+                        <td class="mono"><?= isset($p['rss_kb']) ? e(format_bytes((int) $p['rss_kb'])) : '' ?></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+            <div class="wp-host-stats">
+                <div class="stat-card c-blue">
+                    <span class="layui-icon layui-icon-website"></span>
+                    <div class="num"><?= (int) $stats['sites'] ?></div><div class="label">托管网站</div>
+                </div>
+                <div class="stat-card c-green">
+                    <span class="layui-icon layui-icon-table"></span>
+                    <div class="num"><?= (int) $stats['databases'] ?></div><div class="label">MySQL 数据库</div>
+                </div>
+                <div class="stat-card c-orange">
+                    <span class="layui-icon layui-icon-auz"></span>
+                    <div class="num"><?= (int) $stats['ssl'] ?></div><div class="label">已启用 HTTPS</div>
+                </div>
+                <div class="stat-card c-purple">
+                    <span class="layui-icon layui-icon-cpu"></span>
+                    <div class="num" id="statCpuPct"><?= isset($info['cpu_usage_pct']) ? e(rtrim(rtrim(number_format($cpuPct, 1, '.', ''), '0'), '.')) . '%' : e((string) ($cpuCores ?: '-')) ?></div>
+                    <div class="label" id="statCpuLabel">CPU<?= $cpuCores ? ' · ' . $cpuCores . ' 核' : '' ?> · <?= e((string) ($info['hostname'] ?? '')) ?></div>
+                </div>
+            </div>
+        </div>
+        </div>
     </div>
     <div class="layui-col-md4">
         <div class="panel-card wp-svc-card">
@@ -171,6 +171,30 @@ $memRing = max(0.0, min(100.0, $memPct));
                         </td>
                     </tr>
                 <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="layui-col-md4">
+        <div class="panel-card">
+            <h3>
+                最近登录
+                <span class="mon-updated">最近 10 条登录记录</span>
+            </h3>
+            <table class="layui-table" style="margin:0">
+                <thead><tr><th>用户</th><th>IP 地址</th><th>登录时间</th></tr></thead>
+                <tbody>
+                <?php if (empty($recentLogins)): ?>
+                    <tr><td colspan="3" style="text-align:center;color:#999">暂无登录记录</td></tr>
+                <?php else: ?>
+                    <?php foreach ($recentLogins as $log): ?>
+                        <tr>
+                            <td><?= e($log['actor'] ?? '-') ?></td>
+                            <td class="mono"><?= e($log['ip'] ?? '-') ?></td>
+                            <td class="mono"><?= e($log['ts'] ?? '-') ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
                 </tbody>
             </table>
         </div>
@@ -477,29 +501,6 @@ layui.use(['element', 'layer', 'table'], function () {
         </div>
     </div>
     <div class="layui-col-md4">
-        <div class="wp-login-stack">
-        <div class="panel-card">
-            <h3>
-                最近登录
-                <span class="mon-updated">最近 10 条登录记录</span>
-            </h3>
-            <table class="layui-table" style="margin:0">
-                <thead><tr><th>用户</th><th>IP 地址</th><th>登录时间</th></tr></thead>
-                <tbody>
-                <?php if (empty($recentLogins)): ?>
-                    <tr><td colspan="3" style="text-align:center;color:#999">暂无登录记录</td></tr>
-                <?php else: ?>
-                    <?php foreach ($recentLogins as $log): ?>
-                        <tr>
-                            <td><?= e($log['actor'] ?? '-') ?></td>
-                            <td class="mono"><?= e($log['ip'] ?? '-') ?></td>
-                            <td class="mono"><?= e($log['ts'] ?? '-') ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
         <div class="panel-card">
             <h3>
                 SSH / 系统登录
@@ -530,7 +531,6 @@ layui.use(['element', 'layer', 'table'], function () {
                 <?php endif; ?>
                 </tbody>
             </table>
-        </div>
         </div>
     </div>
 </div>
