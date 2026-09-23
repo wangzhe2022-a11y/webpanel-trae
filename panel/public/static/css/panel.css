@@ -174,8 +174,8 @@ body.layui-layout-body {
 }
 .panel-card h3 .layui-btn { margin-top: -2px; }
 
-/* Desktop: 3-column band — atop | processes | stacked login cards.
-   clear:both keeps the band below the host/services row. */
+/* Desktop: 3-column band — atop | processes | SSH 登录.
+   clear:both keeps the band below the monitoring row. */
 .dash-atop-row {
     clear: both;
     margin-top: 16px;
@@ -183,9 +183,6 @@ body.layui-layout-body {
 .wp-atop-sample {
     display: flex;
     flex-direction: column;
-}
-.wp-login-stack > .panel-card:last-child {
-    margin-bottom: 0;
 }
 
 .mon-row { margin-bottom: 16px; }
@@ -295,8 +292,14 @@ body.layui-layout-body {
     border-color: var(--wp-border);
 }
 
-/* Three equal columns: 主机监控 | 磁盘 | 服务状态.
-   Summary cards live inside the 主机监控 column as a compact 2x2. */
+/* Three equal columns: 磁盘(+主机监控 stacked) | 服务状态 | 最近登录.
+   Left column stacks 磁盘 above 主机监控; summary cards stay in 主机监控. */
+.wp-mon-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+.wp-mon-stack > .panel-card,
 .wp-mon-band > [class*="layui-col"] > .panel-card {
     min-width: 0;
     margin-bottom: 0;
