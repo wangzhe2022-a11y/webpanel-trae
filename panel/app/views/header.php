@@ -80,7 +80,7 @@ window.WP = (function () {
         <ul class="wp-top-nav">
             <?php foreach ($nav as $path => [$label, $icon]): ?>
             <li class="<?= $uri === $path ? 'is-active' : '' ?>">
-                <a href="<?= e($path) ?>"><span class="layui-icon <?= e($icon) ?>"></span><span><?= e($label) ?></span></a>
+                <a href="<?= e($path) ?>" title="<?= e($label) ?>"><span class="layui-icon <?= e($icon) ?>"></span><span><?= e($label) ?></span></a>
             </li>
             <?php endforeach; ?>
         </ul>
@@ -118,14 +118,5 @@ window.WP = (function () {
             </span>
             <a href="javascript:;" id="btnLogout" class="wp-logout"><span class="layui-icon layui-icon-logout"></span> 退出</a>
         </div>
-    </div>
-    <div class="layui-side">
-        <ul class="layui-nav layui-nav-tree" lay-filter="sideNav">
-            <?php foreach ($nav as $path => [$label, $icon]): ?>
-            <li class="layui-nav-item <?= $uri === $path ? 'layui-nav-itemed layui-this' : '' ?>">
-                <a href="<?= e($path) ?>"><span class="layui-icon <?= e($icon) ?>"></span><?= e($label) ?></a>
-            </li>
-            <?php endforeach; ?>
-        </ul>
     </div>
     <div class="layui-body">

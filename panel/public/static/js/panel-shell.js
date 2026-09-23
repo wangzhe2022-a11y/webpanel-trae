@@ -67,7 +67,7 @@
 
     applyTheme(currentTheme());
     tickClock();
-    setInterval(tickClock, 15000);
+    setInterval(tickClock, 1000);
 
     document.addEventListener('click', function (ev) {
         var appear = document.getElementById('wpAppear');

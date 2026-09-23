@@ -94,12 +94,19 @@ $memRing = max(0.0, min(100.0, $memPct));
                     <div class="wp-ring-sub mono" id="ringMemSub"><?= $memTotal ? e(format_bytes($memUsed) . ' / ' . format_bytes($memTotal)) : '-' ?></div>
                 </div>
             </div>
-            <div class="mon-row">
-                <div class="mon-k">内存 <span class="right mono" id="memText">
-                    <?= $memTotal ? e(format_bytes($memUsed) . ' / ' . format_bytes($memTotal) . ' · 可用 ' . format_bytes($memAvail) . ' · ' . rtrim(rtrim(number_format($memPct, 1, '.', ''), '0'), '.') . '%') : '-' ?>
-                </span></div>
-                <div class="layui-progress layui-progress-big" lay-filter="memBar">
-                    <div class="layui-progress-bar <?= e(panel_gauge_class($memPct, 85, 95)) ?>" lay-percent="<?= e((string) $memPct) ?>%"></div>
+            <div class="wp-host-meta">
+                <div class="wp-host-line"><span>主机</span><b id="hostName"><?= e((string) ($info['hostname'] ?? '-')) ?></b></div>
+                <div class="wp-host-line"><span>系统</span><b id="hostOs"><?= e((string) ($info['os'] ?? '-')) ?></b></div>
+                <div class="wp-host-line"><span>内核</span><b class="mono" id="hostKernel"><?= e((string) ($info['kernel'] ?? '-')) ?></b></div>
+                <div class="wp-host-line"><span>运行</span><b id="hostUptime"><?= e((string) ($info['uptime'] ?? '-')) ?></b></div>
+                <div class="wp-host-line" style="grid-column:1 / -1">
+                    <span>负载</span>
+                    <span id="loadText">
+                        1/5/15：<span class="mono <?= $loadRatio >= 1.5 ? 'warn-text' : '' ?>"><?= e($loadavg) ?></span>
+                        <?php if ($cpuCores): ?> · 每核 1 分钟 <?= e(number_format($loadRatio, 2)) ?><?php endif; ?>
+                    </span>
+                    <span id="cpuText" hidden><?= e(($cpuPct > 0 ? rtrim(rtrim(number_format($cpuPct, 1, '.', ''), '0'), '.') . '% · ' : '') . '负载 ' . $loadavg . ($cpuCores ? ' · ' . $cpuCores . ' 核' : '')) ?></span>
+                    <span id="memText" hidden><?= $memTotal ? e(format_bytes($memUsed) . ' / ' . format_bytes($memTotal) . ' · 可用 ' . format_bytes($memAvail) . ' · ' . rtrim(rtrim(number_format($memPct, 1, '.', ''), '0'), '.') . '%') : '-' ?></span>
                 </div>
             </div>
             <div class="mon-row" id="swapRow" <?= $swapTotal > 0 ? '' : 'style="display:none"' ?>>
@@ -110,24 +117,6 @@ $memRing = max(0.0, min(100.0, $memPct));
                     <div class="layui-progress-bar <?= e(panel_gauge_class($swapPct, 50, 80)) ?>" lay-percent="<?= e((string) $swapPct) ?>%"></div>
                 </div>
             </div>
-            <div class="mon-row">
-                <div class="mon-k">CPU / 负载 <span class="right mono" id="cpuText">
-                    <?= e(($cpuPct > 0 ? rtrim(rtrim(number_format($cpuPct, 1, '.', ''), '0'), '.') . '% · ' : '') . '负载 ' . $loadavg . ($cpuCores ? ' · ' . $cpuCores . ' 核' : '')) ?>
-                </span></div>
-                <div class="layui-progress" lay-filter="cpuBar">
-                    <div class="layui-progress-bar <?= e(panel_gauge_class($cpuPct, 85, 95)) ?>" lay-percent="<?= e((string) $cpuPct) ?>%"></div>
-                </div>
-                <div class="mon-meta" id="loadText">
-                    负载 1/5/15：<span class="mono <?= $loadRatio >= 1.5 ? 'warn-text' : '' ?>"><?= e($loadavg) ?></span>
-                    <?php if ($cpuCores): ?> · 每核 1 分钟 <?= e(number_format($loadRatio, 2)) ?><?php endif; ?>
-                </div>
-            </div>
-            <table class="layui-table" lay-skin="line" style="margin:12px 0 0">
-                <tr><td width="110">主机名</td><td id="hostName"><?= e((string) ($info['hostname'] ?? '-')) ?></td></tr>
-                <tr><td>操作系统</td><td id="hostOs"><?= e((string) ($info['os'] ?? '-')) ?></td></tr>
-                <tr><td>内核</td><td class="mono" id="hostKernel"><?= e((string) ($info['kernel'] ?? '-')) ?></td></tr>
-                <tr><td>运行时间</td><td id="hostUptime"><?= e((string) ($info['uptime'] ?? '-')) ?></td></tr>
-            </table>
             <div class="mon-meta" id="topLabel" <?= empty($info['top']) ? 'style="display:none"' : '' ?>>占用内存最多</div>
             <table class="mon-top" id="topTable" <?= empty($info['top']) ? 'style="display:none"' : '' ?>>
                 <tbody>
@@ -157,25 +146,24 @@ $memRing = max(0.0, min(100.0, $memPct));
                     <div class="layui-progress-bar <?= e(panel_gauge_class($storagePct, 80, 90)) ?>" lay-percent="<?= (int) $storagePct ?>%"></div>
                 </div>
             </div>
-            <table class="layui-table" style="margin:0">
-                <thead><tr><th>挂载点</th><th>总量</th><th>已用</th><th>可用</th><th>使用率</th></tr></thead>
-                <tbody id="diskBody">
+            <div id="diskMounts">
+                <?php if (empty($info['disk'])): ?>
+                    <div class="mon-meta">暂无磁盘数据</div>
+                <?php endif; ?>
                 <?php foreach (($info['disk'] ?? []) as $i => $d): ?>
                     <?php $dp = (float) ($d['use_pct'] ?? 0); ?>
-                    <tr>
-                        <td class="mono"><?= e((string) ($d['fs'] ?? '')) ?></td>
-                        <td><?= e((string) ($d['size'] ?? '')) ?></td>
-                        <td><?= e((string) ($d['used'] ?? '')) ?></td>
-                        <td><?= e((string) ($d['avail'] ?? '')) ?></td>
-                        <td>
-                            <div class="layui-progress" lay-filter="diskBar<?= (int) $i ?>" lay-showpercent="true" style="width:120px">
-                                <div class="layui-progress-bar <?= e(panel_gauge_class($dp, 80, 90)) ?>" lay-percent="<?= (int) $dp ?>%"></div>
-                            </div>
-                        </td>
-                    </tr>
+                    <div class="wp-disk-row">
+                        <div class="wp-disk-head">
+                            <span class="mono wp-disk-fs"><?= e((string) ($d['fs'] ?? '')) ?></span>
+                            <span class="wp-disk-state"><?= $dp >= 90 ? '紧张' : ($dp >= 80 ? '注意' : '正常') ?></span>
+                            <span class="mono wp-disk-meta"><?= e('已用 ' . (string) ($d['used'] ?? '') . ' / 总量 ' . (string) ($d['size'] ?? '') . ' · 可用 ' . (string) ($d['avail'] ?? '')) ?></span>
+                        </div>
+                        <div class="layui-progress layui-progress-big" lay-filter="diskBar<?= (int) $i ?>">
+                            <div class="layui-progress-bar <?= e(panel_gauge_class($dp, 80, 90)) ?>" lay-percent="<?= (int) $dp ?>%"></div>
+                        </div>
+                    </div>
                 <?php endforeach; ?>
-                </tbody>
-            </table>
+            </div>
         </div>
     </div>
     <div class="layui-col-md6">
@@ -313,20 +301,29 @@ layui.use(['element', 'layer', 'table'], function () {
         if (res.uptime) $('#hostUptime').text(res.uptime);
 
         var disks = res.disk || [];
-        var $tbody = $('#diskBody').empty();
+        var $mounts = $('#diskMounts').empty();
+        if (!disks.length) {
+            $mounts.append('<div class="mon-meta">暂无磁盘数据</div>');
+        }
         disks.forEach(function (d, i) {
             var dp = Number(d.use_pct) || 0;
             var filter = 'diskBar' + i;
-            $tbody.append(
-                '<tr><td class="mono"></td><td></td><td></td><td></td><td>'
-                + '<div class="layui-progress" lay-filter="' + filter + '" lay-showpercent="true" style="width:120px">'
+            var state = dp >= 90 ? '紧张' : (dp >= 80 ? '注意' : '正常');
+            var $row = $('<div class="wp-disk-row">');
+            $row.append(
+                '<div class="wp-disk-head">'
+                + '<span class="mono wp-disk-fs"></span>'
+                + '<span class="wp-disk-state"></span>'
+                + '<span class="mono wp-disk-meta"></span>'
+                + '</div>'
+                + '<div class="layui-progress layui-progress-big" lay-filter="' + filter + '">'
                 + '<div class="layui-progress-bar ' + gaugeCls(dp, 80, 90) + '" lay-percent="' + parseInt(dp, 10) + '%"></div>'
-                + '</div></td></tr>'
+                + '</div>'
             );
-            $tbody.find('tr:last td:eq(0)').text(d.fs || '');
-            $tbody.find('tr:last td:eq(1)').text(d.size || '');
-            $tbody.find('tr:last td:eq(2)').text(d.used || '');
-            $tbody.find('tr:last td:eq(3)').text(d.avail || '');
+            $row.find('.wp-disk-fs').text(d.fs || '');
+            $row.find('.wp-disk-state').text(state);
+            $row.find('.wp-disk-meta').text('已用 ' + (d.used || '') + ' / 总量 ' + (d.size || '') + ' · 可用 ' + (d.avail || ''));
+            $mounts.append($row);
         });
         element.render('progress');
         disks.forEach(function (d, i) { setBar('diskBar' + i, Number(d.use_pct) || 0, 80, 90); });
