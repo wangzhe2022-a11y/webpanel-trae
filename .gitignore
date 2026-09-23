@@ -1,0 +1,33 @@
+# Live ZPanel / webpanel trees accumulate runtime files next to source.
+# Never `git add -A` on a deploy checkout. Stage only intended source/config.
+
+# Agent / CVM scratch (tests, downloads, verify scripts)
+.tmp-*
+
+# Uploads dropped at repo root or under the panel tree
+.uploads/
+**/.uploads/
+panel/uploads/
+panel/data/uploads/
+
+# CVM-only ops history — never commit to GitHub
+/BUGFIXES.md
+
+# Panel runtime data (install.sh + bootstrap.php create these)
+panel/data/sessions/
+panel/data/cache/
+panel/data/tmp/
+panel/data/panel.db
+panel/data/*.db
+panel/data/panel.db.pre-restore.*
+
+# SQLite sidecars (journal / WAL) anywhere, including agent copies
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Logs (PHP built-in server, acme leftovers copied into the tree, etc.)
+*.log
+
+# Local dry-run marker used by the panel bootstrap
+.dryrun
