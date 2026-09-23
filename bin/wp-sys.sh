@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=wp-lib.sh
 . "$SCRIPT_DIR/wp-lib.sh"
 
-usage() { fail "usage: wp-sys.sh {info|svc}" 64; }
+usage() { fail "usage: wp-sys.sh {info|svc|logins}" 64; }
 [ $# -ge 1 ] || usage
 action="$1"; shift
 require_root
@@ -191,4 +191,33 @@ if [ "$action" = "svc" ]; then
     ok
 fi
 
+if [ "$action" = "logins" ]; then
+    # Recent SSH authentication successes from /var/log/secure (newest first)
+    n="${1:-10}"
+    case "$n" in ''|*[!0-9]*) fail "usage: logins [limit]" ;; esac
+    [ "$n" -gt 100 ] && n=100
+    if is_dry_run; then
+        printf '{"ok":true,"logins":[]}\n'
+        exit 0
+    fi
+    printf '{"ok":true,"logins":['
+    grep -hE 'Accepted (publickey|password)' /var/log/secure 2>/dev/null \
+        | tail -n "$n" | tac | awk '
+        /sshd\[[0-9]+\]: Accepted (publickey|password) for / {
+            method=""; user=""; ip="";
+            for (i=1; i<=NF; i++) {
+                if ($i=="Accepted" && method=="") method=$(i+1);
+                if ($i=="for" && user=="") user=$(i+1);
+                if ($i=="from" && ip=="") ip=$(i+1);
+            }
+            if (method!="" && user!="" && ip!="") {
+                gsub(/[\\"]/,"",method); gsub(/[\\"]/,"",user); gsub(/[\\"]/,"",ip);
+                printf "%s{\"time\":\"%s %s %s\",\"user\":\"%s\",\"ip\":\"%s\",\"method\":\"%s\"}",
+                    sep, $1, $2, $3, user, ip, method;
+                sep=",";
+            }
+        }'
+    printf ']}\n'
+    exit 0
+fi
 usage
