@@ -519,10 +519,20 @@ layui.use(['element', 'layer'], function () {
         });
         return { max: max, text: parts.join(' · ') || '-' };
     }
-    function fillProc($tb, rows) {
+    function asProcRows(rows) {
+        if (!rows) return [];
+        if (typeof rows === 'string') {
+            try { rows = JSON.parse(rows); } catch (e) { return []; }
+        }
+        return Array.isArray(rows) ? rows : [];
+    }
+    function fillProc($tb, rows, err) {
         $tb.empty();
-        if (!rows || !rows.length) {
-            $tb.append('<tr><td class="atop-empty" colspan="5">无进程数据</td></tr>');
+        rows = asProcRows(rows);
+        if (!rows.length) {
+            var msg = err ? String(err) : '该采样没有进程记录';
+            $tb.append('<tr><td class="atop-empty" colspan="5"></td></tr>');
+            $tb.find('td').text(msg);
             return;
         }
         rows.forEach(function (p) {
@@ -607,8 +617,8 @@ layui.use(['element', 'layer'], function () {
         if (!s) {
             $('#atopBody').toggle(!!(res.logs && res.logs.length));
             $('#atopCpuText,#atopMemText,#atopSwapText,#atopLoadText,#atopDiskText').text('-');
-            fillProc($('#atopTopCpu tbody'), []);
-            fillProc($('#atopTopMem tbody'), []);
+            fillProc($('#atopTopCpu tbody'), [], res.proc_error);
+            fillProc($('#atopTopMem tbody'), [], res.proc_error);
             $('#atopProcUpdated').text('所选采样的进程快照');
             return;
         }
@@ -630,8 +640,8 @@ layui.use(['element', 'layer'], function () {
         $('#atopLoadText').text('负载 ' + (s.loadavg || '-') + ' · 磁盘忙 ' + trimPct(db.max) + '%');
         setBar('atopDiskBar', db.max, 80, 90);
         $('#atopDiskText').text(db.text);
-        fillProc($('#atopTopCpu tbody'), res.top_cpu);
-        fillProc($('#atopTopMem tbody'), res.top_mem);
+        fillProc($('#atopTopCpu tbody'), res.top_cpu, res.proc_error);
+        fillProc($('#atopTopMem tbody'), res.top_mem, res.proc_error);
         $('#atopBody').show();
         element.render('progress');
         setBar('atopCpuBar', Number(s.cpu_busy_pct) || 0, 85, 95);
