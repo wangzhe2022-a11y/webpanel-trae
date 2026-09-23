@@ -295,11 +295,18 @@ body.layui-layout-body {
     border-color: var(--wp-border);
 }
 
-/* Three equal columns: 主机监控 | 磁盘 | 服务状态. Each card owns its own
-   ring / storage / service table instead of nesting host+disk in one half. */
+/* Three equal columns: 主机监控 | 磁盘 | 服务状态. Summary cards sit in one
+   4-col row under that band (tied to 主机监控, full width so they stay readable). */
+.wp-mon-stack { clear: both; }
 .wp-mon-band > [class*="layui-col"] > .panel-card {
     min-width: 0;
     margin-bottom: 0;
+}
+.wp-host-stats {
+    margin-top: 15px;
+}
+.wp-host-stats .stat-card .label {
+    word-break: break-word;
 }
 .wp-svc-card {
     overflow-x: auto;
