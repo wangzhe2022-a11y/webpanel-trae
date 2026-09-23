@@ -18,25 +18,25 @@ $loadRatio = $cpuCores > 0 ? $load1 / $cpuCores : $load1;
 ?>
 <div class="layui-row layui-col-space15">
     <div class="layui-col-md3">
-        <div class="stat-card c-blue" style="background:linear-gradient(135deg,#1e9fff,#0c7cd5)">
+        <div class="stat-card c-blue">
             <span class="layui-icon layui-icon-website"></span>
             <div class="num"><?= (int) $stats['sites'] ?></div><div class="label">托管网站</div>
         </div>
     </div>
     <div class="layui-col-md3">
-        <div class="stat-card c-green" style="background:linear-gradient(135deg,#16baaa,#0e9a8c)">
+        <div class="stat-card c-green">
             <span class="layui-icon layui-icon-table"></span>
             <div class="num"><?= (int) $stats['databases'] ?></div><div class="label">MySQL 数据库</div>
         </div>
     </div>
     <div class="layui-col-md3">
-        <div class="stat-card c-orange" style="background:linear-gradient(135deg,#ff9800,#e65100)">
+        <div class="stat-card c-orange">
             <span class="layui-icon layui-icon-auz"></span>
             <div class="num"><?= (int) $stats['ssl'] ?></div><div class="label">已启用 HTTPS</div>
         </div>
     </div>
     <div class="layui-col-md3">
-        <div class="stat-card c-purple" style="background:linear-gradient(135deg,#9c27b0,#6a1b9a)">
+        <div class="stat-card c-purple">
             <span class="layui-icon layui-icon-cpu"></span>
             <div class="num" id="statCpuPct"><?= isset($info['cpu_usage_pct']) ? e(rtrim(rtrim(number_format($cpuPct, 1, '.', ''), '0'), '.')) . '%' : e((string) ($cpuCores ?: '-')) ?></div>
             <div class="label" id="statCpuLabel">CPU<?= $cpuCores ? ' · ' . $cpuCores . ' 核' : '' ?> · <?= e((string) ($info['hostname'] ?? '')) ?></div>
