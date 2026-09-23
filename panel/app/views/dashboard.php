@@ -384,7 +384,7 @@ layui.use(['element', 'layer', 'table'], function () {
 });
 </script>
 
-<div class="layui-row layui-col-space15 dash-atop-row" style="margin-top:2px">
+<div class="layui-row layui-col-space15 dash-atop-row">
     <div class="layui-col-md12">
         <div class="panel-card" id="atopCard">
             <h3>
