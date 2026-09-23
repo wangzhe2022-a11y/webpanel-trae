@@ -17,7 +17,7 @@
 | WordPress | WP-CLI 一键部署中文版 WordPress（wp-config、固定链接、WooCommerce 内存参数、FS_METHOD 全部配好），自动生成管理员密码 |
 | 备份恢复 | **一键备份/恢复**：全量（站点文件+证书+vhost+FPM/Node 配置+MySQL+PostgreSQL+面板库）/仅文件/仅数据库三种范围，后台异步执行、页面实时进度；恢复需输入 RESTORE 二次确认；每日 3:30 自动全量备份，保留最近 10 份自动轮转，支持下载到本地 |
 | Installatron Remote | 对接官方云端 **Installatron Remote**（[installatron.com/apps](https://installatron.com/apps)）：面板提供本机 SFTP/SSH 连接参数（主机、端口 22、站点 sysuser、文档根 `/www/wwwroot/<站点用户>/public`）；数据库在「数据库」页建好后填入安装向导。**不**在本机安装 Installatron Server，也**不**保存 installatron.com 密码 |
-| 系统 | 仪表盘（CPU/内存/磁盘/负载）、Nginx/MySQL/PostgreSQL/各版本 PHP-FPM/Node 服务启停重载、操作审计日志 |
+| 系统 | 仪表盘（CPU/内存/磁盘/负载 + **atop 历史采样**）、Nginx/MySQL/PostgreSQL/各版本 PHP-FPM/Node 服务启停重载、操作审计日志 |
 
 ## 架构与安全模型
 
@@ -25,7 +25,7 @@
 浏览器 ──HTTPS:8888──▶ nginx ──unix socket──▶ php-fpm 池 [webpanel 用户]
                                                   │ 仅能调用
                                                   ▼
-                          /etc/sudoers.d/webpanel 白名单（10 个固定脚本，NOPASSWD）
+                          /etc/sudoers.d/webpanel 白名单（11 个固定脚本，NOPASSWD）
                                                   │ 校验全部参数后
                                                   ▼
                           bin/wp-*.sh（root）→ useradd / nginx vhost / fpm 池 / mysql / postgres / systemd / acme.sh
@@ -158,6 +158,31 @@ sudo /usr/local/webpanel/bin/wp-pma.sh install
 
 若第 3 步提示面板 Nginx 配置不存在，确认 `/etc/nginx/conf.d/00-webpanel.conf` 在；脚本会自动插入
 `include .../phpmyadmin.inc`。完成后登录面板 → **phpMyAdmin**。
+
+### 已有服务器启用 atop 历史
+
+CVM 已安装 `atop`（EPEL 2.7.x，`LOGINTERVAL=600`，日志 `/var/log/atop/atop_YYYYMMDD`）时，更新面板后还需要把新的只读脚本写进 sudoers：
+
+```bash
+sudo cp -a bin/wp-atop.sh /usr/local/webpanel/bin/
+sudo chmod 755 /usr/local/webpanel/bin/wp-atop.sh
+sudo cp -a panel /usr/local/webpanel/
+sudo chgrp -R webpanel /usr/local/webpanel/panel
+sudo find /usr/local/webpanel/panel -type d -exec chmod 750 {} \;
+sudo find /usr/local/webpanel/panel -type f -exec chmod 640 {} \;
+sudo chown -R webpanel:webpanel /usr/local/webpanel/panel/data
+sudo install -m 440 /usr/local/webpanel/config/sudoers.d/webpanel /etc/sudoers.d/webpanel
+sudo visudo -cf /etc/sudoers.d/webpanel
+```
+
+日志由 root 的 `atop` 服务写入，面板用户不能直接读；`wp-atop.sh` 只允许：
+
+```bash
+atop -r /var/log/atop/FILE -Z -P CPU,CPL,MEM,SWP,DSK
+atop -r /var/log/atop/FILE -Z -b HH:MM -e HH:MM+1min -P PRC,PRM,PRD
+```
+
+登录仪表盘后应看到 **atop 历史** 卡片（实时「主机监控」不变）。未安装 atop 或日志为空时显示说明，不会 500。
 
 ## 备份与恢复
 
@@ -761,6 +786,7 @@ bin/
   wp-backup.sh              一键备份/恢复（异步任务、文件锁互斥、轮转清理）
   wp-fs.sh + fs-worker.php  文件管理（jail、chown、禁 setuid）
   wp-sys.sh                 主机信息与服务控制
+  wp-atop.sh                只读解析 /var/log/atop（仪表盘历史采样）
   wp-wp.sh                  WP-CLI 一键部署 WordPress
 panel/
   public/index.php          前端控制器

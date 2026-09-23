@@ -324,3 +324,301 @@ layui.use(['element', 'layer', 'table'], function () {
     });
 });
 </script>
+
+<div class="layui-row layui-col-space15" style="margin-top:2px">
+    <div class="layui-col-md12">
+        <div class="panel-card" id="atopCard">
+            <h3>
+                atop 历史
+                <span class="mon-updated" id="atopUpdated">从 /var/log/atop 读取 · 不替代上方实时监控</span>
+            </h3>
+            <div id="atopStatus" class="atop-empty">正在检查 atop 服务与日志…</div>
+            <div class="atop-toolbar" id="atopToolbar" style="display:none">
+                <label>日志
+                    <select id="atopFile" class="layui-input" style="display:inline-block;width:170px;padding:0 8px"></select>
+                </label>
+                <label>采样时间
+                    <select id="atopTime" class="layui-input" style="display:inline-block;width:110px;padding:0 8px"></select>
+                </label>
+                <label>最近 N 条
+                    <select id="atopLatest" class="layui-input" style="display:inline-block;width:70px;padding:0 8px">
+                        <option value="1">1</option>
+                        <option value="3" selected>3</option>
+                        <option value="6">6</option>
+                        <option value="12">12</option>
+                    </select>
+                </label>
+                <button class="layui-btn layui-btn-sm layui-btn-normal" id="btnAtopLoad">查看</button>
+                <button class="layui-btn layui-btn-sm layui-btn-primary" id="btnAtopRefresh">
+                    <span class="layui-icon layui-icon-refresh"></span> 刷新
+                </button>
+            </div>
+            <div id="atopErr" class="atop-empty" style="display:none"></div>
+            <div id="atopBody" style="display:none">
+                <div class="mon-meta" style="margin:0 0 8px">日志文件</div>
+                <table class="layui-table atop-logs" lay-skin="line" style="margin:0 0 14px">
+                    <thead><tr><th>文件</th><th>大小</th><th>修改时间</th></tr></thead>
+                    <tbody id="atopLogs"></tbody>
+                </table>
+                <div id="atopRecentWrap" style="display:none">
+                    <div class="mon-meta" style="margin:0 0 8px">最近采样</div>
+                    <table class="layui-table atop-logs" lay-skin="line" style="margin:0 0 14px">
+                        <thead><tr><th>时间</th><th>CPU</th><th>内存</th><th>交换</th><th>负载</th><th>磁盘忙</th></tr></thead>
+                        <tbody id="atopRecent"></tbody>
+                    </table>
+                </div>
+                <div class="mon-meta" id="atopSampleLabel" style="margin:0 0 10px">采样详情</div>
+                <div class="mon-row">
+                    <div class="mon-k">CPU <span class="right mono" id="atopCpuText">-</span></div>
+                    <div class="layui-progress" lay-filter="atopCpuBar">
+                        <div class="layui-progress-bar" lay-percent="0%"></div>
+                    </div>
+                </div>
+                <div class="mon-row">
+                    <div class="mon-k">内存 <span class="right mono" id="atopMemText">-</span></div>
+                    <div class="layui-progress" lay-filter="atopMemBar">
+                        <div class="layui-progress-bar" lay-percent="0%"></div>
+                    </div>
+                </div>
+                <div class="mon-row" id="atopSwapRow" style="display:none">
+                    <div class="mon-k">交换分区 <span class="right mono" id="atopSwapText">-</span></div>
+                    <div class="layui-progress" lay-filter="atopSwapBar">
+                        <div class="layui-progress-bar" lay-percent="0%"></div>
+                    </div>
+                </div>
+                <div class="mon-row">
+                    <div class="mon-k">负载 / 磁盘 <span class="right mono" id="atopLoadText">-</span></div>
+                    <div class="layui-progress" lay-filter="atopDiskBar">
+                        <div class="layui-progress-bar" lay-percent="0%"></div>
+                    </div>
+                    <div class="mon-meta" id="atopDiskText"></div>
+                </div>
+                <div class="atop-split" style="margin-top:12px">
+                    <div>
+                        <div class="mon-meta">CPU 占用最高</div>
+                        <table class="atop-proc" id="atopTopCpu">
+                            <thead><tr><th>PID</th><th>名称</th><th>CPU</th><th>内存</th><th>磁盘</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div>
+                        <div class="mon-meta">内存占用最高</div>
+                        <table class="atop-proc" id="atopTopMem">
+                            <thead><tr><th>PID</th><th>名称</th><th>CPU</th><th>内存</th><th>磁盘</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+layui.use(['element', 'layer'], function () {
+    var layer = layui.layer, $ = layui.$, element = layui.element;
+
+    function fmtBytes(n) {
+        n = Number(n) || 0;
+        if (n >= 1073741824) return (n / 1073741824).toFixed(1) + ' GB';
+        if (n >= 1048576) return (n / 1048576).toFixed(1) + ' MB';
+        if (n >= 1024) return (n / 1024).toFixed(1) + ' KB';
+        return n + ' B';
+    }
+    function fmtKb(kb) {
+        kb = Number(kb) || 0;
+        if (kb >= 1048576) return (kb / 1048576).toFixed(1) + ' GB';
+        if (kb >= 1024) return (kb / 1024).toFixed(1) + ' MB';
+        return kb + ' KB';
+    }
+    function trimPct(n) {
+        var s = (Number(n) || 0).toFixed(1);
+        return s.replace(/\.0$/, '');
+    }
+    function gaugeCls(pct, warn, crit) {
+        if (pct >= crit) return 'layui-bg-red';
+        if (pct >= warn) return 'layui-bg-orange';
+        return '';
+    }
+    function setBar(filter, pct, warn, crit) {
+        var $bar = $('[lay-filter="' + filter + '"] .layui-progress-bar');
+        $bar.removeClass('layui-bg-red layui-bg-orange').addClass(gaugeCls(pct, warn, crit));
+        element.progress(filter, trimPct(pct) + '%');
+    }
+    function badge(cls, text) {
+        return $('<span>').addClass('atop-badge ' + cls).text(text)[0].outerHTML;
+    }
+    function diskBusy(sample) {
+        var disks = (sample && sample.disk) || [];
+        var max = 0, parts = [];
+        disks.forEach(function (d) {
+            var p = Number(d.busy_pct) || 0;
+            if (p > max) max = p;
+            parts.push((d.name || '?') + ' ' + trimPct(p) + '%');
+        });
+        return { max: max, text: parts.join(' · ') || '-' };
+    }
+    function fillProc($tb, rows) {
+        $tb.empty();
+        if (!rows || !rows.length) {
+            $tb.append('<tr><td class="atop-empty" colspan="5">无进程数据</td></tr>');
+            return;
+        }
+        rows.forEach(function (p) {
+            $tb.append('<tr><td class="mono"></td><td class="mono"></td><td class="mono"></td><td class="mono"></td><td class="mono"></td></tr>');
+            var $td = $tb.find('tr:last td');
+            $td.eq(0).text(p.pid != null ? p.pid : '');
+            $td.eq(1).text(p.name || '');
+            $td.eq(2).text(trimPct(p.cpu_pct) + '%');
+            $td.eq(3).text(p.rss_kb != null ? fmtKb(p.rss_kb) : '-');
+            $td.eq(4).text(p.disk_kb != null ? fmtKb(p.disk_kb) : '-');
+        });
+    }
+
+    var filling = false;
+
+    function applyAtop(res) {
+        var html = '';
+        if (res.installed) {
+            html += badge('ok', '已安装' + (res.version ? ' ' + res.version : ''));
+        } else {
+            html += badge('err', '未安装 atop');
+        }
+        if (res.service === 'active') html += badge('ok', '服务运行中');
+        else if (res.service) html += badge('warn', '服务 ' + res.service);
+        if (res.enabled === 'enabled') html += badge('mute', '开机自启');
+        if (res.last_log_mtime) html += badge('mute', '最近日志 ' + res.last_log_mtime);
+        if (res.interval_s) html += badge('mute', '间隔 ' + res.interval_s + 's');
+        if (res.log_path) html += '<span class="mono" style="color:#888;font-size:12px">' + $('<div>').text(res.log_path).html() + '</span>';
+        $('#atopStatus').html(html || '无状态');
+
+        filling = true;
+        var $file = $('#atopFile').empty();
+        (res.logs || []).forEach(function (l) {
+            $file.append($('<option>').val(l.name).text(l.name));
+        });
+        if (res.file) $file.val(res.file);
+        var $time = $('#atopTime').empty();
+        $time.append($('<option>').val('latest').text('最新一条'));
+        (res.times || []).forEach(function (t) {
+            $time.append($('<option>').val(t).text(t));
+        });
+        if (res.time) $time.val(res.time);
+        else $time.val('latest');
+        filling = false;
+        $('#atopToolbar').toggle(!!res.installed);
+
+        if (res.error) {
+            $('#atopErr').text(res.error).show();
+        } else {
+            $('#atopErr').hide().text('');
+        }
+
+        var $logs = $('#atopLogs').empty();
+        (res.logs || []).forEach(function (l) {
+            $logs.append('<tr><td class="mono"></td><td class="mono"></td><td class="mono"></td></tr>');
+            var $td = $logs.find('tr:last td');
+            $td.eq(0).text(l.name || '');
+            $td.eq(1).text(l.size != null ? fmtBytes(l.size) : '-');
+            $td.eq(2).text(l.mtime || '');
+        });
+
+        var recent = res.recent || [];
+        if (recent.length > 1) {
+            var $rb = $('#atopRecent').empty();
+            recent.forEach(function (s) {
+                var db = diskBusy(s);
+                $rb.append('<tr><td class="mono"></td><td></td><td></td><td></td><td class="mono"></td><td></td></tr>');
+                var $td = $rb.find('tr:last td');
+                $td.eq(0).text(s.time || '');
+                $td.eq(1).text(trimPct(s.cpu_busy_pct) + '%');
+                $td.eq(2).text(trimPct(s.mem_used_pct) + '%');
+                $td.eq(3).text(trimPct(s.swap_used_pct) + '%');
+                $td.eq(4).text(s.loadavg || '-');
+                $td.eq(5).text(db.text);
+            });
+            $('#atopRecentWrap').show();
+        } else {
+            $('#atopRecentWrap').hide();
+        }
+
+        var s = res.sample;
+        if (!s) {
+            $('#atopBody').toggle(!!(res.logs && res.logs.length));
+            if (!res.sample) {
+                $('#atopCpuText,#atopMemText,#atopSwapText,#atopLoadText,#atopDiskText').text('-');
+                $('#atopTopCpu tbody,#atopTopMem tbody').empty();
+            }
+            return;
+        }
+
+        $('#atopSampleLabel').text('采样详情 · ' + (res.file || '') + ' · ' + (s.time || '') + (s.interval_s ? ' · 间隔 ' + s.interval_s + 's' : ''));
+        $('#atopCpuText').text(trimPct(s.cpu_busy_pct) + '%（user ' + trimPct(s.cpu_user_pct) + '% / sys ' + trimPct(s.cpu_sys_pct) + '% / wait ' + trimPct(s.cpu_wait_pct) + '%）' + (s.nrcpu ? ' · ' + s.nrcpu + ' 核' : ''));
+        setBar('atopCpuBar', Number(s.cpu_busy_pct) || 0, 85, 95);
+        $('#atopMemText').text(fmtKb(s.mem_used_kb) + ' / ' + fmtKb(s.mem_total_kb) + ' · 可用 ' + fmtKb(s.mem_avail_kb) + ' · ' + trimPct(s.mem_used_pct) + '%');
+        setBar('atopMemBar', Number(s.mem_used_pct) || 0, 85, 95);
+        if (Number(s.swap_total_kb) > 0) {
+            $('#atopSwapRow').show();
+            $('#atopSwapText').text(fmtKb(s.swap_used_kb) + ' / ' + fmtKb(s.swap_total_kb) + ' · ' + trimPct(s.swap_used_pct) + '%');
+            setBar('atopSwapBar', Number(s.swap_used_pct) || 0, 50, 80);
+        } else {
+            $('#atopSwapRow').hide();
+        }
+        var db = diskBusy(s);
+        $('#atopLoadText').text('负载 ' + (s.loadavg || '-') + ' · 磁盘忙 ' + trimPct(db.max) + '%');
+        setBar('atopDiskBar', db.max, 80, 90);
+        $('#atopDiskText').text(db.text);
+        fillProc($('#atopTopCpu tbody'), res.top_cpu);
+        fillProc($('#atopTopMem tbody'), res.top_mem);
+        $('#atopBody').show();
+        element.render('progress');
+        setBar('atopCpuBar', Number(s.cpu_busy_pct) || 0, 85, 95);
+        setBar('atopMemBar', Number(s.mem_used_pct) || 0, 85, 95);
+        if (Number(s.swap_total_kb) > 0) setBar('atopSwapBar', Number(s.swap_used_pct) || 0, 50, 80);
+        setBar('atopDiskBar', db.max, 80, 90);
+    }
+
+    function loadAtop(showErr) {
+        var q = new URLSearchParams();
+        var f = $('#atopFile').val();
+        var t = $('#atopTime').val();
+        var n = $('#atopLatest').val() || '3';
+        if (f) q.set('file', f);
+        if (t) q.set('time', t);
+        q.set('latest', n);
+        fetch('/sys/atop?' + q.toString(), { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+            .then(function (r) {
+                if (r.status === 401) {
+                    if (showErr) layer.msg('未登录或会话已过期', { icon: 2 });
+                    return null;
+                }
+                return r.json();
+            })
+            .then(function (res) {
+                if (!res) return;
+                if (!res.ok && res.error) {
+                    $('#atopStatus').html(badge('err', res.error));
+                    if (showErr) layer.msg(res.error, { icon: 2 });
+                    return;
+                }
+                applyAtop(res);
+            })
+            .catch(function () {
+                if (showErr) layer.msg('网络错误', { icon: 2 });
+                $('#atopStatus').html(badge('err', '无法连接 /sys/atop'));
+            });
+    }
+
+    $('#btnAtopLoad, #btnAtopRefresh').on('click', function () { loadAtop(true); });
+    $('#atopFile').on('change', function () {
+        if (filling) return;
+        $('#atopTime').val('latest');
+        loadAtop(false);
+    });
+    $('#atopTime, #atopLatest').on('change', function () {
+        if (filling) return;
+        loadAtop(false);
+    });
+    loadAtop(false);
+});
+</script>
