@@ -422,7 +422,7 @@ layui.use(['element', 'layer', 'table'], function () {
 </script>
 
 <div class="layui-row layui-col-space15 dash-atop-row">
-    <div class="layui-col-md4">
+    <div class="layui-col-md6">
         <div class="panel-card" id="atopCard">
             <h3>
                 atop 历史
@@ -494,25 +494,7 @@ layui.use(['element', 'layer', 'table'], function () {
             </div>
         </div>
     </div>
-    <div class="layui-col-md4">
-        <div class="panel-card" id="atopProcCard">
-            <h3>
-                占用最高进程
-                <span class="mon-updated" id="atopProcUpdated">所选采样的进程快照</span>
-            </h3>
-            <div class="mon-meta">CPU 占用最高</div>
-            <table class="atop-proc" id="atopTopCpu">
-                <thead><tr><th>PID</th><th>名称</th><th>CPU</th><th>内存</th><th>磁盘</th></tr></thead>
-                <tbody></tbody>
-            </table>
-            <div class="mon-meta" style="margin-top:16px">内存占用最高</div>
-            <table class="atop-proc" id="atopTopMem">
-                <thead><tr><th>PID</th><th>名称</th><th>CPU</th><th>内存</th><th>磁盘</th></tr></thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </div>
-    <div class="layui-col-md4">
+    <div class="layui-col-md6">
         <div class="wp-login-stack">
         <div class="panel-card">
             <h3>
@@ -623,6 +605,7 @@ layui.use(['element', 'layer'], function () {
         return Array.isArray(rows) ? rows : [];
     }
     function fillProc($tb, rows, err) {
+        if (!$tb || !$tb.length) return;
         $tb.empty();
         rows = asProcRows(rows);
         if (!rows.length) {
@@ -715,12 +698,14 @@ layui.use(['element', 'layer'], function () {
             $('#atopCpuText,#atopMemText,#atopSwapText,#atopLoadText,#atopDiskText').text('-');
             fillProc($('#atopTopCpu tbody'), [], res.proc_error);
             fillProc($('#atopTopMem tbody'), [], res.proc_error);
-            $('#atopProcUpdated').text('所选采样的进程快照');
+            if ($('#atopProcUpdated').length) $('#atopProcUpdated').text('所选采样的进程快照');
             return;
         }
 
         $('#atopSampleLabel').text('采样详情 · ' + (res.file || '') + ' · ' + (s.time || '') + (s.interval_s ? ' · 间隔 ' + s.interval_s + 's' : ''));
-        $('#atopProcUpdated').text((s.time || '所选采样') + (res.file ? ' · ' + res.file : '') + (s.interval_s ? ' · 间隔 ' + s.interval_s + 's' : ''));
+        if ($('#atopProcUpdated').length) {
+            $('#atopProcUpdated').text((s.time || '所选采样') + (res.file ? ' · ' + res.file : '') + (s.interval_s ? ' · 间隔 ' + s.interval_s + 's' : ''));
+        }
         $('#atopCpuText').text(trimPct(s.cpu_busy_pct) + '%（user ' + trimPct(s.cpu_user_pct) + '% / sys ' + trimPct(s.cpu_sys_pct) + '% / wait ' + trimPct(s.cpu_wait_pct) + '%）' + (s.nrcpu ? ' · ' + s.nrcpu + ' 核' : ''));
         setBar('atopCpuBar', Number(s.cpu_busy_pct) || 0, 85, 95);
         $('#atopMemText').text(fmtKb(s.mem_used_kb) + ' / ' + fmtKb(s.mem_total_kb) + ' · 可用 ' + fmtKb(s.mem_avail_kb) + ' · ' + trimPct(s.mem_used_pct) + '%');
