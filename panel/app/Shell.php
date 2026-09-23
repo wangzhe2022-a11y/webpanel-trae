@@ -109,6 +109,13 @@ final class Shell
                 => ['ok' => true, 'data' => ['ok' => true], 'error' => ''],
             str_starts_with($script, 'wp-sys') && $a === 'info'
                 => ['ok' => true, 'data' => json_decode('{"ok":true,"hostname":"demo-srv","os":"AlmaLinux 8.10","kernel":"4.18.0-553","uptime":"3d 4h 12m","cpu_cores":4,"cpu_usage_pct":8.2,"loadavg":"0.21 0.18 0.10","load_1":0.21,"load_5":0.18,"load_15":0.10,"mem_total_kb":3880152,"mem_available_kb":2142200,"mem_used_kb":1737952,"mem_used_pct":44.8,"swap_total_kb":4194304,"swap_used_kb":102400,"swap_free_kb":4091904,"swap_used_pct":2.4,"disk":[{"fs":"/","size":"40G","used":"21G","avail":"19G","use_pct":53},{"fs":"/mnt/backup","size":"50G","used":"8.1G","avail":"42G","use_pct":16}],"top":[{"name":"mysqld","rss_kb":412000},{"name":"php-fpm","rss_kb":186000},{"name":"nginx","rss_kb":42000}],"services":[{"name":"nginx","unit":"nginx","status":"active"},{"name":"mysql","unit":"mysqld","status":"active"},{"name":"postgres","unit":"postgresql-16","status":"active"},{"name":"panel-php","unit":"php-fpm","status":"active"},{"name":"php74-fpm","unit":"php74-php-fpm","status":"active"},{"name":"php82-fpm","unit":"php82-php-fpm","status":"active"},{"name":"node:apidemo01","unit":"wp-node-apidemo01","status":"active"}],"sites":1,"databases":2}', true), 'error' => ''],
+            str_starts_with($script, 'wp-sys') && $a === 'logins'
+                => ['ok' => true, 'data' => ['ok' => true, 'logins' => [
+                    ['time' => 'Sep 23 13:51:08', 'user' => 'root', 'ip' => '203.0.113.10', 'method' => 'publickey'],
+                    ['time' => 'Sep 23 12:08:41', 'user' => 'trae_solo', 'ip' => '203.0.113.10', 'method' => 'publickey'],
+                    ['time' => 'Sep 23 09:22:15', 'user' => 'demo', 'ip' => '198.51.100.24', 'method' => 'password'],
+                    ['time' => 'Sep 22 22:14:03', 'user' => 'root', 'ip' => '203.0.113.10', 'method' => 'publickey'],
+                ]], 'error' => ''],
             str_starts_with($script, 'wp-wp')
                 => ['ok' => true, 'data' => ['ok' => true, 'domain' => $args[2] ?? 'demo', 'admin' => $args[6] ?? 'admin', 'url' => 'http://demo/wp-admin/'], 'error' => ''],
             str_starts_with($script, 'wp-pma') && $a === 'status'
