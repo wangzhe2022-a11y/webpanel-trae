@@ -15,17 +15,6 @@ if ($load1 == 0.0 && $loadavg !== '-' && $loadavg !== '') {
     $load1 = (float) explode(' ', $loadavg)[0];
 }
 $loadRatio = $cpuCores > 0 ? $load1 / $cpuCores : $load1;
-$rootDisk = null;
-foreach (($info['disk'] ?? []) as $d) {
-    if (($d['fs'] ?? '') === '/') {
-        $rootDisk = $d;
-        break;
-    }
-}
-if ($rootDisk === null && !empty($info['disk'][0]) && is_array($info['disk'][0])) {
-    $rootDisk = $info['disk'][0];
-}
-$storagePct = (float) (is_array($rootDisk) ? ($rootDisk['use_pct'] ?? 0) : 0);
 $cpuRing = max(0.0, min(100.0, $cpuPct));
 $memRing = max(0.0, min(100.0, $memPct));
 ?>
@@ -71,22 +60,6 @@ $memRing = max(0.0, min(100.0, $memPct));
                 主机监控
                 <span class="mon-updated" id="monUpdated">每 15 秒自动刷新</span>
             </h3>
-            <div class="wp-perf wp-perf-single" id="wpPerf">
-                <div class="wp-ring-wrap">
-                    <div class="wp-ring<?= $cpuRing >= 95 ? ' is-crit' : ($cpuRing >= 85 ? ' is-warn' : '') ?>" id="ringCpu">
-                        <svg viewBox="0 0 36 36" aria-hidden="true">
-                            <circle class="wp-ring-track" cx="18" cy="18" r="15.9155"></circle>
-                            <circle class="wp-ring-value" cx="18" cy="18" r="15.9155"
-                                stroke-dasharray="<?= e(rtrim(rtrim(number_format($cpuRing, 1, '.', ''), '0'), '.') ?: '0') ?> 100"></circle>
-                        </svg>
-                        <div class="wp-ring-center">
-                            <span class="wp-ring-num" id="ringCpuNum"><?= e(rtrim(rtrim(number_format($cpuRing, 1, '.', ''), '0'), '.') ?: '0') ?>%</span>
-                        </div>
-                    </div>
-                    <div class="wp-ring-label">CPU</div>
-                    <div class="wp-ring-sub mono" id="ringCpuSub"><?= e($loadavg) ?><?= $cpuCores ? ' · ' . $cpuCores . ' 核' : '' ?></div>
-                </div>
-            </div>
             <div class="wp-host-meta">
                 <div class="wp-host-line"><span>主机</span><b id="hostName"><?= e((string) ($info['hostname'] ?? '-')) ?></b></div>
                 <div class="wp-host-line"><span>内核</span><b class="mono" id="hostKernel"><?= e((string) ($info['kernel'] ?? '-')) ?></b></div>
@@ -101,14 +74,6 @@ $memRing = max(0.0, min(100.0, $memPct));
                 </div>
                 <div class="wp-host-line"><span>系统</span><b id="hostOs"><?= e((string) ($info['os'] ?? '-')) ?></b></div>
                 <div class="wp-host-line"><span>运行</span><b id="hostUptime"><?= e((string) ($info['uptime'] ?? '-')) ?></b></div>
-            </div>
-            <div class="mon-row" id="swapRow" <?= $swapTotal > 0 ? '' : 'style="display:none"' ?>>
-                <div class="mon-k">交换分区 <span class="right mono" id="swapText">
-                    <?= $swapTotal ? e(format_bytes($swapUsed) . ' / ' . format_bytes($swapTotal) . ' · ' . rtrim(rtrim(number_format($swapPct, 1, '.', ''), '0'), '.') . '%') : '' ?>
-                </span></div>
-                <div class="layui-progress" lay-filter="swapBar">
-                    <div class="layui-progress-bar <?= e(panel_gauge_class($swapPct, 50, 80)) ?>" lay-percent="<?= e((string) $swapPct) ?>%"></div>
-                </div>
             </div>
             <div class="mon-meta" id="topLabel" <?= empty($info['top']) ? 'style="display:none"' : '' ?>>占用内存最多</div>
             <table class="mon-top" id="topTable" <?= empty($info['top']) ? 'style="display:none"' : '' ?>>
@@ -126,7 +91,21 @@ $memRing = max(0.0, min(100.0, $memPct));
     <div class="layui-col-md4">
         <div class="panel-card">
             <h3>磁盘</h3>
-            <div class="wp-perf wp-perf-single">
+            <div class="wp-perf wp-perf-pair" id="wpPerf">
+                <div class="wp-ring-wrap">
+                    <div class="wp-ring<?= $cpuRing >= 95 ? ' is-crit' : ($cpuRing >= 85 ? ' is-warn' : '') ?>" id="ringCpu">
+                        <svg viewBox="0 0 36 36" aria-hidden="true">
+                            <circle class="wp-ring-track" cx="18" cy="18" r="15.9155"></circle>
+                            <circle class="wp-ring-value" cx="18" cy="18" r="15.9155"
+                                stroke-dasharray="<?= e(rtrim(rtrim(number_format($cpuRing, 1, '.', ''), '0'), '.') ?: '0') ?> 100"></circle>
+                        </svg>
+                        <div class="wp-ring-center">
+                            <span class="wp-ring-num" id="ringCpuNum"><?= e(rtrim(rtrim(number_format($cpuRing, 1, '.', ''), '0'), '.') ?: '0') ?>%</span>
+                        </div>
+                    </div>
+                    <div class="wp-ring-label">CPU</div>
+                    <div class="wp-ring-sub mono" id="ringCpuSub"><?= e($loadavg) ?><?= $cpuCores ? ' · ' . $cpuCores . ' 核' : '' ?></div>
+                </div>
                 <div class="wp-ring-wrap">
                     <div class="wp-ring<?= $memRing >= 95 ? ' is-crit' : ($memRing >= 85 ? ' is-warn' : '') ?>" id="ringMem">
                         <svg viewBox="0 0 36 36" aria-hidden="true">
@@ -142,19 +121,12 @@ $memRing = max(0.0, min(100.0, $memPct));
                     <div class="wp-ring-sub mono" id="ringMemSub"><?= $memTotal ? e(format_bytes($memUsed) . ' / ' . format_bytes($memTotal)) : '-' ?></div>
                 </div>
             </div>
-            <div class="wp-storage" id="wpStorage">
-                <div class="wp-storage-head">
-                    <span class="wp-storage-state" id="storageState"><?= ($storagePct >= 90 ? '紧张' : ($storagePct >= 80 ? '注意' : '正常')) . ' · ' . (int) $storagePct . '%' ?></span>
-                    <span class="wp-storage-meta mono" id="storageMeta"><?php
-                        if ($rootDisk) {
-                            echo e('已用 ' . (string) ($rootDisk['used'] ?? '') . ' / 总量 ' . (string) ($rootDisk['size'] ?? ''));
-                        } else {
-                            echo '暂无磁盘数据';
-                        }
-                    ?></span>
-                </div>
-                <div class="layui-progress layui-progress-big" lay-filter="storageBar">
-                    <div class="layui-progress-bar <?= e(panel_gauge_class($storagePct, 80, 90)) ?>" lay-percent="<?= (int) $storagePct ?>%"></div>
+            <div class="mon-row" id="swapRow" <?= $swapTotal > 0 ? '' : 'style="display:none"' ?>>
+                <div class="mon-k">交换分区 <span class="right mono" id="swapText">
+                    <?= $swapTotal ? e(format_bytes($swapUsed) . ' / ' . format_bytes($swapTotal) . ' · ' . rtrim(rtrim(number_format($swapPct, 1, '.', ''), '0'), '.') . '%') : '' ?>
+                </span></div>
+                <div class="layui-progress" lay-filter="swapBar">
+                    <div class="layui-progress-bar <?= e(panel_gauge_class($swapPct, 50, 80)) ?>" lay-percent="<?= e((string) $swapPct) ?>%"></div>
                 </div>
             </div>
             <div id="diskMounts">
@@ -249,6 +221,7 @@ layui.use(['element', 'layer', 'table'], function () {
         $el.find('.wp-ring-num').text(trimPct(pct) + '%');
     }
     function applyStorage(disks) {
+        if (!$('#wpStorage').length) return;
         disks = disks || [];
         var d = disks[0] || null;
         disks.forEach(function (row) {

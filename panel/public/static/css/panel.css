@@ -324,6 +324,15 @@ body.layui-layout-body {
     justify-content: center;
     gap: 0;
 }
+.wp-perf-pair {
+    justify-content: space-evenly;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+.wp-perf-pair .wp-ring {
+    width: 108px;
+    height: 108px;
+}
 .wp-ring-wrap {
     flex: 0 0 auto;
     text-align: center;
