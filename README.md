@@ -39,18 +39,33 @@
 - 全站 CSRF token、登录失败限速（10 分钟 8 次）、会话 httpOnly/SameSite、面板自签 HTTPS
 - SELinux 安装时切为 permissive（与宝塔等第三方面板一致，可日后自行加固）
 
-## 一键安装（腾讯云 AlmaLinux 8.10）
+## 一键安装
+
+### AlmaLinux 8.10
 
 ```bash
-# 1. 上传本仓库到服务器（或 git clone）
 dnf install -y git
 git clone <你的仓库地址> webpanel && cd webpanel
-
-# 2. 执行安装（全程约 10-20 分钟，取决于网速）
 sudo bash install.sh
-# 可选：指定面板端口/管理员/证书邮箱
-# sudo PANEL_PORT=8888 PANEL_ADMIN=admin ACME_EMAIL=you@example.com bash install.sh
+# 可选：sudo PANEL_PORT=8888 PANEL_ADMIN=admin ACME_EMAIL=you@example.com bash install.sh
 ```
+
+### AlmaLinux 10.x
+
+```bash
+dnf install -y git
+git clone <你的仓库地址> webpanel && cd webpanel
+sudo bash install-al10.sh
+# 可选：sudo PANEL_PORT=8888 PANEL_ADMIN=admin ACME_EMAIL=you@example.com bash install-al10.sh
+```
+
+> **AlmaLinux 10 与 8 的差异**：
+> - MySQL 8.4 LTS（8.0 在 EL10 已停更）
+> - PostgreSQL 16 用系统自带（无需 PGDG 仓库）
+> - 移除所有 `dnf module` 命令（EL10 已废弃 DNF Modules）
+> - PHP 8.1 已 EOL，多版本为 7.4 / 8.0 / 8.2 / 8.3
+> - 面板自身用系统 PHP 8.4
+> - CRB 仓库自动启用
 
 安装器会完成：Nginx、MySQL 8（root 随机密码写入 `/root/.my.cnf`）、PostgreSQL 16（仅监听
 127.0.0.1，peer + scram-sha-256）、Node.js 22 LTS、5 个版本 PHP-FPM、
@@ -766,6 +781,7 @@ sudo bash /usr/local/webpanel/uninstall.sh --purge
 
 ```
 install.sh                  AlmaLinux 8 一键安装器
+install-al10.sh             AlmaLinux 10 一键安装器
 uninstall.sh
 config/
   nginx/                    面板 vhost、站点 HTTP/HTTPS 模板、Node 反向代理模板、phpMyAdmin include
