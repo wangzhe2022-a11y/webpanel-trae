@@ -295,18 +295,37 @@ body.layui-layout-body {
     border-color: var(--wp-border);
 }
 
-/* Three equal columns: 主机监控 | 磁盘 | 服务状态. Summary cards sit in one
-   4-col row under that band (tied to 主机监控, full width so they stay readable). */
-.wp-mon-stack { clear: both; }
+/* Three equal columns: 主机监控 | 磁盘 | 服务状态.
+   Summary cards live inside the 主机监控 column as a compact 2x2. */
 .wp-mon-band > [class*="layui-col"] > .panel-card {
     min-width: 0;
     margin-bottom: 0;
 }
 .wp-host-stats {
-    margin-top: 15px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 14px;
+}
+.wp-host-stats .stat-card {
+    min-width: 0;
+    min-height: 68px;
+    padding: 10px 12px;
+    margin: 0;
+}
+.wp-host-stats .stat-card .num {
+    font-size: 22px;
 }
 .wp-host-stats .stat-card .label {
+    font-size: 12px;
+    margin-top: 2px;
     word-break: break-word;
+    padding-right: 22px;
+}
+.wp-host-stats .stat-card .layui-icon {
+    font-size: 26px;
+    right: 8px;
+    top: 10px;
 }
 .wp-svc-card {
     overflow-x: auto;

@@ -25,7 +25,6 @@ $memRing = max(0.0, min(100.0, $memPct));
         <div class="wp-clock-tz">本地时间</div>
     </div>
 </div>
-<div class="wp-mon-stack">
 <div class="layui-row layui-col-space15 wp-mon-band">
     <div class="layui-col-md4">
         <div class="panel-card">
@@ -59,6 +58,25 @@ $memRing = max(0.0, min(100.0, $memPct));
                 <?php endforeach; ?>
                 </tbody>
             </table>
+            <div class="wp-host-stats">
+                <div class="stat-card c-blue">
+                    <span class="layui-icon layui-icon-website"></span>
+                    <div class="num"><?= (int) $stats['sites'] ?></div><div class="label">托管网站</div>
+                </div>
+                <div class="stat-card c-green">
+                    <span class="layui-icon layui-icon-table"></span>
+                    <div class="num"><?= (int) $stats['databases'] ?></div><div class="label">MySQL 数据库</div>
+                </div>
+                <div class="stat-card c-orange">
+                    <span class="layui-icon layui-icon-auz"></span>
+                    <div class="num"><?= (int) $stats['ssl'] ?></div><div class="label">已启用 HTTPS</div>
+                </div>
+                <div class="stat-card c-purple">
+                    <span class="layui-icon layui-icon-cpu"></span>
+                    <div class="num" id="statCpuPct"><?= isset($info['cpu_usage_pct']) ? e(rtrim(rtrim(number_format($cpuPct, 1, '.', ''), '0'), '.')) . '%' : e((string) ($cpuCores ?: '-')) ?></div>
+                    <div class="label" id="statCpuLabel">CPU<?= $cpuCores ? ' · ' . $cpuCores . ' 核' : '' ?> · <?= e((string) ($info['hostname'] ?? '')) ?></div>
+                </div>
+            </div>
         </div>
     </div>
     <div class="layui-col-md4">
@@ -157,34 +175,6 @@ $memRing = max(0.0, min(100.0, $memPct));
             </table>
         </div>
     </div>
-</div>
-<div class="layui-row layui-col-space15 wp-stat-row wp-host-stats">
-    <div class="layui-col-sm6 layui-col-md3">
-        <div class="stat-card c-blue">
-            <span class="layui-icon layui-icon-website"></span>
-            <div class="num"><?= (int) $stats['sites'] ?></div><div class="label">托管网站</div>
-        </div>
-    </div>
-    <div class="layui-col-sm6 layui-col-md3">
-        <div class="stat-card c-green">
-            <span class="layui-icon layui-icon-table"></span>
-            <div class="num"><?= (int) $stats['databases'] ?></div><div class="label">MySQL 数据库</div>
-        </div>
-    </div>
-    <div class="layui-col-sm6 layui-col-md3">
-        <div class="stat-card c-orange">
-            <span class="layui-icon layui-icon-auz"></span>
-            <div class="num"><?= (int) $stats['ssl'] ?></div><div class="label">已启用 HTTPS</div>
-        </div>
-    </div>
-    <div class="layui-col-sm6 layui-col-md3">
-        <div class="stat-card c-purple">
-            <span class="layui-icon layui-icon-cpu"></span>
-            <div class="num" id="statCpuPct"><?= isset($info['cpu_usage_pct']) ? e(rtrim(rtrim(number_format($cpuPct, 1, '.', ''), '0'), '.')) . '%' : e((string) ($cpuCores ?: '-')) ?></div>
-            <div class="label" id="statCpuLabel">CPU<?= $cpuCores ? ' · ' . $cpuCores . ' 核' : '' ?> · <?= e((string) ($info['hostname'] ?? '')) ?></div>
-        </div>
-    </div>
-</div>
 </div>
 
 <script>
