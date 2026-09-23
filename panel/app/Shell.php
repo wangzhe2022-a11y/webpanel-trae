@@ -131,6 +131,8 @@ final class Shell
                 => ['ok' => true, 'data' => ['ok' => true, 'name' => 'webpanel-' . ($args[1] ?? 'full') . '-' . date('Ymd-His') . '.tar.gz', 'scope' => $args[1] ?? 'full'], 'error' => ''],
             str_starts_with($script, 'wp-backup')
                 => ['ok' => true, 'data' => ['ok' => true], 'error' => ''],
+            str_starts_with($script, 'wp-atop')
+                => self::dryAtop($args),
             default => ['ok' => true, 'data' => ['ok' => true], 'error' => ''],
         };
     }
@@ -189,5 +191,93 @@ final class Shell
     {
         @unlink(self::PMA_MARKER);
         return ['ok' => true, 'data' => ['ok' => true], 'error' => ''];
+    }
+
+    /** Demo atop history so the dashboard card is clickable without host logs. */
+    private static function dryAtop(array $args): array
+    {
+        $today = date('Ymd');
+        $yday = date('Ymd', strtotime('-1 day'));
+        $now = date('H:i');
+        $file = (string) ($args[1] ?? '');
+        if ($file === '' || $file === 'auto' || $file === '-') {
+            $file = 'atop_' . $today;
+        }
+        $time = (string) ($args[2] ?? '');
+        if ($time === '' || $time === 'latest' || $time === '-') {
+            $time = $now;
+        }
+        $latest = (int) ($args[3] ?? 1);
+        if ($latest < 1) {
+            $latest = 1;
+        }
+        if ($latest > 24) {
+            $latest = 24;
+        }
+
+        $sample = [
+            'time' => $time,
+            'epoch' => time(),
+            'interval_s' => 600,
+            'nrcpu' => 4,
+            'cpu_busy_pct' => 12.4,
+            'cpu_user_pct' => 8.1,
+            'cpu_sys_pct' => 3.2,
+            'cpu_wait_pct' => 1.1,
+            'load_1' => 0.42,
+            'load_5' => 0.31,
+            'load_15' => 0.22,
+            'loadavg' => '0.42 0.31 0.22',
+            'mem_total_kb' => 8048576,
+            'mem_used_kb' => 3211264,
+            'mem_avail_kb' => 4837312,
+            'mem_used_pct' => 39.9,
+            'cache_kb' => 1048576,
+            'swap_total_kb' => 4194304,
+            'swap_used_kb' => 102400,
+            'swap_used_pct' => 2.4,
+            'disk' => [['name' => 'vda', 'busy_pct' => 4.2, 'reads' => 120, 'writes' => 48]],
+        ];
+        $recent = [];
+        for ($i = $latest - 1; $i >= 0; $i--) {
+            $row = $sample;
+            $row['time'] = date('H:i', strtotime($time) - ($i * 600));
+            $row['cpu_busy_pct'] = round(10 + $i * 1.2, 1);
+            $row['mem_used_pct'] = round(38 + $i * 0.4, 1);
+            $recent[] = $row;
+        }
+        $times = ['00:00', '06:00', '12:00', '18:00', $time];
+        $times = array_values(array_unique($times));
+
+        return ['ok' => true, 'data' => [
+            'ok' => true,
+            'installed' => true,
+            'version' => '2.7.1-dryrun',
+            'service' => 'active',
+            'enabled' => 'enabled',
+            'log_path' => '/var/log/atop',
+            'interval_s' => 600,
+            'last_log_mtime' => date('Y-m-d H:i:s'),
+            'logs' => [
+                ['name' => 'atop_' . $today, 'size' => 1843200, 'mtime' => date('Y-m-d H:i:s')],
+                ['name' => 'atop_' . $yday, 'size' => 2105344, 'mtime' => date('Y-m-d', strtotime('-1 day')) . ' 23:50:00'],
+            ],
+            'file' => $file,
+            'time' => $time,
+            'times' => $times,
+            'sample' => $sample,
+            'recent' => $recent,
+            'top_cpu' => [
+                ['pid' => 1842, 'name' => 'mysqld', 'cpu_pct' => 6.2, 'rss_kb' => 412000, 'disk_kb' => 8192],
+                ['pid' => 2201, 'name' => 'php-fpm', 'cpu_pct' => 3.1, 'rss_kb' => 186000, 'disk_kb' => 1024],
+                ['pid' => 991, 'name' => 'nginx', 'cpu_pct' => 0.8, 'rss_kb' => 42000, 'disk_kb' => 256],
+            ],
+            'top_mem' => [
+                ['pid' => 1842, 'name' => 'mysqld', 'cpu_pct' => 6.2, 'rss_kb' => 412000, 'disk_kb' => 8192],
+                ['pid' => 2201, 'name' => 'php-fpm', 'cpu_pct' => 3.1, 'rss_kb' => 186000, 'disk_kb' => 1024],
+                ['pid' => 1, 'name' => 'systemd', 'cpu_pct' => 0.1, 'rss_kb' => 9800, 'disk_kb' => 0],
+            ],
+            'error' => '',
+        ], 'error' => ''];
     }
 }

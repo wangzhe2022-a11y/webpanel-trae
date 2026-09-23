@@ -29,6 +29,70 @@ class ServiceController extends Controller
         $this->ok($info);
     }
 
+    public function atop(): void
+    {
+        $this->requireLogin();
+
+        $file = trim((string) ($_GET['file'] ?? 'auto'));
+        $time = trim((string) ($_GET['time'] ?? 'latest'));
+        $latest = (int) ($_GET['latest'] ?? 1);
+        $top = (int) ($_GET['top'] ?? 8);
+
+        if ($file === '') {
+            $file = 'auto';
+        }
+        if ($file !== 'auto' && !preg_match('/^atop_\d{8}$/', $file)) {
+            $this->fail('无效的 atop 日志文件名');
+        }
+        if ($time === '') {
+            $time = 'latest';
+        }
+        if ($time !== 'latest' && !preg_match('/^\d{2}:\d{2}$/', $time)) {
+            $this->fail('无效的采样时间（HH:MM）');
+        }
+        if ($latest < 1) {
+            $latest = 1;
+        }
+        if ($latest > 24) {
+            $latest = 24;
+        }
+        if ($top < 3) {
+            $top = 3;
+        }
+        if ($top > 20) {
+            $top = 20;
+        }
+
+        $r = Shell::sudo('wp-atop.sh', ['info', $file, $time, (string) $latest, (string) $top]);
+        if (!$r['ok']) {
+            $this->ok([
+                'installed' => false,
+                'version' => '',
+                'service' => 'unknown',
+                'enabled' => 'unknown',
+                'log_path' => '/var/log/atop',
+                'interval_s' => 600,
+                'last_log_mtime' => '',
+                'logs' => [],
+                'file' => $file === 'auto' ? '' : $file,
+                'time' => '',
+                'times' => [],
+                'sample' => null,
+                'recent' => [],
+                'top_cpu' => [],
+                'top_mem' => [],
+                'error' => '无法读取 atop：' . ($r['error'] !== '' ? $r['error'] : '请确认已部署 wp-atop.sh 并更新 sudoers'),
+            ]);
+        }
+
+        $data = $r['data'];
+        unset($data['ok']);
+        if (!isset($data['installed'])) {
+            $data['installed'] = false;
+        }
+        $this->ok($data);
+    }
+
     public function svc(): void
     {
         $this->requireLogin();

@@ -55,6 +55,24 @@ $nav = [
     .secret-box { background: #f7f7f7; border: 1px dashed #bbb; border-radius: 6px; padding: 12px; margin: 10px 0; word-break: break-all; }
     .secret-box b { color: #333; }
     .secret-box .v { color: #c21f39; }
+    .atop-badge { display: inline-block; padding: 1px 8px; border-radius: 4px; font-size: 12px; margin-right: 6px; line-height: 20px; }
+    .atop-badge.ok { background: #e8f5e9; color: #2e7d32; }
+    .atop-badge.warn { background: #fff3e0; color: #e65100; }
+    .atop-badge.err { background: #ffebee; color: #c62828; }
+    .atop-badge.mute { background: #f2f2f2; color: #666; }
+    .atop-toolbar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin: 12px 0 14px; }
+    .atop-toolbar label { font-size: 13px; color: #555; }
+    .atop-toolbar .layui-input, .atop-toolbar .layui-select { height: 32px; }
+    .atop-empty { color: #888; font-size: 13px; padding: 8px 0 4px; }
+    .atop-logs { width: 100%; margin: 0 0 12px; }
+    .atop-logs td, .atop-logs th { font-size: 12px; }
+    .atop-proc { width: 100%; margin-top: 4px; }
+    .atop-proc th { text-align: left; font-size: 12px; color: #888; font-weight: 400; padding: 2px 6px 4px 0; }
+    .atop-proc th:last-child, .atop-proc td:last-child { text-align: right; }
+    .atop-proc td { padding: 2px 6px 2px 0; font-size: 12px; color: #555; }
+    .atop-proc td:last-child { color: #888; }
+    .atop-split { display: flex; flex-wrap: wrap; gap: 16px; }
+    .atop-split > div { flex: 1 1 280px; min-width: 0; }
 </style>
 </head>
 <body class="layui-layout-body">
