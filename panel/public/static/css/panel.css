@@ -174,14 +174,18 @@ body.layui-layout-body {
 }
 .panel-card h3 .layui-btn { margin-top: -2px; }
 
-/* Same layui-row + col-md6 + space15 as the host/services row. clear:both
-   keeps each pair on its own full-width band (atop above, login below).
-   No flex/gap/overflow:hidden — those clipped the left h3 (“最近登录”)
-   and fought space15 padding. */
-.dash-login-row,
+/* Desktop: one 3-column band — atop | processes | stacked login cards.
+   clear:both keeps the band below the host/services row. */
 .dash-atop-row {
     clear: both;
     margin-top: 16px;
+}
+.wp-atop-sample {
+    display: flex;
+    flex-direction: column;
+}
+.wp-login-stack > .panel-card:last-child {
+    margin-bottom: 0;
 }
 
 .mon-row { margin-bottom: 16px; }
