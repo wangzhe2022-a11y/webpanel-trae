@@ -19,14 +19,14 @@ class DashboardController extends Controller
         ];
 
         $recentLogins = Db::all(
-            "SELECT actor, ip, ts FROM action_log WHERE action = 'login' ORDER BY id DESC LIMIT 10"
+            "SELECT actor, ip, ts FROM action_log WHERE action = 'login' ORDER BY id DESC LIMIT 12"
         );
 
         $this->render('dashboard', [
             'info' => $info,
             'stats' => $stats,
             'recentLogins' => $recentLogins,
-            'sshLogins' => $this->sshLogins(),
+            'sshLogins' => $this->sshLogins(12),
         ]);
     }
 
@@ -38,7 +38,7 @@ class DashboardController extends Controller
      *
      * @return list<array{user: string, ip: string, method: string, time: string}>
      */
-    private function sshLogins(int $limit = 10): array
+    private function sshLogins(int $limit = 12): array
     {
         $res = Shell::sudo('wp-sys.sh', ['logins', (string) $limit]);
         if (!$res['ok'] || !is_array($res['data']['logins'] ?? null)) {

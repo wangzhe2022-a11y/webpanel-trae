@@ -174,7 +174,7 @@ body.layui-layout-body {
 }
 .panel-card h3 .layui-btn { margin-top: -2px; }
 
-/* Desktop: 3-column band — atop | processes | SSH 登录.
+/* Desktop: 2-column band — atop | processes.
    clear:both keeps the band below the monitoring row. */
 .dash-atop-row {
     clear: both;
@@ -292,11 +292,41 @@ body.layui-layout-body {
     border-color: var(--wp-border);
 }
 
-/* Three equal columns: 主机监控 | 服务状态 | 最近登录.
-   磁盘 sits beside the clock in .wp-dash-clock-row; summary cards stay in 主机监控. */
+/* Three equal columns: 主机监控 | 服务状态 | 最近登录(+SSH stacked).
+   Right column stacks 最近登录 above SSH / 系统登录. */
+.wp-login-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+.wp-login-stack > .panel-card,
 .wp-mon-band > [class*="layui-col"] > .panel-card {
     min-width: 0;
     margin-bottom: 0;
+}
+.wp-login-limit-wrap {
+    float: right;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 10px;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--wp-text-muted);
+    line-height: 28px;
+}
+.wp-login-limit {
+    width: 56px;
+    height: 26px;
+    padding: 0 4px;
+    border-radius: 8px;
+    border: 1px solid var(--wp-border);
+    background: var(--wp-surface-soft);
+    color: var(--wp-text);
+    font-size: 12px;
+}
+.wp-login-table .wp-login-row[hidden] {
+    display: none !important;
 }
 .wp-host-stats {
     display: grid;
@@ -544,32 +574,38 @@ html[data-theme="dark"] .wp-dash-clock .wp-clock-time { color: #fff; }
 html[data-theme="dark"] .wp-dash-clock .wp-clock-date { color: rgba(255, 255, 255, 0.72); }
 html[data-theme="dark"] .wp-clock-tz { color: rgba(255, 255, 255, 0.48); }
 
-/* ---- header chrome: clock + top nav (both themes) ------------------------ */
-/* Dashboard already has the large CasaOS clock card — hide the header companion. */
-body.wp-page-dashboard .layui-header > .wp-clock {
-    display: none;
-}
-.wp-clock {
+/* ---- header chrome: compact clock + top nav (both themes) ---------------- */
+/* Dashboard uses the large CasaOS clock card — no header companion there. */
+.header-right > .wp-clock {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    min-width: 168px;
-    padding: 0 16px 0 6px;
+    align-items: flex-end;
+    min-width: 0;
+    max-width: 148px;
+    height: 34px;
+    padding: 0 4px 0 0;
+    margin: 0;
     line-height: 1.05;
     flex: 0 0 auto;
+    text-align: right;
 }
-.wp-clock-time {
-    font-size: 34px;
-    font-weight: 700;
-    letter-spacing: 0.03em;
+.header-right > .wp-clock .wp-clock-time {
+    font-size: 15px;
+    font-weight: 650;
+    letter-spacing: 0.02em;
     color: var(--wp-text);
     font-variant-numeric: tabular-nums;
+    line-height: 1.1;
 }
-.wp-clock-date {
-    font-size: 13px;
+.header-right > .wp-clock .wp-clock-date {
+    font-size: 10px;
     color: var(--wp-text-muted);
-    margin-top: 4px;
+    margin-top: 2px;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 148px;
 }
 .wp-top-nav {
     display: flex;
@@ -719,8 +755,8 @@ html[data-theme="dark"] .layui-layout-admin .layui-header {
     color: #fff;
 }
 html[data-theme="dark"] .layui-layout-admin .layui-logo { color: #fff; }
-html[data-theme="dark"] .wp-clock-time { color: #fff; }
-html[data-theme="dark"] .wp-clock-date { color: rgba(255, 255, 255, 0.62); }
+html[data-theme="dark"] .header-right > .wp-clock .wp-clock-time { color: #fff; }
+html[data-theme="dark"] .header-right > .wp-clock .wp-clock-date { color: rgba(255, 255, 255, 0.62); }
 html[data-theme="dark"] .wp-top-nav a { color: rgba(255, 255, 255, 0.82); }
 html[data-theme="dark"] .wp-top-nav a:hover {
     background: rgba(255, 255, 255, 0.08);
@@ -904,16 +940,15 @@ html[data-theme="dark"] .fm-crumb a { color: #8fb4ff; }
 html[data-theme="dark"] .fm-empty .layui-icon { color: rgba(255, 255, 255, 0.35); }
 
 @media (max-width: 1100px) {
-    .wp-clock { min-width: 132px; padding-right: 10px; }
-    .wp-clock .wp-clock-time { font-size: 26px; }
+    .header-right > .wp-clock { max-width: 108px; }
+    .header-right > .wp-clock .wp-clock-date { display: none; }
     .wp-dash-clock { min-width: 220px; max-width: 280px; }
     .wp-dash-clock .wp-clock-time { font-size: 44px; }
     .wp-top-nav a span:not(.layui-icon) { display: none; }
     .wp-top-nav a { padding: 0 9px; }
 }
 @media (max-width: 720px) {
-    .wp-clock .wp-clock-time { font-size: 22px; }
-    .wp-clock .wp-clock-date { font-size: 11px; }
+    .header-right > .wp-clock { display: none; }
     .wp-dash-clock-row {
         flex-direction: column;
     }

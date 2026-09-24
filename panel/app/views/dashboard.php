@@ -203,19 +203,27 @@ $ringClass = static function (float $pct, float $warn, float $crit): string {
         </div>
     </div>
     <div class="layui-col-md4">
+        <div class="wp-login-stack">
         <div class="panel-card">
             <h3>
                 最近登录
-                <span class="mon-updated">最近 10 条登录记录</span>
+                <label class="wp-login-limit-wrap">
+                    显示
+                    <select id="recentLoginLimit" class="wp-login-limit" aria-label="最近登录显示条数">
+                        <option value="6" selected>6</option>
+                        <option value="12">12</option>
+                    </select>
+                </label>
+                <span class="mon-updated" id="recentLoginHint">最近 6 条登录记录</span>
             </h3>
-            <table class="layui-table" style="margin:0">
+            <table class="layui-table wp-login-table" style="margin:0">
                 <thead><tr><th>用户</th><th>IP 地址</th><th>登录时间</th></tr></thead>
-                <tbody>
+                <tbody id="recentLoginBody">
                 <?php if (empty($recentLogins)): ?>
-                    <tr><td colspan="3" style="text-align:center;color:#999">暂无登录记录</td></tr>
+                    <tr class="wp-login-empty"><td colspan="3" style="text-align:center;color:#999">暂无登录记录</td></tr>
                 <?php else: ?>
-                    <?php foreach ($recentLogins as $log): ?>
-                        <tr>
+                    <?php foreach ($recentLogins as $i => $log): ?>
+                        <tr class="wp-login-row" data-i="<?= (int) $i ?>"<?= $i >= 6 ? ' hidden' : '' ?>>
                             <td><?= e($log['actor'] ?? '-') ?></td>
                             <td class="mono"><?= e($log['ip'] ?? '-') ?></td>
                             <td class="mono"><?= e($log['ts'] ?? '-') ?></td>
@@ -225,6 +233,45 @@ $ringClass = static function (float $pct, float $warn, float $crit): string {
                 </tbody>
             </table>
         </div>
+        <div class="panel-card">
+            <h3>
+                SSH / 系统登录
+                <label class="wp-login-limit-wrap">
+                    显示
+                    <select id="sshLoginLimit" class="wp-login-limit" aria-label="SSH 登录显示条数">
+                        <option value="6" selected>6</option>
+                        <option value="12">12</option>
+                    </select>
+                </label>
+                <span class="mon-updated" id="sshLoginHint">SSH 认证成功 · 最近 6 条</span>
+            </h3>
+            <table class="layui-table wp-login-table" style="margin:0">
+                <thead><tr><th>用户</th><th>来源 IP</th><th style="width:80px">认证</th><th>登录时间</th></tr></thead>
+                <tbody id="sshLoginBody">
+                <?php if (empty($sshLogins)): ?>
+                    <tr class="wp-login-empty"><td colspan="4" style="text-align:center;color:#999">暂无 SSH 登录记录</td></tr>
+                <?php else: ?>
+                    <?php foreach ($sshLogins as $i => $sl): ?>
+                        <tr class="wp-login-row" data-i="<?= (int) $i ?>"<?= $i >= 6 ? ' hidden' : '' ?>>
+                            <td><?= e($sl['user'] ?? '-') ?></td>
+                            <td class="mono"><?= e($sl['ip'] ?? '-') ?></td>
+                            <td>
+                                <?php if (($sl['method'] ?? '') === 'publickey'): ?>
+                                    <span class="layui-badge layui-bg-blue">密钥</span>
+                                <?php elseif (($sl['method'] ?? '') === 'password'): ?>
+                                    <span class="layui-badge layui-bg-orange">密码</span>
+                                <?php else: ?>
+                                    <?= e($sl['method'] ?? '-') ?>
+                                <?php endif; ?>
+                            </td>
+                            <td class="mono"><?= e($sl['time'] ?? '-') ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+        </div>
     </div>
 </div>
 
@@ -232,6 +279,25 @@ $ringClass = static function (float $pct, float $warn, float $crit): string {
 layui.use(['element', 'layer', 'table'], function () {
     var layer = layui.layer, $ = layui.$, element = layui.element;
     element.render('progress');
+
+    function applyLoginLimit(bodyId, limit, hintId, hintTpl) {
+        limit = Number(limit) === 12 ? 12 : 6;
+        var $rows = $('#' + bodyId + ' > tr.wp-login-row');
+        $rows.each(function () {
+            var i = Number(this.getAttribute('data-i')) || 0;
+            if (i < limit) this.removeAttribute('hidden');
+            else this.setAttribute('hidden', 'hidden');
+        });
+        if (hintId && hintTpl) {
+            $('#' + hintId).text(hintTpl.replace('%n', String(limit)));
+        }
+    }
+    $('#recentLoginLimit').on('change', function () {
+        applyLoginLimit('recentLoginBody', this.value, 'recentLoginHint', '最近 %n 条登录记录');
+    });
+    $('#sshLoginLimit').on('change', function () {
+        applyLoginLimit('sshLoginBody', this.value, 'sshLoginHint', 'SSH 认证成功 · 最近 %n 条');
+    });
 
     function fmtKb(kb) {
         kb = Number(kb) || 0;
@@ -440,7 +506,7 @@ layui.use(['element', 'layer', 'table'], function () {
 </script>
 
 <div class="layui-row layui-col-space15 dash-atop-row">
-    <div class="layui-col-md4">
+    <div class="layui-col-md6">
         <div class="panel-card" id="atopCard">
             <h3>
                 atop 历史
@@ -512,7 +578,7 @@ layui.use(['element', 'layer', 'table'], function () {
             </div>
         </div>
     </div>
-    <div class="layui-col-md4">
+    <div class="layui-col-md6">
         <div class="panel-card" id="atopProcCard">
             <h3>
                 占用最高进程
@@ -527,39 +593,6 @@ layui.use(['element', 'layer', 'table'], function () {
             <table class="atop-proc" id="atopTopMem">
                 <thead><tr><th>PID</th><th>名称</th><th>CPU</th><th>内存</th><th>磁盘</th></tr></thead>
                 <tbody></tbody>
-            </table>
-        </div>
-    </div>
-    <div class="layui-col-md4">
-        <div class="panel-card">
-            <h3>
-                SSH / 系统登录
-                <span class="mon-updated">SSH 认证成功记录 · 最近 10 条</span>
-            </h3>
-            <table class="layui-table" style="margin:0">
-                <thead><tr><th>用户</th><th>来源 IP</th><th style="width:80px">认证</th><th>登录时间</th></tr></thead>
-                <tbody>
-                <?php if (empty($sshLogins)): ?>
-                    <tr><td colspan="4" style="text-align:center;color:#999">暂无 SSH 登录记录</td></tr>
-                <?php else: ?>
-                    <?php foreach ($sshLogins as $sl): ?>
-                        <tr>
-                            <td><?= e($sl['user'] ?? '-') ?></td>
-                            <td class="mono"><?= e($sl['ip'] ?? '-') ?></td>
-                            <td>
-                                <?php if (($sl['method'] ?? '') === 'publickey'): ?>
-                                    <span class="layui-badge layui-bg-blue">密钥</span>
-                                <?php elseif (($sl['method'] ?? '') === 'password'): ?>
-                                    <span class="layui-badge layui-bg-orange">密码</span>
-                                <?php else: ?>
-                                    <?= e($sl['method'] ?? '-') ?>
-                                <?php endif; ?>
-                            </td>
-                            <td class="mono"><?= e($sl['time'] ?? '-') ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-                </tbody>
             </table>
         </div>
     </div>

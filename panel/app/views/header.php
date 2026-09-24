@@ -20,9 +20,9 @@ $wallpaperSrc = panel_appearance_src();
 <title>WebPanel 管理面板</title>
 <script>
 (function () {
-    var t = 'light';
+    var t = 'dark';
     try { t = localStorage.getItem('wp.theme') || t; } catch (e) {}
-    if (t !== 'dark') t = 'light';
+    if (t !== 'light') t = 'dark';
     document.documentElement.setAttribute('data-theme', t);
     var src = document.documentElement.getAttribute('data-wallpaper') || '';
     if (t === 'dark' && src) {
@@ -69,12 +69,6 @@ window.WP = (function () {
 </script>
 <div class="layui-layout layui-layout-admin">
     <div class="layui-header">
-        <?php if ($uri !== '/'): ?>
-        <div class="wp-clock" id="wpClock">
-            <div class="wp-clock-time" id="wpClockTime">--:--</div>
-            <div class="wp-clock-date" id="wpClockDate"></div>
-        </div>
-        <?php endif; ?>
         <div class="layui-logo layui-elip">
             <span class="layui-icon layui-icon-template-1 wp-logo-icon"></span>
             WebPanel<span class="wp-logo-rest"> 管理面板</span>
@@ -87,8 +81,14 @@ window.WP = (function () {
             <?php endforeach; ?>
         </ul>
         <div class="header-right">
-            <button type="button" class="wp-icon-btn" id="btnTheme" title="切换浅色 / 深色玻璃" aria-label="切换主题">
-                <span class="layui-icon layui-icon-moon" id="btnThemeIcon"></span>
+            <?php if ($uri !== '/'): ?>
+            <div class="wp-clock" id="wpClock" title="本地时间">
+                <div class="wp-clock-time" id="wpClockTime">--:--</div>
+                <div class="wp-clock-date" id="wpClockDate"></div>
+            </div>
+            <?php endif; ?>
+            <button type="button" class="wp-icon-btn" id="btnTheme" title="切换到浅色主题" aria-label="切换主题">
+                <span class="layui-icon layui-icon-light" id="btnThemeIcon"></span>
             </button>
             <div class="wp-appear-wrap">
                 <button type="button" class="wp-icon-btn" id="btnAppearance" title="外观" aria-label="外观">
