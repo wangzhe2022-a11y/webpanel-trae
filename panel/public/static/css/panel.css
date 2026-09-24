@@ -448,6 +448,8 @@ input[type="checkbox"],
 input[type="radio"] {
     accent-color: var(--wp-accent);
 }
+.fm-icon-dir { color: var(--wp-accent) !important; }
+.fm-name-link { color: var(--wp-accent); }
 .layui-layer-btn .layui-layer-btn0 {
     background: var(--wp-accent);
     border-color: var(--wp-accent);
