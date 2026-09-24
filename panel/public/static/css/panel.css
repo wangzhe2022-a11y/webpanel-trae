@@ -420,8 +420,8 @@ html.wp-side-collapsed .layui-layout-admin .layui-body {
     border-color: var(--wp-border);
 }
 
-/* Three equal columns, each a vertical stack of two cards:
-   主机监控 / 服务状态 | atop / 占用最高进程 | 最近登录 / SSH. */
+/* Three equal columns:
+   主机监控 (atop + 占用最高进程 as collapsed tabs) | 服务状态 | 最近登录 / SSH. */
 .wp-col-stack {
     display: flex;
     flex-direction: column;
@@ -481,6 +481,75 @@ html.wp-side-collapsed .layui-layout-admin .layui-body {
     font-size: 26px;
     right: 8px;
     top: 10px;
+}
+.wp-host-extra {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--wp-border);
+}
+.wp-host-tabs {
+    display: flex;
+    border: 1px solid var(--wp-border);
+    border-radius: var(--wp-radius-sm);
+    overflow: hidden;
+    background: var(--wp-surface-soft);
+}
+.wp-host-tab {
+    flex: 1 1 0;
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--wp-text-secondary);
+    font-size: 13px;
+    font-weight: 550;
+    line-height: 22px;
+    padding: 7px 10px;
+    cursor: pointer;
+    text-align: center;
+}
+.wp-host-tab + .wp-host-tab {
+    border-left: 1px solid var(--wp-border);
+}
+.wp-host-tab:hover {
+    color: var(--wp-text);
+    background: var(--wp-accent-soft);
+}
+.wp-host-tab.is-active {
+    color: var(--wp-accent);
+    background: var(--wp-surface);
+    box-shadow: inset 0 -2px 0 var(--wp-accent);
+}
+.wp-host-tab::after {
+    content: '';
+    display: inline-block;
+    width: 0;
+    height: 0;
+    margin-left: 6px;
+    vertical-align: 2px;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid currentColor;
+    opacity: .55;
+}
+.wp-host-tab.is-active::after {
+    transform: rotate(180deg);
+}
+.wp-host-tab-panels {
+    display: none;
+    margin-top: 12px;
+}
+.wp-host-extra.is-open .wp-host-tab-panels {
+    display: block;
+}
+.wp-host-tab-panel[hidden] {
+    display: none !important;
+}
+.wp-host-tab-head {
+    margin: 0 0 8px;
+}
+.wp-host-tab-head .mon-updated {
+    float: none;
+    display: block;
 }
 .wp-svc-card {
     overflow-x: auto;
@@ -946,6 +1015,28 @@ html[data-theme="dark"] .atop-badge.mute { background: rgba(255, 255, 255, 0.1);
 html[data-theme="dark"] .atop-toolbar {
     background: rgba(255, 255, 255, 0.05);
     border-color: rgba(255, 255, 255, 0.1);
+}
+html[data-theme="dark"] .wp-host-extra {
+    border-top-color: rgba(255, 255, 255, 0.1);
+}
+html[data-theme="dark"] .wp-host-tabs {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+html[data-theme="dark"] .wp-host-tab {
+    color: rgba(255, 255, 255, 0.7);
+}
+html[data-theme="dark"] .wp-host-tab + .wp-host-tab {
+    border-left-color: rgba(255, 255, 255, 0.1);
+}
+html[data-theme="dark"] .wp-host-tab:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.06);
+}
+html[data-theme="dark"] .wp-host-tab.is-active {
+    color: #8fb4ff;
+    background: rgba(64, 128, 255, 0.16);
+    box-shadow: inset 0 -2px 0 #4080ff;
 }
 html[data-theme="dark"] .secret-box {
     background: rgba(0, 0, 0, 0.28);

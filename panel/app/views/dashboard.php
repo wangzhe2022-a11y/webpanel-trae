@@ -166,7 +166,103 @@ $ringClass = static function (float $pct, float $warn, float $crit): string {
                     <div class="label" id="statCpuLabel">CPU<?= $cpuCores ? ' · ' . $cpuCores . ' 核' : '' ?> · <?= e((string) ($info['hostname'] ?? '')) ?></div>
                 </div>
             </div>
+            <div class="wp-host-extra" id="hostExtra">
+                <div class="wp-host-tabs" role="tablist">
+                    <button type="button" class="wp-host-tab" role="tab" id="hostTabAtop" data-tab="atop" aria-controls="atopCard" aria-selected="false" aria-expanded="false">atop 历史</button>
+                    <button type="button" class="wp-host-tab" role="tab" id="hostTabProc" data-tab="proc" aria-controls="atopProcCard" aria-selected="false" aria-expanded="false">占用最高进程</button>
+                </div>
+                <div class="wp-host-tab-panels">
+                    <div id="atopCard" class="wp-host-tab-panel" role="tabpanel" data-tab="atop" aria-labelledby="hostTabAtop" hidden>
+                        <div class="wp-host-tab-head">
+                            <span class="mon-updated" id="atopUpdated">从 /var/log/atop 读取 · 不替代上方实时监控</span>
+                        </div>
+                        <div id="atopStatus" class="atop-empty">正在检查 atop 服务与日志…</div>
+                        <div class="atop-toolbar" id="atopToolbar" style="display:none">
+                            <label>日志
+                                <select id="atopFile" class="layui-input" style="display:inline-block;width:170px;padding:0 8px"></select>
+                            </label>
+                            <label>采样时间
+                                <select id="atopTime" class="layui-input" style="display:inline-block;width:110px;padding:0 8px"></select>
+                            </label>
+                            <label>最近 N 条
+                                <select id="atopLatest" class="layui-input" style="display:inline-block;width:70px;padding:0 8px">
+                                    <option value="1">1</option>
+                                    <option value="3" selected>3</option>
+                                    <option value="6">6</option>
+                                    <option value="12">12</option>
+                                </select>
+                            </label>
+                            <button class="layui-btn layui-btn-sm layui-btn-normal" id="btnAtopLoad">查看</button>
+                            <button class="layui-btn layui-btn-sm layui-btn-primary" id="btnAtopRefresh">
+                                <span class="layui-icon layui-icon-refresh"></span> 刷新
+                            </button>
+                        </div>
+                        <div id="atopErr" class="atop-empty" style="display:none"></div>
+                        <div id="atopBody" style="display:none">
+                            <div class="mon-meta" style="margin:0 0 8px">日志文件</div>
+                            <table class="layui-table atop-logs" lay-skin="line" style="margin:0 0 14px">
+                                <thead><tr><th>文件</th><th>大小</th><th>修改时间</th></tr></thead>
+                                <tbody id="atopLogs"></tbody>
+                            </table>
+                            <div id="atopRecentWrap" style="display:none">
+                                <div class="mon-meta" style="margin:0 0 8px">最近采样</div>
+                                <table class="layui-table atop-logs" lay-skin="line" style="margin:0 0 14px">
+                                    <thead><tr><th>时间</th><th>CPU</th><th>内存</th><th>交换</th><th>负载</th><th>磁盘忙</th></tr></thead>
+                                    <tbody id="atopRecent"></tbody>
+                                </table>
+                            </div>
+                            <div class="mon-meta" id="atopSampleLabel" style="margin:0 0 10px">采样详情</div>
+                            <div class="wp-atop-sample">
+                            <div class="mon-row">
+                                <div class="mon-k">CPU <span class="right mono" id="atopCpuText">-</span></div>
+                                <div class="layui-progress" lay-filter="atopCpuBar">
+                                    <div class="layui-progress-bar" lay-percent="0%"></div>
+                                </div>
+                            </div>
+                            <div class="mon-row">
+                                <div class="mon-k">内存 <span class="right mono" id="atopMemText">-</span></div>
+                                <div class="layui-progress" lay-filter="atopMemBar">
+                                    <div class="layui-progress-bar" lay-percent="0%"></div>
+                                </div>
+                            </div>
+                            <div class="mon-row" id="atopSwapRow" style="display:none">
+                                <div class="mon-k">交换分区 <span class="right mono" id="atopSwapText">-</span></div>
+                                <div class="layui-progress" lay-filter="atopSwapBar">
+                                    <div class="layui-progress-bar" lay-percent="0%"></div>
+                                </div>
+                            </div>
+                            <div class="mon-row">
+                                <div class="mon-k">负载 / 磁盘 <span class="right mono" id="atopLoadText">-</span></div>
+                                <div class="layui-progress" lay-filter="atopDiskBar">
+                                    <div class="layui-progress-bar" lay-percent="0%"></div>
+                                </div>
+                                <div class="mon-meta" id="atopDiskText"></div>
+                            </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="atopProcCard" class="wp-host-tab-panel" role="tabpanel" data-tab="proc" aria-labelledby="hostTabProc" hidden>
+                        <div class="wp-host-tab-head">
+                            <span class="mon-updated" id="atopProcUpdated">所选采样的进程快照</span>
+                        </div>
+                        <div class="mon-meta">CPU 占用最高</div>
+                        <table class="atop-proc" id="atopTopCpu">
+                            <thead><tr><th>PID</th><th>名称</th><th>CPU</th><th>内存</th><th>磁盘</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                        <div class="mon-meta" style="margin-top:16px">内存占用最高</div>
+                        <table class="atop-proc" id="atopTopMem">
+                            <thead><tr><th>PID</th><th>名称</th><th>CPU</th><th>内存</th><th>磁盘</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
+        </div>
+    </div>
+    <div class="layui-col-md4">
+        <div class="wp-col-stack">
         <div class="panel-card wp-svc-card">
             <h3>
                 服务状态
@@ -198,96 +294,6 @@ $ringClass = static function (float $pct, float $warn, float $crit): string {
                     </tr>
                 <?php endforeach; ?>
                 </tbody>
-            </table>
-        </div>
-        </div>
-    </div>
-    <div class="layui-col-md4">
-        <div class="wp-col-stack">
-        <div class="panel-card" id="atopCard">
-            <h3>
-                atop 历史
-                <span class="mon-updated" id="atopUpdated">从 /var/log/atop 读取 · 不替代上方实时监控</span>
-            </h3>
-            <div id="atopStatus" class="atop-empty">正在检查 atop 服务与日志…</div>
-            <div class="atop-toolbar" id="atopToolbar" style="display:none">
-                <label>日志
-                    <select id="atopFile" class="layui-input" style="display:inline-block;width:170px;padding:0 8px"></select>
-                </label>
-                <label>采样时间
-                    <select id="atopTime" class="layui-input" style="display:inline-block;width:110px;padding:0 8px"></select>
-                </label>
-                <label>最近 N 条
-                    <select id="atopLatest" class="layui-input" style="display:inline-block;width:70px;padding:0 8px">
-                        <option value="1">1</option>
-                        <option value="3" selected>3</option>
-                        <option value="6">6</option>
-                        <option value="12">12</option>
-                    </select>
-                </label>
-                <button class="layui-btn layui-btn-sm layui-btn-normal" id="btnAtopLoad">查看</button>
-                <button class="layui-btn layui-btn-sm layui-btn-primary" id="btnAtopRefresh">
-                    <span class="layui-icon layui-icon-refresh"></span> 刷新
-                </button>
-            </div>
-            <div id="atopErr" class="atop-empty" style="display:none"></div>
-            <div id="atopBody" style="display:none">
-                <div class="mon-meta" style="margin:0 0 8px">日志文件</div>
-                <table class="layui-table atop-logs" lay-skin="line" style="margin:0 0 14px">
-                    <thead><tr><th>文件</th><th>大小</th><th>修改时间</th></tr></thead>
-                    <tbody id="atopLogs"></tbody>
-                </table>
-                <div id="atopRecentWrap" style="display:none">
-                    <div class="mon-meta" style="margin:0 0 8px">最近采样</div>
-                    <table class="layui-table atop-logs" lay-skin="line" style="margin:0 0 14px">
-                        <thead><tr><th>时间</th><th>CPU</th><th>内存</th><th>交换</th><th>负载</th><th>磁盘忙</th></tr></thead>
-                        <tbody id="atopRecent"></tbody>
-                    </table>
-                </div>
-                <div class="mon-meta" id="atopSampleLabel" style="margin:0 0 10px">采样详情</div>
-                <div class="wp-atop-sample">
-                <div class="mon-row">
-                    <div class="mon-k">CPU <span class="right mono" id="atopCpuText">-</span></div>
-                    <div class="layui-progress" lay-filter="atopCpuBar">
-                        <div class="layui-progress-bar" lay-percent="0%"></div>
-                    </div>
-                </div>
-                <div class="mon-row">
-                    <div class="mon-k">内存 <span class="right mono" id="atopMemText">-</span></div>
-                    <div class="layui-progress" lay-filter="atopMemBar">
-                        <div class="layui-progress-bar" lay-percent="0%"></div>
-                    </div>
-                </div>
-                <div class="mon-row" id="atopSwapRow" style="display:none">
-                    <div class="mon-k">交换分区 <span class="right mono" id="atopSwapText">-</span></div>
-                    <div class="layui-progress" lay-filter="atopSwapBar">
-                        <div class="layui-progress-bar" lay-percent="0%"></div>
-                    </div>
-                </div>
-                <div class="mon-row">
-                    <div class="mon-k">负载 / 磁盘 <span class="right mono" id="atopLoadText">-</span></div>
-                    <div class="layui-progress" lay-filter="atopDiskBar">
-                        <div class="layui-progress-bar" lay-percent="0%"></div>
-                    </div>
-                    <div class="mon-meta" id="atopDiskText"></div>
-                </div>
-                </div>
-            </div>
-        </div>
-        <div class="panel-card" id="atopProcCard">
-            <h3>
-                占用最高进程
-                <span class="mon-updated" id="atopProcUpdated">所选采样的进程快照</span>
-            </h3>
-            <div class="mon-meta">CPU 占用最高</div>
-            <table class="atop-proc" id="atopTopCpu">
-                <thead><tr><th>PID</th><th>名称</th><th>CPU</th><th>内存</th><th>磁盘</th></tr></thead>
-                <tbody></tbody>
-            </table>
-            <div class="mon-meta" style="margin-top:16px">内存占用最高</div>
-            <table class="atop-proc" id="atopTopMem">
-                <thead><tr><th>PID</th><th>名称</th><th>CPU</th><th>内存</th><th>磁盘</th></tr></thead>
-                <tbody></tbody>
             </table>
         </div>
         </div>
@@ -387,6 +393,25 @@ layui.use(['element', 'layer', 'table'], function () {
     });
     $('#sshLoginLimit').on('change', function () {
         applyLoginLimit('sshLoginBody', this.value, 'sshLoginHint', 'SSH 认证成功 · 最近 %n 条');
+    });
+
+    $('#hostExtra').on('click', '.wp-host-tab', function () {
+        var $extra = $('#hostExtra');
+        var tab = this.getAttribute('data-tab');
+        var wasActive = $(this).hasClass('is-active');
+        $extra.find('.wp-host-tab').removeClass('is-active')
+            .attr({ 'aria-selected': 'false', 'aria-expanded': 'false' });
+        $extra.find('.wp-host-tab-panel').attr('hidden', true);
+        if (wasActive) {
+            $extra.removeClass('is-open');
+            return;
+        }
+        $(this).addClass('is-active').attr({ 'aria-selected': 'true', 'aria-expanded': 'true' });
+        $extra.find('.wp-host-tab-panel[data-tab="' + tab + '"]').removeAttr('hidden');
+        $extra.addClass('is-open');
+        if (tab === 'atop') {
+            element.render('progress');
+        }
     });
 
     function fmtKb(kb) {
