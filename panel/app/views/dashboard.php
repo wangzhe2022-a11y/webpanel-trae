@@ -301,13 +301,13 @@ $ringClass = static function (float $pct, float $warn, float $crit): string {
     <div class="layui-col-md4">
         <div class="wp-col-stack">
         <div class="panel-card">
-            <div class="wp-host-extra" id="loginExtra">
+            <div class="wp-host-extra is-open" id="loginExtra">
                 <div class="wp-host-tabs" role="tablist">
-                    <button type="button" class="wp-host-tab" role="tab" id="loginTabRecent" data-tab="recent" aria-controls="recentLoginCard" aria-selected="false" aria-expanded="false">最近登录</button>
+                    <button type="button" class="wp-host-tab is-active" role="tab" id="loginTabRecent" data-tab="recent" aria-controls="recentLoginCard" aria-selected="true" aria-expanded="true">最近登录</button>
                     <button type="button" class="wp-host-tab" role="tab" id="loginTabSsh" data-tab="ssh" aria-controls="sshLoginCard" aria-selected="false" aria-expanded="false">SSH / 系统登录</button>
                 </div>
                 <div class="wp-host-tab-panels">
-                    <div id="recentLoginCard" class="wp-host-tab-panel" role="tabpanel" data-tab="recent" aria-labelledby="loginTabRecent" hidden>
+                    <div id="recentLoginCard" class="wp-host-tab-panel" role="tabpanel" data-tab="recent" aria-labelledby="loginTabRecent">
                         <div class="wp-host-tab-head">
                             <label class="wp-login-limit-wrap">
                                 显示
