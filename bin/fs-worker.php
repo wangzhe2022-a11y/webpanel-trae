@@ -4,6 +4,7 @@
  * fs-worker.php - root file manager backend for WebPanel
  *
  * Invoked (via sudo) as: wp-fs.sh <action> <siteUser> <relPath> [extra...]
+ * Download path: stat (json size) then cat (chunked stdout; no JSON).
  *
  * Hard rules:
  *  - every path must resolve inside /www/wwwroot/<siteUser>
@@ -512,14 +513,43 @@ if ($action === 'list') {
 /* --------------------------- read (edit) -------------------------------- */
 $EDIT_EXT = ['php','txt','html','htm','css','js','json','xml','yml','yaml','ini','conf','log','md','htaccess','po','mo','sql','svg'];
 
+if ($action === 'stat') {
+    $rel = $argv[3] ?? '';
+    if ($GLOBALS['DRY']) {
+        out(['ok' => true, 'path' => $rel, 'name' => basename((string) $rel), 'size' => 0, 'mtime' => date('Y-m-d H:i:s')]);
+    }
+    $p = abs_path($user, $rel);
+    if (is_dir($p)) err('not a regular file');
+    if (!is_file($p)) err('file not found');
+    out([
+        'ok' => true,
+        'path' => rel_from_base($p, jail_base($user)),
+        'name' => basename($p),
+        'size' => (int) filesize($p),
+        'mtime' => date('Y-m-d H:i:s', (int) filemtime($p)),
+    ]);
+}
+
 if ($action === 'cat') {
     $rel = $argv[3] ?? '';
     if ($GLOBALS['DRY']) { fwrite(STDOUT, "dry-run placeholder\n"); exit(0); }
     $p = abs_path($user, $rel);
-    if (!is_file($p) || is_dir($p)) err('file not found');
+    if (is_dir($p)) err('not a regular file');
+    if (!is_file($p)) err('file not found');
     $fh = fopen($p, 'rb');
     if ($fh === false) err('file not found');
-    fpassthru($fh);
+    // Exit cleanly when the panel closes the pipe (client abort) instead of
+    // dying on SIGPIPE and leaving a stuck worker.
+    if (function_exists('pcntl_signal')) {
+        @pcntl_signal(SIGPIPE, SIG_IGN);
+    }
+    while (!feof($fh)) {
+        $chunk = fread($fh, 1024 * 1024);
+        if ($chunk === false || $chunk === '') break;
+        $n = @fwrite(STDOUT, $chunk);
+        if ($n === false || $n < strlen($chunk)) break;
+        if (function_exists('fflush')) @fflush(STDOUT);
+    }
     fclose($fh);
     exit(0);
 }
