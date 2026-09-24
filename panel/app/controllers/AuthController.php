@@ -22,7 +22,7 @@ class AuthController extends Controller
         $ip = Auth::ip();
 
         if (Auth::recentFailures($ip) >= 8) {
-            $this->fail('失败次数过多，请 10 分钟后再试', 429);
+            $this->fail('Too many attempts. Try again in 10 minutes.', 429);
         }
 
         $username = (string) $this->input('username', '');
@@ -32,7 +32,7 @@ class AuthController extends Controller
         if (!$user || !password_verify($password, $user['password_hash'])) {
             Auth::recordFailure($ip);
             sleep(1);
-            $this->fail('用户名或密码错误', 401);
+            $this->fail('Invalid account or password', 401);
         }
 
         Auth::clearFailures($ip);

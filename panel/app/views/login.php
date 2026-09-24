@@ -1,10 +1,10 @@
 <?php /** @var string $csrf @var string $error */ ?>
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>WebPanel 登录</title>
+<title>Login</title>
 <link rel="stylesheet" href="/static/layui/css/layui.css">
 <style>
     body { background: linear-gradient(135deg, #0a0b0d, #111318, #16181d); height: 100vh; margin: 0; }
@@ -25,29 +25,29 @@
 <div class="login-box">
     <div class="login-head">
         <div class="logo layui-icon layui-icon-template-1"></div>
-        <h1>WebPanel 服务器管理面板</h1>
+        <h1>Login</h1>
     </div>
     <div class="login-body">
         <form class="layui-form" id="loginForm">
             <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
             <div class="layui-form-item">
-                <label class="layui-form-label">账号</label>
+                <label class="layui-form-label">Account</label>
                 <div class="layui-input-block">
                     <input type="text" name="username" required lay-verify="required"
-                           placeholder="管理员账号" autocomplete="username"
+                           placeholder="Account" autocomplete="username"
                            class="layui-input" autofocus>
                 </div>
             </div>
             <div class="layui-form-item">
-                <label class="layui-form-label">密码</label>
+                <label class="layui-form-label">Password</label>
                 <div class="layui-input-block">
                     <input type="password" name="password" required lay-verify="required"
-                           placeholder="登录密码" autocomplete="current-password"
+                           placeholder="Password" autocomplete="current-password"
                            class="layui-input">
                 </div>
             </div>
             <div class="login-tip" id="tip"><?= e($error) ?></div>
-            <button type="submit" class="layui-btn layui-btn-fluid" lay-submit lay-filter="doLogin">登 录</button>
+            <button type="submit" class="layui-btn layui-btn-fluid" lay-submit lay-filter="doLogin">Sign in</button>
         </form>
     </div>
 </div>
@@ -62,12 +62,12 @@ layui.use(['form', 'layer'], function () {
             .then(function (res) {
                 if (res.ok) { location.href = res.redirect || '/'; }
                 else {
-                    $('#tip').text(res.error || '登录失败');
+                    $('#tip').text(res.error || 'Login failed');
                     btn.removeAttr('disabled').removeClass('layui-btn-disabled');
                 }
             })
             .catch(function () {
-                $('#tip').text('网络错误，请重试');
+                $('#tip').text('Network error, try again');
                 btn.removeAttr('disabled').removeClass('layui-btn-disabled');
             });
         return false;
