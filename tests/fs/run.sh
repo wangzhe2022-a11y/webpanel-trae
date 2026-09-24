@@ -79,6 +79,48 @@ assert data.strip()=="hello from vdb", repr(data)
 print("ok cat")
 '
 
+echo "== stat README =="
+out="$(run stat __vdb /README.txt)"
+echo "$out" | python3 -c '
+import json,sys
+d=json.load(sys.stdin)
+assert d.get("ok") is True
+assert d.get("name")=="README.txt"
+assert int(d.get("size",0))==len("hello from vdb\n")
+assert d.get("path") in ("/README.txt","README.txt")
+print("ok stat", d)
+'
+
+echo "== stat directory refused =="
+err="$(run_err stat __vdb /archives)"
+echo "$err" | python3 -c '
+import json,sys
+d=json.loads(sys.stdin.read().strip().splitlines()[-1])
+assert d.get("ok") is False
+assert "regular" in d.get("error","") or "not a" in d.get("error",""), d
+print("ok stat dir:", d.get("error"))
+'
+
+echo "== stat symlink refused =="
+err="$(run_err stat __vdb /escape-link)"
+echo "$err" | python3 -c '
+import json,sys
+d=json.loads(sys.stdin.read().strip().splitlines()[-1])
+assert d.get("ok") is False
+assert "symlink" in d.get("error","") or "jail" in d.get("error",""), d
+print("ok stat symlink:", d.get("error"))
+'
+
+echo "== cat missing file =="
+err="$(run_err cat __vdb /no-such-file.bin)"
+echo "$err" | python3 -c '
+import json,sys
+d=json.loads(sys.stdin.read().strip().splitlines()[-1])
+assert d.get("ok") is False
+assert "not found" in d.get("error","") or "parent" in d.get("error",""), d
+print("ok cat missing:", d.get("error"))
+'
+
 echo "== jail: .. escape =="
 err="$(run_err list __vdb /../$(basename "$OUTSIDE"))"
 echo "$err" | python3 -c '

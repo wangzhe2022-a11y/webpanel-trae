@@ -58,13 +58,19 @@ final class Shell
 
     public static function sudoStream(string $script, array $args): array
     {
-        // binary-safe passthrough (file download) - returns proc resource + pipes
-        $cmd = 'sudo -n ' . escapeshellarg(PANEL_BIN . '/' . $script);
+        // binary-safe passthrough (file download) - returns proc resource + pipes.
+        // `exec` so proc_get_status pid is sudo (not an extra sh), which makes
+        // the download reaper able to find fs-worker.php as a direct child.
+        $cmd = 'exec sudo -n ' . escapeshellarg(PANEL_BIN . '/' . $script);
         foreach ($args as $a) {
             $cmd .= ' ' . escapeshellarg((string) $a);
         }
         $desc = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
-        $proc = proc_open($cmd, $desc, $pipes);
+        $proc = @proc_open($cmd, $desc, $pipes);
+        if (is_resource($proc) && isset($pipes[0]) && is_resource($pipes[0])) {
+            fclose($pipes[0]);
+            $pipes[0] = null;
+        }
         return [$proc, $pipes];
     }
 
@@ -101,6 +107,14 @@ final class Shell
                 => ['ok' => true, 'data' => ['ok' => true], 'error' => ''],
             str_starts_with($script, 'wp-fs') && self::isVdbUser((string) ($args[1] ?? '')) && self::vdbForbidden($a)
                 => ['ok' => false, 'data' => [], 'error' => 'vdb（/mnt/backup）为只读：不允许此操作'],
+            str_starts_with($script, 'wp-fs') && $a === 'stat'
+                => ['ok' => true, 'data' => [
+                    'ok' => true,
+                    'path' => (string) ($args[2] ?? '/'),
+                    'name' => basename((string) ($args[2] ?? 'file')),
+                    'size' => 284569907,
+                    'mtime' => date('Y-m-d H:i:s'),
+                ], 'error' => ''],
             str_starts_with($script, 'wp-fs') && $a === 'list'
                 => self::dryFsList((string) ($args[2] ?? '/'), (string) ($args[1] ?? '')),
             str_starts_with($script, 'wp-fs') && ($a === 'extract' || $a === 'unzip')
@@ -137,6 +151,8 @@ final class Shell
                 => self::pmaInstall(),
             str_starts_with($script, 'wp-pma') && $a === 'uninstall'
                 => self::pmaUninstall(),
+            str_starts_with($script, 'wp-backup') && $a === 'stat'
+                => ['ok' => true, 'data' => ['ok' => true, 'name' => $args[1] ?? '', 'size' => 284569907], 'error' => ''],
             str_starts_with($script, 'wp-backup') && $a === 'list'
                 => ['ok' => true, 'data' => ['ok' => true, 'dir' => '/www/server/backup', 'keep' => 10, 'backups' => [
                     ['name' => 'webpanel-full-' . date('Ymd') . '-033000.tar.gz', 'scope' => 'full', 'size' => 284569907, 'mtime' => date('Y-m-d') . ' 03:30:00'],

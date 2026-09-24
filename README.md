@@ -777,6 +777,31 @@ sudo bash /usr/local/webpanel/uninstall.sh
 sudo bash /usr/local/webpanel/uninstall.sh --purge
 ```
 
+### 运维跟进：大文件下载（已有 CVM）
+
+新安装会从 `config/nginx/panel.conf.tmpl` 自动带上 `panel-download.inc`。
+**已经在跑的机器**需要把同一段加进面板 Nginx，否则多 GB 的 vdb / 备份下载
+在修了 PHP 死锁之后，仍可能被默认 `fastcgi_read_timeout 60s` 在读 body 时掐断。
+
+```nginx
+# /etc/nginx/conf.d/00-webpanel.conf  （server { } 内，location / 之前）
+include /usr/local/webpanel/config/nginx/panel-download.inc;
+```
+
+然后：
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+不要用 X-Accel-Redirect 去读 `/mnt/backup`：vdb 文件通常是 root 属主，面板
+php-fpm 还有 `open_basedir`。给 nginx worker 放开备份盘读取会削弱隔离。
+下载继续走 `sudo wp-fs.sh cat`（只读 jail），只是不再占用 PHP 会话锁、也不再
+先堵死 stderr。
+
+可选（一般不必）：若仍有超慢链路被 FPM `request_terminate_timeout` 杀掉，再在
+`/etc/php-fpm.d/webpanel.conf` 里把该值调到 `7200`，`systemctl reload php-fpm`。
+
 ## 目录结构
 
 ```
@@ -784,7 +809,7 @@ install.sh                  AlmaLinux 8 一键安装器
 install-al10.sh             AlmaLinux 10 一键安装器
 uninstall.sh
 config/
-  nginx/                    面板 vhost、站点 HTTP/HTTPS 模板、Node 反向代理模板、phpMyAdmin include
+  nginx/                    面板 vhost、站点 HTTP/HTTPS 模板、Node 反向代理模板、phpMyAdmin include、大文件下载 timeout
   php-fpm/                  面板池、站点池、phpMyAdmin 池模板
   phpmyadmin/config.inc.php phpMyAdmin 配置模板（不含密钥）
   systemd/node-site.service.tmpl   Node 站点 systemd 单元模板

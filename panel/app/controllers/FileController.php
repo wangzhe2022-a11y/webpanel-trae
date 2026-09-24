@@ -310,33 +310,31 @@ class FileController extends Controller
         $rel = (string) ($_GET['path'] ?? '');
         $name = basename($rel);
 
+        // Release the session lock before any I/O so other tabs stay usable.
+        \WebPanel\Download::releaseSession();
+
         // dry-run: emit placeholder without touching sudo
         if (PANEL_DRY) {
-            header('Content-Type: application/octet-stream');
-            header('Content-Disposition: attachment; filename="' . $name . '"');
+            \WebPanel\Download::sendHeaders($name);
             echo "dry-run placeholder for $name\n";
             return;
         }
 
-        [$proc, $pipes] = Shell::sudoStream('wp-fs.sh', ['cat', $site['sysuser'], $rel]);
-        $meta = stream_get_meta_data($pipes[2]);
-        $err = stream_get_contents($pipes[2]);
-        fclose($pipes[2]);
-        // peek whether the worker errored
-        $head = fread($pipes[1], 1);
-        if ($head === '' && !proc_open_status_running($proc)) {
-            $code = proc_close($proc);
-            http_response_code(500);
-            echo '下载失败：' . htmlspecialchars(trim($err) ?: "exit $code");
+        $size = null;
+        $stat = Shell::sudo('wp-fs.sh', ['stat', $site['sysuser'], $rel]);
+        if ($stat['ok']) {
+            $size = isset($stat['data']['size']) ? (int) $stat['data']['size'] : null;
+            $statName = basename((string) ($stat['data']['name'] ?? ''));
+            if ($statName !== '' && $statName !== '.' && $statName !== '..') {
+                $name = $statName;
+            }
+        } elseif (!str_contains($stat['error'], 'unknown action')) {
+            http_response_code(404);
+            echo '下载失败：' . htmlspecialchars($this->fsErrorZh($stat['error']), ENT_QUOTES, 'UTF-8');
             return;
         }
-        header('Content-Type: application/octet-stream');
-        header('Content-Disposition: attachment; filename="' . rawurlencode($name) . '"; filename*=UTF-8\'\'' . rawurlencode($name));
-        echo $head;
-        fpassthru($pipes[1]);
-        fclose($pipes[0]);
-        fclose($pipes[1]);
-        proc_close($proc);
+
+        \WebPanel\Download::streamPrivileged('wp-fs.sh', ['cat', $site['sysuser'], $rel], $name, $size);
     }
 
     /** Map a few fs-worker jail errors into the Chinese UI. */
@@ -354,16 +352,11 @@ class FileController extends Controller
             'invalid file name' => '文件名不合法',
             'file not found' => '文件不存在',
             'not a directory' => '不是目录',
+            'not a regular file' => '不是普通文件',
         ];
         if (str_starts_with($msg, 'unknown action:')) {
             return '当前服务器组件不支持解压，请更新 fs-worker.php';
         }
         return $map[$msg] ?? $msg;
     }
-}
-
-function proc_open_status_running($proc): bool
-{
-    $st = proc_get_status($proc);
-    return (bool) ($st['running'] ?? false);
 }

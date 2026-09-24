@@ -8,6 +8,7 @@
 #   list                      backup archives (json)
 #   delete <name>             delete one archive
 #   download <name>           stream archive to stdout
+#   stat <name>               json size of one archive (for Content-Length)
 #
 # Archives live in /www/server/backup and are named:
 #   webpanel-<scope>-YYYYmmdd-HHMMSS[-N].tar.gz
@@ -46,7 +47,7 @@ PG_PSQL="${PG_PSQL:-/usr/pgsql-16/bin/psql}"
 PG_DUMP="${PG_DUMP:-$([ -x /usr/pgsql-16/bin/pg_dump ] && echo /usr/pgsql-16/bin/pg_dump || command -v pg_dump)}"
 PG_DUMP="${PG_DUMP:-/usr/pgsql-16/bin/pg_dump}"
 
-usage() { fail "usage: wp-backup.sh {create|restore|status|list|delete|download} ..." 64; }
+usage() { fail "usage: wp-backup.sh {create|restore|status|list|delete|download|stat} ..." 64; }
 [ $# -ge 1 ] || usage
 action="$1"; shift
 require_root
@@ -217,6 +218,15 @@ cmd_delete() {
     if is_dry_run; then ok; fi
     rm -f "$f" || fail "删除失败"
     ok
+}
+
+cmd_stat() {
+    [ $# -eq 1 ] || usage
+    local f
+    f="$(archive_path "$1")"
+    [ -f "$f" ] || fail "备份文件不存在"
+    if is_dry_run; then ok "\"name\":\"$1\",\"size\":0"; fi
+    ok "\"name\":\"$1\",\"size\":$(stat -c%s "$f")"
 }
 
 cmd_download() {
@@ -505,6 +515,7 @@ case "$action" in
     list)     cmd_list ;;
     delete)   cmd_delete "$@" ;;
     download) cmd_download "$@" ;;
+    stat)     cmd_stat "$@" ;;
     _job_backup)  _job_backup "$@" ;;
     _job_restore) _job_restore "$@" ;;
     *) usage ;;

@@ -93,31 +93,25 @@ class BackupController extends Controller
             return;
         }
 
+        \WebPanel\Download::releaseSession();
+
         if (PANEL_DRY) {
-            header('Content-Type: application/octet-stream');
-            header('Content-Disposition: attachment; filename="' . $name . '"');
+            \WebPanel\Download::sendHeaders($name);
             echo "dry-run placeholder for $name\n";
             return;
         }
 
-        [$proc, $pipes] = Shell::sudoStream('wp-backup.sh', ['download', $name]);
-        $err = stream_get_contents($pipes[2]);
-        fclose($pipes[2]);
-        $head = fread($pipes[1], 1);
-        $running = (bool) (proc_get_status($proc)['running'] ?? false);
-        if ($head === '' && !$running) {
-            $code = proc_close($proc);
-            http_response_code(500);
-            echo '下载失败：' . htmlspecialchars(trim($err) ?: "exit $code");
+        $size = null;
+        $stat = Shell::sudo('wp-backup.sh', ['stat', $name]);
+        if ($stat['ok'] && isset($stat['data']['size'])) {
+            $size = (int) $stat['data']['size'];
+        } elseif (!$stat['ok'] && !str_contains($stat['error'], 'unknown action') && !str_contains($stat['error'], 'usage:')) {
+            http_response_code(404);
+            echo '下载失败：' . htmlspecialchars($stat['error'] !== '' ? $stat['error'] : '备份文件不存在', ENT_QUOTES, 'UTF-8');
             return;
         }
-        header('Content-Type: application/octet-stream');
-        header('Content-Disposition: attachment; filename="' . $name . '"');
-        echo $head;
-        fpassthru($pipes[1]);
-        fclose($pipes[0]);
-        fclose($pipes[1]);
-        proc_close($proc);
+
+        \WebPanel\Download::streamPrivileged('wp-backup.sh', ['download', $name], $name, $size);
     }
 
     private function jobStatus(): array
