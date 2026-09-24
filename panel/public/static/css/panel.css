@@ -174,7 +174,7 @@ body.layui-layout-body {
 }
 .panel-card h3 .layui-btn { margin-top: -2px; }
 
-/* Desktop: 3-column band — atop | processes | SSH 登录.
+/* Desktop: 2-column band — atop | processes.
    clear:both keeps the band below the monitoring row. */
 .dash-atop-row {
     clear: both;
@@ -292,11 +292,41 @@ body.layui-layout-body {
     border-color: var(--wp-border);
 }
 
-/* Three equal columns: 主机监控 | 服务状态 | 最近登录.
-   磁盘 sits beside the clock in .wp-dash-clock-row; summary cards stay in 主机监控. */
+/* Three equal columns: 主机监控 | 服务状态 | 最近登录(+SSH stacked).
+   Right column stacks 最近登录 above SSH / 系统登录. */
+.wp-login-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+.wp-login-stack > .panel-card,
 .wp-mon-band > [class*="layui-col"] > .panel-card {
     min-width: 0;
     margin-bottom: 0;
+}
+.wp-login-limit-wrap {
+    float: right;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 10px;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--wp-text-muted);
+    line-height: 28px;
+}
+.wp-login-limit {
+    width: 56px;
+    height: 26px;
+    padding: 0 4px;
+    border-radius: 8px;
+    border: 1px solid var(--wp-border);
+    background: var(--wp-surface-soft);
+    color: var(--wp-text);
+    font-size: 12px;
+}
+.wp-login-table .wp-login-row[hidden] {
+    display: none !important;
 }
 .wp-host-stats {
     display: grid;
