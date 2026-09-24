@@ -254,11 +254,17 @@ c_blue "==> [10/12] 启动全部服务"
 systemctl enable nginx php-fpm mysqld crond
 rpm -q postgresql-server >/dev/null 2>&1 && systemctl enable postgresql
 for v in "${PHP_VERSIONS[@]}"; do
-    systemctl enable "php${v}-php-fpm"
+    if systemctl cat "php${v}-php-fpm.service" >/dev/null 2>&1; then
+        systemctl enable "php${v}-php-fpm"
+    else
+        c_warn "跳过 php${v}-php-fpm（未安装）"
+    fi
 done
 systemctl restart php-fpm
 for v in "${PHP_VERSIONS[@]}"; do
-    systemctl restart "php${v}-php-fpm"
+    if systemctl cat "php${v}-php-fpm.service" >/dev/null 2>&1; then
+        systemctl restart "php${v}-php-fpm"
+    fi
 done
 systemctl restart nginx
 

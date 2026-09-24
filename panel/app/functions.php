@@ -53,13 +53,21 @@ function make_sysuser(string $primaryDomain): string
 
 function panel_php_versions(): array
 {
-    return [
+    $all = [
         '74' => 'PHP 7.4（旧版 WP/插件兼容）',
         '80' => 'PHP 8.0',
         '81' => 'PHP 8.1（WooCommerce 推荐）',
         '82' => 'PHP 8.2（默认推荐）',
         '83' => 'PHP 8.3（最新）',
     ];
+    // Hide versions whose Remi SCL tree is not installed (AL10 omits 8.1).
+    $installed = [];
+    foreach ($all as $ver => $label) {
+        if (is_dir('/etc/opt/remi/php' . $ver)) {
+            $installed[$ver] = $label;
+        }
+    }
+    return $installed !== [] ? $installed : $all;
 }
 
 function format_bytes(int|float $kb): string

@@ -14,6 +14,19 @@ usage() { fail "usage: wp-sys.sh {info|svc|logins}" 64; }
 action="$1"; shift
 require_root
 
+# PGDG (AL8 install.sh) uses postgresql-16; AlmaLinux 10 system PG uses postgresql
+pg_unit() {
+    if [ -f /usr/lib/systemd/system/postgresql-16.service ] \
+        || [ -f /etc/systemd/system/postgresql-16.service ]; then
+        echo postgresql-16
+    elif [ -f /usr/lib/systemd/system/postgresql.service ] \
+        || [ -f /etc/systemd/system/postgresql.service ]; then
+        echo postgresql
+    else
+        echo postgresql-16
+    fi
+}
+
 svc_json() {
     # svc_json "label" "unit"
     local label="$1" unit="$2" state
@@ -128,7 +141,7 @@ JSON
     svcs="["
     svcs+="$(svc_json nginx nginx)"
     svcs+="$(svc_json mysql mysqld)"
-    svcs+="$(svc_json postgres postgresql-16)"
+    svcs+="$(svc_json postgres "$(pg_unit)")"
     svcs+="$(svc_json panel-php php-fpm)"
     for v in 74 80 81 82 83; do
         unit="php${v}-php-fpm"
@@ -173,7 +186,7 @@ if [ "$action" = "svc" ]; then
     case "$svc" in
         nginx) unit=nginx ;;
         mysql) unit=mysqld ;;
-        postgres) unit=postgresql-16 ;;
+        postgres|postgresql|postgresql-16) unit="$(pg_unit)" ;;
         phpfpm) unit=php-fpm ;;
         php74fpm) unit=php74-php-fpm ;;
         php80fpm) unit=php80-php-fpm ;;

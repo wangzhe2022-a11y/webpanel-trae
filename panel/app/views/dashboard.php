@@ -178,7 +178,7 @@ $ringClass = static function (float $pct, float $warn, float $crit): string {
                 <thead><tr><th>服务</th><th>状态</th><th>操作</th></tr></thead>
                 <tbody id="svcBody">
                 <?php foreach (($info['services'] ?? []) as $s): ?>
-                    <tr data-name="<?= e(str_replace(['php74-php-fpm','php80-php-fpm','php81-php-fpm','php82-php-fpm','php83-php-fpm'], ['php74fpm','php80fpm','php81fpm','php82fpm','php83fpm'], str_replace(['nginx','mysqld','php-fpm'], ['nginx','mysql','phpfpm'], $s['unit']))) ?>">
+                    <tr data-name="<?= e(str_replace(['php74-php-fpm','php80-php-fpm','php81-php-fpm','php82-php-fpm','php83-php-fpm'], ['php74fpm','php80fpm','php81fpm','php82fpm','php83fpm'], str_replace(['postgresql-16','postgresql','nginx','mysqld','php-fpm'], ['postgres','postgres','nginx','mysql','phpfpm'], $s['unit']))) ?>">
                         <td><?= e($s['name']) ?></td>
                         <td>
                             <?php if ($s['status'] === 'active'): ?>
@@ -529,7 +529,7 @@ layui.use(['element', 'layer', 'table'], function () {
             $('#topLabel').hide();
         }
 
-        var map = { nginx: 'nginx', mysqld: 'mysql', 'php-fpm': 'phpfpm' };
+        var map = { nginx: 'nginx', mysqld: 'mysql', 'php-fpm': 'phpfpm', 'postgresql-16': 'postgres', postgresql: 'postgres' };
         [74, 80, 81, 82, 83].forEach(function (v) { map['php' + v + '-php-fpm'] = 'php' + v + 'fpm'; });
         (res.services || []).forEach(function (s) {
             var key = map[s.unit];

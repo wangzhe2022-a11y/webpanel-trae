@@ -103,6 +103,10 @@ class ServiceController extends Controller
 
         // node sites: "node-<siteuser>" maps to wp-node-<siteuser>.service
         $unit = self::UNITS[$name] ?? null;
+        if ($unit === null && ($name === 'postgresql' || $name === 'postgresql-16')) {
+            $name = 'postgres';
+            $unit = self::UNITS['postgres'];
+        }
         if ($unit === null && preg_match('/^node-([a-z][a-z0-9_]{2,30})$/', $name, $m)) {
             $unit = 'wp-node-' . $m[1];
         }
