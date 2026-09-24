@@ -354,18 +354,24 @@ html.wp-side-collapsed .layui-layout-admin .layui-body {
 .wp-top-mem-item {
     display: flex;
     align-items: baseline;
+    justify-content: space-between;
     gap: 8px;
     min-width: 0;
     font-size: 13px;
     color: var(--wp-text-secondary);
 }
 .wp-top-mem-name {
+    flex: 1 1 auto;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 .wp-top-mem-rss {
     flex: 0 0 auto;
+    margin-left: auto;
+    text-align: right;
+    white-space: nowrap;
     color: var(--wp-text-muted);
 }
 .tag-alias { margin: 2px 4px 2px 0; }
