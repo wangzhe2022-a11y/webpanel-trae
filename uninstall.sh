@@ -68,7 +68,7 @@ if [ "$PURGE" -eq 1 ]; then
     fi
 
     echo "==> 卸载软件包（Nginx/MySQL/PHP/Node.js/PostgreSQL 全部移除）"
-    dnf remove -y nginx mysql-community-server postgresql16-server nodejs \
+    dnf remove -y nginx mysql-community-server postgresql16-server postgresql-server nodejs \
         "php*-php-*" php php-fpm php-cli 2>/dev/null || true
     rm -rf /www /var/lib/mysql /var/lib/pgsql
 fi
@@ -76,6 +76,6 @@ fi
 echo "==> 删除面板程序"
 systemctl restart php-fpm 2>/dev/null || true
 rm -rf "$INSTALL_DIR"
-rm -f /etc/cron.d/webpanel-acme
+rm -f /etc/cron.d/webpanel-acme /etc/cron.d/webpanel-backup
 
 echo "卸载完成。$([ "$PURGE" -eq 1 ] && echo '（已清除全部数据）')"
