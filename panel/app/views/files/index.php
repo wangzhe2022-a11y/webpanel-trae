@@ -18,7 +18,16 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-crumb a { color: #1e9fff; }
     .fm-crumb .sep { color: #bbb; margin: 0 2px; }
     .fm-split { flex: 1; display: flex; min-height: 380px; border: 1px solid #e6e6e6; border-radius: 4px; overflow: hidden; background: #fff; }
-    .fm-tree { width: 260px; min-width: 200px; max-width: 420px; border-right: 1px solid #e6e6e6; background: #f7f8fa; display: flex; flex-direction: column; }
+    .fm-tree { width: 260px; min-width: 200px; flex: 0 0 auto; background: #f7f8fa; display: flex; flex-direction: column; }
+    .fm-splitter {
+        display: block; align-self: stretch; width: 6px; flex: 0 0 6px;
+        margin: 0; padding: 0; border: 0; height: auto; min-height: 0;
+        font-size: 0; line-height: 0; background: #e6e6e6;
+        cursor: col-resize; position: relative; z-index: 2;
+        touch-action: none; user-select: none; appearance: none; -webkit-appearance: none;
+    }
+    .fm-splitter:hover, .fm-splitter:focus-visible, body.fm-resizing .fm-splitter { background: #1e9fff; }
+    body.fm-resizing, body.fm-resizing * { cursor: col-resize !important; user-select: none !important; }
     .fm-tree-head { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-bottom: 1px solid #ececec; font-size: 12px; color: #666; background: #f0f2f5; }
     .fm-tree-body { flex: 1; overflow: auto; padding: 6px 0 12px; }
     .fm-tree-ul { list-style: none; margin: 0; padding: 0 0 0 14px; }
@@ -37,7 +46,8 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-root-hint { color: #999; font-size: 12px; margin-left: 4px; }
     @media (max-width: 800px) {
         .fm-split { flex-direction: column; }
-        .fm-tree { width: 100%; max-width: none; max-height: 200px; border-right: 0; border-bottom: 1px solid #e6e6e6; }
+        .fm-tree { width: 100% !important; min-width: 0; flex-basis: auto !important; max-height: 200px; border-bottom: 1px solid #e6e6e6; }
+        .fm-splitter { display: none; }
     }
 </style>
 
@@ -112,6 +122,9 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
                 <ul class="fm-tree-ul root" id="treeRoot"></ul>
             </div>
         </aside>
+        <button type="button" class="fm-splitter" id="fmSplitter" role="separator"
+                aria-orientation="vertical" aria-valuemin="200" aria-valuemax="800"
+                aria-label="拖动调整目录栏宽度" title="拖动调整目录栏宽度"></button>
         <div class="fm-main">
             <table class="layui-table fm-table">
                 <thead>
@@ -182,6 +195,106 @@ layui.use(['layer', 'upload'], function () {
     }
     function lastPath(id) {
         try { return localStorage.getItem('wp.files.lastPath.' + id) || ''; } catch (e) { return ''; }
+    }
+
+    /* directory-tree width: drag the splitter; persist like lastSite / lastPath */
+    var TREE_W_KEY = 'wp.files.treeWidth';
+    var TREE_W_MIN = 200;
+    var TREE_W_MAX = 800;
+    var TREE_W_DEFAULT = 260;
+    var TREE_MAIN_MIN = 320;
+    function treeNarrow() {
+        return window.matchMedia && window.matchMedia('(max-width: 800px)').matches;
+    }
+    function clampTreeW(w) {
+        var split = document.querySelector('.fm-split');
+        var max = TREE_W_MAX;
+        if (split) {
+            max = Math.min(TREE_W_MAX, Math.max(TREE_W_MIN, split.clientWidth - TREE_MAIN_MIN));
+        }
+        w = parseInt(w, 10);
+        if (!isFinite(w)) w = TREE_W_DEFAULT;
+        return Math.max(TREE_W_MIN, Math.min(max, w));
+    }
+    function readTreeW() {
+        try {
+            var raw = localStorage.getItem(TREE_W_KEY);
+            if (raw) return clampTreeW(raw);
+        } catch (e) {}
+        return TREE_W_DEFAULT;
+    }
+    function writeTreeW(w) {
+        try { localStorage.setItem(TREE_W_KEY, String(w)); } catch (e) {}
+    }
+    function applyTreeW(w, persist) {
+        var tree = document.querySelector('.fm-tree');
+        var handle = document.getElementById('fmSplitter');
+        if (!tree) return 0;
+        if (treeNarrow()) {
+            tree.style.width = '';
+            tree.style.flexBasis = '';
+            if (handle) handle.removeAttribute('aria-valuenow');
+            return 0;
+        }
+        w = clampTreeW(w);
+        tree.style.width = w + 'px';
+        tree.style.flexBasis = w + 'px';
+        if (handle) handle.setAttribute('aria-valuenow', String(w));
+        if (persist) writeTreeW(w);
+        return w;
+    }
+    function bindTreeResize() {
+        var handle = document.getElementById('fmSplitter');
+        var tree = document.querySelector('.fm-tree');
+        if (!handle || !tree) return;
+        applyTreeW(readTreeW(), false);
+        var dragging = false, startX = 0, startW = 0;
+        function pointX(e) {
+            if (e.touches && e.touches[0]) return e.touches[0].clientX;
+            if (e.changedTouches && e.changedTouches[0]) return e.changedTouches[0].clientX;
+            return e.clientX;
+        }
+        function onMove(e) {
+            if (!dragging) return;
+            applyTreeW(startW + (pointX(e) - startX), false);
+            if (e.cancelable) e.preventDefault();
+        }
+        function onUp() {
+            if (!dragging) return;
+            dragging = false;
+            document.body.classList.remove('fm-resizing');
+            applyTreeW(tree.getBoundingClientRect().width, true);
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            document.removeEventListener('touchmove', onMove);
+            document.removeEventListener('touchend', onUp);
+        }
+        function onDown(e) {
+            if (treeNarrow() || (e.button != null && e.button !== 0)) return;
+            dragging = true;
+            startX = pointX(e);
+            startW = tree.getBoundingClientRect().width;
+            document.body.classList.add('fm-resizing');
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+            document.addEventListener('touchmove', onMove, { passive: false });
+            document.addEventListener('touchend', onUp);
+            if (e.cancelable) e.preventDefault();
+        }
+        handle.addEventListener('mousedown', onDown);
+        handle.addEventListener('touchstart', onDown, { passive: false });
+        handle.addEventListener('dblclick', function () { applyTreeW(TREE_W_DEFAULT, true); });
+        handle.addEventListener('keydown', function (e) {
+            if (treeNarrow()) return;
+            var cur = tree.getBoundingClientRect().width;
+            if (e.key === 'ArrowLeft') { applyTreeW(cur - 16, true); e.preventDefault(); }
+            else if (e.key === 'ArrowRight') { applyTreeW(cur + 16, true); e.preventDefault(); }
+            else if (e.key === 'Home') { applyTreeW(TREE_W_MIN, true); e.preventDefault(); }
+            else if (e.key === 'End') { applyTreeW(TREE_W_MAX, true); e.preventDefault(); }
+        });
+        window.addEventListener('resize', function () {
+            applyTreeW(treeNarrow() ? TREE_W_DEFAULT : (parseInt(tree.style.width, 10) || readTreeW()), false);
+        });
     }
     function currentSite() { return siteOf(SITE); }
     function defaultFor(id) {
@@ -712,6 +825,7 @@ layui.use(['layer', 'upload'], function () {
         ensureTreePath(start === '/' ? '/' : dirOf(start));
     }
 
+    bindTreeResize();
     boot();
 });
 </script>

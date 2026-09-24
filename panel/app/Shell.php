@@ -169,10 +169,18 @@ final class Shell
         $entries = match ($rel) {
             '/', '' => [$dir('public'), $dir('app'), $dir('logs')],
             '/public' => [
+                $dir('account_live_order@t-shirtshanghai.com'),
                 $dir('wp-content'),
                 $file('index.php', 4521),
                 $file('wp-config.php', 3012, '0640'),
                 $file('theme.zip', 204800),
+            ],
+            '/public/account_live_order@t-shirtshanghai.com' => [
+                $dir('orderid_5c714d42e445c0a1b2'),
+                $file('index.php', 128),
+            ],
+            '/public/account_live_order@t-shirtshanghai.com/orderid_5c714d42e445c0a1b2' => [
+                $file('order.json', 2048),
             ],
             '/public/wp-content' => [$dir('plugins'), $dir('themes'), $dir('uploads')],
             '/public/wp-content/plugins' => [$dir('akismet'), $file('index.php', 28)],
