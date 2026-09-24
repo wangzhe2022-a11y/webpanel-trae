@@ -31,16 +31,55 @@ $ringClass = static function (float $pct, float $warn, float $crit): string {
     }
     return '';
 };
+$storeState = static function (float $pct, float $warn, float $crit): array {
+    if ($pct >= $crit) {
+        return ['Critical', ' is-crit'];
+    }
+    if ($pct >= $warn) {
+        return ['Attention', ' is-warn'];
+    }
+    return ['Healthy', ''];
+};
+$driveIcon = '<svg class="wp-drive-svg" viewBox="0 0 48 40" aria-hidden="true">'
+    . '<rect class="wp-drive-case" x="4" y="8" width="40" height="24" rx="6"></rect>'
+    . '<rect class="wp-drive-lid" x="4" y="8" width="40" height="8" rx="4"></rect>'
+    . '<circle class="wp-drive-led" cx="12" cy="26" r="2.2"></circle>'
+    . '</svg>';
+$renderStoreCard = static function (
+    string $id,
+    string $title,
+    string $used,
+    string $total,
+    float $pct,
+    float $warn,
+    float $crit
+) use ($driveIcon, $storeState, $pctLabel): string {
+    $pct = max(0.0, min(100.0, $pct));
+    [$label, $cls] = $storeState($pct, $warn, $crit);
+    $w = $pctLabel($pct);
+    return '<article class="wp-store-card' . e($cls) . '" data-store="' . e($id) . '">'
+        . '<div class="wp-store-head"><span class="wp-store-title">' . e($title) . '</span></div>'
+        . '<div class="wp-store-body">' . $driveIcon
+        . '<div class="wp-store-info">'
+        . '<div class="wp-store-state">' . e($label) . '</div>'
+        . '<div class="wp-store-used">Used: ' . e($used !== '' ? $used : '—') . '</div>'
+        . '<div class="wp-store-total">Total: ' . e($total !== '' ? $total : '—') . '</div>'
+        . '</div></div>'
+        . '<div class="wp-store-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'
+        . e($w) . '" aria-label="' . e($title) . ' ' . e($w) . '%">'
+        . '<div class="wp-store-bar-fill" style="width:' . e($w) . '%"></div></div>'
+        . '</article>';
+};
 ?>
-<div class="wp-dash-clock-row">
-    <div class="panel-card wp-dash-clock" id="wpDashClock">
-        <div class="wp-clock-time" id="wpDashClockTime">--:--:--</div>
-        <div class="wp-clock-date" id="wpDashClockDate"></div>
-        <div class="wp-clock-tz">本地时间</div>
-    </div>
-    <div class="panel-card wp-dash-disk" id="wpDashDisk">
-        <h3>磁盘</h3>
-        <div class="wp-perf wp-perf-row" id="wpPerf">
+<div class="panel-card wp-sys-status" id="wpSysStatus">
+    <h3>System Status</h3>
+    <div class="wp-sys-status-body">
+        <div class="wp-dash-clock" id="wpDashClock">
+            <div class="wp-clock-time" id="wpDashClockTime">--:--:--</div>
+            <div class="wp-clock-date" id="wpDashClockDate"></div>
+            <div class="wp-clock-tz">本地时间</div>
+        </div>
+        <div class="wp-perf wp-perf-row wp-sys-gauges" id="wpPerf">
             <div class="wp-ring-wrap">
                 <div class="wp-ring<?= e($ringClass($cpuRing, 85, 95)) ?>" id="ringCpu">
                     <svg viewBox="0 0 36 36" aria-hidden="true">
@@ -68,47 +107,6 @@ $ringClass = static function (float $pct, float $warn, float $crit): string {
                 </div>
                 <div class="wp-ring-label">RAM</div>
                 <div class="wp-ring-sub mono" id="ringMemSub"><?= $memTotal ? e(format_bytes($memUsed) . ' / ' . format_bytes($memTotal)) : '-' ?></div>
-            </div>
-            <div class="wp-ring-wrap" id="ringSwapWrap" <?= $swapTotal > 0 ? '' : 'style="display:none"' ?>>
-                <div class="wp-ring<?= e($ringClass($swapRing, 50, 80)) ?>" id="ringSwap">
-                    <svg viewBox="0 0 36 36" aria-hidden="true">
-                        <circle class="wp-ring-track" cx="18" cy="18" r="15.9155"></circle>
-                        <circle class="wp-ring-value" cx="18" cy="18" r="15.9155"
-                            stroke-dasharray="<?= e($pctLabel($swapRing)) ?> 100"></circle>
-                    </svg>
-                    <div class="wp-ring-center">
-                        <span class="wp-ring-num" id="ringSwapNum"><?= e($pctLabel($swapRing)) ?>%</span>
-                    </div>
-                </div>
-                <div class="wp-ring-label">交换</div>
-                <div class="wp-ring-sub mono" id="ringSwapSub"><?= $swapTotal ? e(format_bytes($swapUsed) . ' / ' . format_bytes($swapTotal)) : '-' ?></div>
-            </div>
-            <div id="diskMounts" class="wp-disk-rings">
-            <?php if (empty($diskMounts)): ?>
-                <div class="mon-meta wp-disk-empty">暂无磁盘数据</div>
-            <?php endif; ?>
-            <?php foreach ($diskMounts as $i => $d): ?>
-                <?php
-                $dp = max(0.0, min(100.0, (float) ($d['use_pct'] ?? 0)));
-                $fs = (string) ($d['fs'] ?? '');
-                $used = (string) ($d['used'] ?? '');
-                $size = (string) ($d['size'] ?? '');
-                ?>
-                <div class="wp-ring-wrap wp-disk-ring" data-disk-i="<?= (int) $i ?>">
-                    <div class="wp-ring<?= e($ringClass($dp, 80, 90)) ?>" id="ringDisk<?= (int) $i ?>">
-                        <svg viewBox="0 0 36 36" aria-hidden="true">
-                            <circle class="wp-ring-track" cx="18" cy="18" r="15.9155"></circle>
-                            <circle class="wp-ring-value" cx="18" cy="18" r="15.9155"
-                                stroke-dasharray="<?= e($pctLabel($dp)) ?> 100"></circle>
-                        </svg>
-                        <div class="wp-ring-center">
-                            <span class="wp-ring-num"><?= e($pctLabel($dp)) ?>%</span>
-                        </div>
-                    </div>
-                    <div class="wp-ring-label mono wp-disk-fs"><?= e($fs !== '' ? $fs : '磁盘') ?></div>
-                    <div class="wp-ring-sub mono wp-disk-meta"><?= e(trim($used . ($size !== '' ? ' / ' . $size : '')) ?: '-') ?></div>
-                </div>
-            <?php endforeach; ?>
             </div>
         </div>
     </div>
@@ -167,7 +165,7 @@ $ringClass = static function (float $pct, float $warn, float $crit): string {
                 </div>
             </div>
             <div class="wp-host-extra" id="hostExtra">
-                <div class="wp-host-tabs" role="tablist">
+                <div class="wp-eq-tabs wp-host-tabs" role="tablist">
                     <button type="button" class="wp-host-tab" role="tab" id="hostTabAtop" data-tab="atop" aria-controls="atopCard" aria-selected="false" aria-expanded="false">atop 历史</button>
                     <button type="button" class="wp-host-tab" role="tab" id="hostTabProc" data-tab="proc" aria-controls="atopProcCard" aria-selected="false" aria-expanded="false">占用最高进程</button>
                 </div>
@@ -263,6 +261,31 @@ $ringClass = static function (float $pct, float $warn, float $crit): string {
     </div>
     <div class="layui-col-md4">
         <div class="wp-col-stack">
+        <div class="wp-storage-grid" id="diskMounts">
+            <?= $renderStoreCard(
+                'swap',
+                '交换',
+                $swapTotal ? format_bytes($swapUsed) : '0 KB',
+                $swapTotal ? format_bytes($swapTotal) : '0 KB',
+                $swapRing,
+                50,
+                80
+            ) ?>
+            <?php foreach ($diskMounts as $i => $d): ?>
+                <?= $renderStoreCard(
+                    'disk-' . (int) $i,
+                    (string) (($d['fs'] ?? '') !== '' ? $d['fs'] : '磁盘'),
+                    (string) ($d['used'] ?? ''),
+                    (string) ($d['size'] ?? ''),
+                    (float) ($d['use_pct'] ?? 0),
+                    80,
+                    90
+                ) ?>
+            <?php endforeach; ?>
+            <?php if (empty($diskMounts) && $swapTotal <= 0): ?>
+                <div class="mon-meta wp-disk-empty">暂无磁盘数据</div>
+            <?php endif; ?>
+        </div>
         <div class="panel-card wp-svc-card">
             <h3>
                 服务状态
@@ -300,9 +323,10 @@ $ringClass = static function (float $pct, float $warn, float $crit): string {
     </div>
     <div class="layui-col-md4">
         <div class="wp-col-stack">
-        <div class="panel-card">
+        <div class="panel-card wp-dash-slot" id="wpDashSlot" aria-hidden="true"></div>
+        <div class="panel-card wp-login-card">
             <div class="wp-host-extra is-open" id="loginExtra">
-                <div class="wp-host-tabs" role="tablist">
+                <div class="wp-eq-tabs wp-host-tabs wp-login-tabs" role="tablist">
                     <button type="button" class="wp-host-tab is-active" role="tab" id="loginTabRecent" data-tab="recent" aria-controls="recentLoginCard" aria-selected="true" aria-expanded="true">最近登录</button>
                     <button type="button" class="wp-host-tab" role="tab" id="loginTabSsh" data-tab="ssh" aria-controls="sshLoginCard" aria-selected="false" aria-expanded="false">SSH / 系统登录</button>
                 </div>
@@ -452,30 +476,43 @@ layui.use(['element', 'layer', 'table'], function () {
         $el.find('.wp-ring-value').attr('stroke-dasharray', trimPct(pct) + ' 100');
         $el.find('.wp-ring-num').text(trimPct(pct) + '%');
     }
-    function ringSvg(pct) {
-        pct = trimPct(pct);
-        return '<svg viewBox="0 0 36 36" aria-hidden="true">'
-            + '<circle class="wp-ring-track" cx="18" cy="18" r="15.9155"></circle>'
-            + '<circle class="wp-ring-value" cx="18" cy="18" r="15.9155" stroke-dasharray="' + pct + ' 100"></circle>'
-            + '</svg>'
-            + '<div class="wp-ring-center"><span class="wp-ring-num">' + pct + '%</span></div>';
+    function storeState(pct, warn, crit) {
+        if (pct >= crit) return { label: 'Critical', cls: ' is-crit' };
+        if (pct >= warn) return { label: 'Attention', cls: ' is-warn' };
+        return { label: 'Healthy', cls: '' };
     }
-    function applyStorage(disks) {
-        if (!$('#wpStorage').length) return;
-        disks = disks || [];
-        var d = disks[0] || null;
-        disks.forEach(function (row) {
-            if (row && row.fs === '/') d = row;
+    function driveIcon() {
+        return '<svg class="wp-drive-svg" viewBox="0 0 48 40" aria-hidden="true">'
+            + '<rect class="wp-drive-case" x="4" y="8" width="40" height="24" rx="6"></rect>'
+            + '<rect class="wp-drive-lid" x="4" y="8" width="40" height="8" rx="4"></rect>'
+            + '<circle class="wp-drive-led" cx="12" cy="26" r="2.2"></circle>'
+            + '</svg>';
+    }
+    function storeCard(id, title, used, total, pct, warn, crit) {
+        var st = storeState(pct, warn, crit);
+        var w = trimPct(Math.max(0, Math.min(100, Number(pct) || 0)));
+        var $card = $('<article class="wp-store-card' + st.cls + '" data-store="' + id + '">');
+        $card.append(
+            '<div class="wp-store-head"><span class="wp-store-title"></span></div>'
+            + '<div class="wp-store-body">' + driveIcon()
+            + '<div class="wp-store-info">'
+            + '<div class="wp-store-state"></div>'
+            + '<div class="wp-store-used"></div>'
+            + '<div class="wp-store-total"></div>'
+            + '</div></div>'
+            + '<div class="wp-store-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">'
+            + '<div class="wp-store-bar-fill"></div></div>'
+        );
+        $card.find('.wp-store-title').text(title);
+        $card.find('.wp-store-state').text(st.label);
+        $card.find('.wp-store-used').text('Used: ' + (used || '—'));
+        $card.find('.wp-store-total').text('Total: ' + (total || '—'));
+        $card.find('.wp-store-bar').attr({
+            'aria-valuenow': w,
+            'aria-label': title + ' ' + w + '%'
         });
-        if (!d) {
-            $('#storageMeta').text('暂无磁盘数据');
-            $('#storageState').text('—');
-            return;
-        }
-        var pct = Number(d.use_pct) || 0;
-        $('#storageMeta').text('已用 ' + (d.used || '') + ' / 总量 ' + (d.size || ''));
-        $('#storageState').text((pct >= 90 ? '紧张' : (pct >= 80 ? '注意' : '正常')) + ' · ' + parseInt(pct, 10) + '%');
-        setBar('storageBar', pct, 80, 90);
+        $card.find('.wp-store-bar-fill').css('width', w + '%');
+        return $card;
     }
 
     function applyInfo(res) {
@@ -494,14 +531,6 @@ layui.use(['element', 'layer', 'table'], function () {
         var swapUsed = Number(res.swap_used_kb) || 0;
         var swapPct = Number(res.swap_used_pct);
         if (!swapPct && swapTotal) swapPct = 100 * swapUsed / swapTotal;
-        if (swapTotal > 0) {
-            $('#ringSwapWrap').show();
-            setRing('ringSwap', swapPct, 50, 80);
-            $('#ringSwapSub').text(fmtKb(swapUsed) + ' / ' + fmtKb(swapTotal));
-        } else {
-            $('#ringSwapWrap').hide();
-        }
-
         var cpuPct = Number(res.cpu_usage_pct) || 0;
         var cores = Number(res.cpu_cores) || 0;
         var loadavg = res.loadavg || '-';
@@ -526,26 +555,29 @@ layui.use(['element', 'layer', 'table'], function () {
 
         var disks = res.disk || [];
         var $mounts = $('#diskMounts').empty();
-        if (!disks.length) {
-            $mounts.append('<div class="mon-meta wp-disk-empty">暂无磁盘数据</div>');
-        }
+        $mounts.append(storeCard(
+            'swap',
+            '交换',
+            swapTotal ? fmtKb(swapUsed) : '0 KB',
+            swapTotal ? fmtKb(swapTotal) : '0 KB',
+            swapPct,
+            50,
+            80
+        ));
         disks.forEach(function (d, i) {
-            var dp = Number(d.use_pct) || 0;
-            var fs = d.fs || '磁盘';
-            var sub = ((d.used || '') + (d.size ? ' / ' + d.size : '')).trim() || '-';
-            var warnCls = dp >= 90 ? ' is-crit' : (dp >= 80 ? ' is-warn' : '');
-            var $wrap = $('<div class="wp-ring-wrap wp-disk-ring" data-disk-i="' + i + '">');
-            $wrap.append(
-                '<div class="wp-ring' + warnCls + '" id="ringDisk' + i + '">' + ringSvg(dp) + '</div>'
-                + '<div class="wp-ring-label mono wp-disk-fs"></div>'
-                + '<div class="wp-ring-sub mono wp-disk-meta"></div>'
-            );
-            $wrap.find('.wp-disk-fs').text(fs);
-            $wrap.find('.wp-disk-meta').text(sub);
-            $mounts.append($wrap);
-            setRing('ringDisk' + i, dp, 80, 90);
+            $mounts.append(storeCard(
+                'disk-' + i,
+                d.fs || '磁盘',
+                d.used || '',
+                d.size || '',
+                Number(d.use_pct) || 0,
+                80,
+                90
+            ));
         });
-        applyStorage(disks);
+        if (!disks.length && !swapTotal) {
+            $mounts.empty().append('<div class="mon-meta wp-disk-empty">暂无磁盘数据</div>');
+        }
 
         var top = res.top || [];
         var $top = $('#topTable tbody').empty();
