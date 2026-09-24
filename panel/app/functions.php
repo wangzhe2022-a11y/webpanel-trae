@@ -51,6 +51,10 @@ function make_sysuser(string $primaryDomain): string
     return $user;
 }
 
+/**
+ * Supported PHP versions for site dropdowns and wp-site.sh (values 74–83).
+ * Array keys are numeric strings in source but PHP casts them to int; compare with (string) in views.
+ */
 function panel_php_versions(): array
 {
     return [
