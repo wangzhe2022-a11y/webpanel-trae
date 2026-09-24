@@ -1,4 +1,5 @@
 /* Soft light CasaOS / ZimaOS-like tokens for the admin shell + dashboard.
+   Shared accent is cPanel Meridian orange remapped to ZPanel green #90BA1E.
    Login is a separate document and does not load this file. */
 :root {
     --wp-bg: #f5f7fb;
@@ -8,16 +9,16 @@
     --wp-text: #1e293b;
     --wp-text-secondary: #5b677a;
     --wp-text-muted: #8b95a7;
-    --wp-accent: #4080ff;
-    --wp-accent-hover: #2f6feb;
-    --wp-accent-soft: #eaf1ff;
+    --wp-accent: #90BA1E;
+    --wp-accent-hover: #7a9e16;
+    --wp-accent-soft: #eef6d4;
     --wp-header-bg: #ffffff;
     --wp-header-text: #1e293b;
     --wp-sidebar-bg: #e8edf5;
     --wp-sidebar-text: #445066;
-    --wp-sidebar-hover: rgba(64, 128, 255, 0.08);
+    --wp-sidebar-hover: rgba(144, 186, 30, 0.10);
     --wp-sidebar-active-bg: #ffffff;
-    --wp-sidebar-active-text: #4080ff;
+    --wp-sidebar-active-text: #90BA1E;
     --wp-shadow: 0 8px 28px rgba(31, 42, 68, 0.07);
     --wp-shadow-sm: 0 2px 10px rgba(31, 42, 68, 0.05);
     --wp-radius: 14px;
@@ -281,7 +282,7 @@ html.wp-side-collapsed .layui-layout-admin .layui-body {
     opacity: .38;
     color: #fff !important;
 }
-.stat-card.c-blue { background: linear-gradient(135deg, #6aa6ff, #4080ff) !important; }
+.stat-card.c-blue { background: linear-gradient(135deg, #90BA1E, #5a7612) !important; }
 .stat-card.c-green { background: linear-gradient(135deg, #4ad4c2, #2bb8a6) !important; }
 .stat-card.c-orange { background: linear-gradient(135deg, #ffc266, #f5a623) !important; }
 .stat-card.c-purple { background: linear-gradient(135deg, #b794f6, #8b5cf6) !important; }
@@ -407,6 +408,50 @@ html.wp-side-collapsed .layui-layout-admin .layui-body {
 .layui-progress-bar {
     background-color: var(--wp-accent);
     border-radius: 999px;
+}
+.layui-layout-admin .layui-progress-bar.layui-bg-blue,
+.layui-layout-admin .layui-bg-blue {
+    background-color: var(--wp-accent) !important;
+}
+
+/* Shared accent: links, focus, primary actions, native controls. */
+.wp-link,
+.wp-accent,
+.layui-layout-admin .panel-card a:not(.layui-btn),
+.layui-layout-admin .layui-card a:not(.layui-btn) {
+    color: var(--wp-accent);
+}
+.wp-link:hover,
+.layui-layout-admin .panel-card a:not(.layui-btn):hover,
+.layui-layout-admin .layui-card a:not(.layui-btn):hover {
+    color: var(--wp-accent-hover);
+}
+.layui-layout-admin .layui-input:focus,
+.layui-layout-admin .layui-textarea:focus,
+.layui-layout-admin select:focus,
+.layui-layout-admin textarea:focus {
+    border-color: var(--wp-accent) !important;
+}
+.layui-layout-admin .layui-btn:not(.layui-btn-primary):not(.layui-btn-danger):not(.layui-btn-warm):not(.layui-btn-disabled) {
+    background-color: var(--wp-accent);
+    color: #1a1f0a;
+}
+.layui-layout-admin .layui-btn:not(.layui-btn-primary):not(.layui-btn-danger):not(.layui-btn-warm):hover {
+    background-color: var(--wp-accent-hover);
+    color: #1a1f0a;
+}
+.layui-layout-admin .layui-btn-primary:hover {
+    border-color: var(--wp-accent);
+    color: var(--wp-accent);
+}
+input[type="checkbox"],
+input[type="radio"] {
+    accent-color: var(--wp-accent);
+}
+.layui-layer-btn .layui-layer-btn0 {
+    background: var(--wp-accent);
+    border-color: var(--wp-accent);
+    color: #1a1f0a;
 }
 
 /* Inherited table polish only: keep Layui structure, quieter chrome. */
@@ -868,36 +913,36 @@ html[data-theme="dark"] .wp-clock-tz { color: rgba(255, 255, 255, 0.48); }
 }
 
 /* ==========================================================================
-   Dark glass theme — CasaOS / ZimaOS home-dashboard language
-   Wallpaper + frosted panels + top chrome (no classic left sidebar)
+   Dark glass theme — CasaOS cards/structure, cPanel Meridian-like palette
+   Deep neutrals + green #90BA1E accent (Meridian orange → ZPanel green)
    ========================================================================== */
 html[data-theme="dark"] {
     color-scheme: dark;
     --wp-bg: transparent;
-    --wp-surface: rgba(0, 0, 0, 0.42);
-    --wp-surface-soft: rgba(255, 255, 255, 0.06);
-    --wp-border: rgba(255, 255, 255, 0.12);
-    --wp-text: #f5f8ff;
-    --wp-text-secondary: rgba(245, 248, 255, 0.78);
-    --wp-text-muted: rgba(245, 248, 255, 0.58);
-    --wp-accent: #4080ff;
-    --wp-accent-hover: #5a93ff;
-    --wp-accent-soft: rgba(64, 128, 255, 0.22);
-    --wp-header-bg: rgba(0, 0, 0, 0.28);
-    --wp-header-text: #ffffff;
-    --wp-sidebar-bg: rgba(0, 0, 0, 0.28);
-    --wp-sidebar-text: rgba(255, 255, 255, 0.78);
-    --wp-sidebar-hover: rgba(64, 128, 255, 0.18);
-    --wp-sidebar-active-bg: rgba(64, 128, 255, 0.28);
-    --wp-sidebar-active-text: #ffffff;
-    --wp-shadow: 0 10px 36px rgba(0, 0, 0, 0.28);
-    --wp-shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.2);
+    --wp-surface: rgba(17, 19, 24, 0.78);
+    --wp-surface-soft: rgba(255, 255, 255, 0.045);
+    --wp-border: rgba(255, 255, 255, 0.08);
+    --wp-text: #e8eaed;
+    --wp-text-secondary: rgba(232, 234, 237, 0.70);
+    --wp-text-muted: rgba(232, 234, 237, 0.48);
+    --wp-accent: #90BA1E;
+    --wp-accent-hover: #a4cf28;
+    --wp-accent-soft: rgba(144, 186, 30, 0.16);
+    --wp-header-bg: rgba(10, 11, 13, 0.86);
+    --wp-header-text: #e8eaed;
+    --wp-sidebar-bg: rgba(10, 11, 13, 0.92);
+    --wp-sidebar-text: rgba(232, 234, 237, 0.68);
+    --wp-sidebar-hover: rgba(144, 186, 30, 0.10);
+    --wp-sidebar-active-bg: rgba(144, 186, 30, 0.14);
+    --wp-sidebar-active-text: #90BA1E;
+    --wp-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+    --wp-shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.32);
     --wp-header-h: 56px;
-    --wp-glass: rgba(8, 12, 20, 0.34);
-    --wp-glass-strong: rgba(8, 12, 20, 0.46);
+    --wp-glass: rgba(17, 19, 24, 0.72);
+    --wp-glass-strong: rgba(12, 14, 16, 0.86);
     --wp-wallpaper-image: none;
-    --wp-wallpaper-fallback: linear-gradient(165deg, #0a1020 0%, #152238 42%, #1c2d48 70%, #0d1524 100%);
-    background-color: #0a1020;
+    --wp-wallpaper-fallback: linear-gradient(180deg, #0a0b0d 0%, #111318 55%, #0d0e10 100%);
+    background-color: #0a0b0d;
     background-image: var(--wp-wallpaper-image), var(--wp-wallpaper-fallback);
     background-attachment: fixed;
     background-size: cover;
@@ -914,56 +959,56 @@ html[data-theme="dark"] .layui-layout-admin .layui-body {
 
 html[data-theme="dark"] .layui-layout-admin .layui-header {
     background: var(--wp-header-bg);
-    backdrop-filter: blur(28px) saturate(1.4);
-    -webkit-backdrop-filter: blur(28px) saturate(1.4);
-    color: #fff;
+    backdrop-filter: blur(28px) saturate(1.15);
+    -webkit-backdrop-filter: blur(28px) saturate(1.15);
+    color: var(--wp-header-text);
 }
 html[data-theme="dark"] .layui-layout-admin .layui-side,
 html[data-theme="dark"] .layui-layout-admin .wp-side {
     background: var(--wp-sidebar-bg);
-    backdrop-filter: blur(28px) saturate(1.4);
-    -webkit-backdrop-filter: blur(28px) saturate(1.4);
-    border-right-color: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(28px) saturate(1.15);
+    -webkit-backdrop-filter: blur(28px) saturate(1.15);
+    border-right-color: var(--wp-border);
 }
-html[data-theme="dark"] .layui-layout-admin .layui-logo { color: #fff; }
-html[data-theme="dark"] .header-right > .wp-clock .wp-clock-time { color: #fff; }
-html[data-theme="dark"] .header-right > .wp-clock .wp-clock-date { color: rgba(255, 255, 255, 0.62); }
-html[data-theme="dark"] .wp-side-nav a { color: rgba(255, 255, 255, 0.82); }
+html[data-theme="dark"] .layui-layout-admin .layui-logo { color: var(--wp-header-text); }
+html[data-theme="dark"] .header-right > .wp-clock .wp-clock-time { color: var(--wp-text); }
+html[data-theme="dark"] .header-right > .wp-clock .wp-clock-date { color: var(--wp-text-muted); }
+html[data-theme="dark"] .wp-side-nav a { color: var(--wp-sidebar-text); }
 html[data-theme="dark"] .wp-side-nav a:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: #fff;
+    background: var(--wp-sidebar-hover);
+    color: var(--wp-text);
 }
 html[data-theme="dark"] .wp-side-nav li.is-active a {
-    background: rgba(64, 128, 255, 0.3);
-    color: #fff;
+    background: var(--wp-sidebar-active-bg);
+    color: var(--wp-sidebar-active-text);
 }
 
 html[data-theme="dark"] .wp-icon-btn {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.12);
-    color: #fff;
+    background: var(--wp-surface-soft);
+    border-color: var(--wp-border);
+    color: var(--wp-text);
 }
 html[data-theme="dark"] .wp-icon-btn:hover {
-    background: rgba(64, 128, 255, 0.28);
-    color: #fff;
+    background: var(--wp-accent-soft);
+    color: var(--wp-accent);
 }
 html[data-theme="dark"] .wp-user {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.12);
-    color: rgba(255, 255, 255, 0.86);
+    background: var(--wp-surface-soft);
+    border-color: var(--wp-border);
+    color: var(--wp-text-secondary);
 }
-html[data-theme="dark"] .wp-logout { color: rgba(255, 255, 255, 0.82) !important; }
+html[data-theme="dark"] .wp-logout { color: var(--wp-text-secondary) !important; }
 html[data-theme="dark"] .wp-logout:hover {
-    background: rgba(64, 128, 255, 0.22);
-    color: #fff !important;
+    background: var(--wp-accent-soft);
+    color: var(--wp-accent) !important;
 }
 
 html[data-theme="dark"] .wp-appear {
-    background: rgba(10, 14, 22, 0.78);
-    backdrop-filter: blur(22px) saturate(1.2);
-    -webkit-backdrop-filter: blur(22px) saturate(1.2);
-    border-color: rgba(255, 255, 255, 0.12);
-    color: #fff;
+    background: var(--wp-glass-strong);
+    backdrop-filter: blur(22px) saturate(1.15);
+    -webkit-backdrop-filter: blur(22px) saturate(1.15);
+    border-color: var(--wp-border);
+    color: var(--wp-text);
 }
 
 /* Frosted cards — the CasaOS dashboard language. */
@@ -971,11 +1016,24 @@ html[data-theme="dark"] .panel-card {
     background: var(--wp-glass);
     backdrop-filter: blur(28px) saturate(1.4);
     -webkit-backdrop-filter: blur(28px) saturate(1.4);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid var(--wp-border);
     box-shadow: var(--wp-shadow);
     color: var(--wp-text);
 }
-html[data-theme="dark"] .panel-card h3 { color: #fff; }
+html[data-theme="dark"] .panel-card h3 { color: var(--wp-text); }
+
+html[data-theme="dark"] .layui-card {
+    background: var(--wp-glass);
+    backdrop-filter: blur(28px) saturate(1.15);
+    -webkit-backdrop-filter: blur(28px) saturate(1.15);
+    border: 1px solid var(--wp-border);
+    color: var(--wp-text);
+    box-shadow: var(--wp-shadow);
+}
+html[data-theme="dark"] .layui-card-header,
+html[data-theme="dark"] .layui-card-body {
+    color: var(--wp-text-secondary);
+}
 
 html[data-theme="dark"] .stat-card {
     background: rgba(8, 12, 20, 0.32) !important;
@@ -985,7 +1043,7 @@ html[data-theme="dark"] .stat-card {
     box-shadow: var(--wp-shadow-sm);
 }
 html[data-theme="dark"] .stat-card.c-blue {
-    background: linear-gradient(135deg, rgba(64, 128, 255, 0.42), rgba(0, 0, 0, 0.4)) !important;
+    background: linear-gradient(135deg, rgba(144, 186, 30, 0.42), rgba(0, 0, 0, 0.4)) !important;
 }
 html[data-theme="dark"] .stat-card.c-green {
     background: linear-gradient(135deg, rgba(46, 196, 182, 0.38), rgba(0, 0, 0, 0.4)) !important;
@@ -997,8 +1055,8 @@ html[data-theme="dark"] .stat-card.c-purple {
     background: linear-gradient(135deg, rgba(139, 92, 246, 0.38), rgba(0, 0, 0, 0.4)) !important;
 }
 
-html[data-theme="dark"] .wp-ring-track { stroke: rgba(255, 255, 255, 0.16); }
-html[data-theme="dark"] .wp-ring-value { stroke: #5ee0c8; }
+html[data-theme="dark"] .wp-ring-track { stroke: rgba(255, 255, 255, 0.14); }
+html[data-theme="dark"] .wp-ring-value { stroke: var(--wp-accent); }
 html[data-theme="dark"] .wp-ring.is-warn .wp-ring-value { stroke: #ffc266; }
 html[data-theme="dark"] .wp-ring.is-crit .wp-ring-value { stroke: #ff7a6b; }
 html[data-theme="dark"] .wp-ring-num { color: #fff; }
@@ -1030,13 +1088,13 @@ html[data-theme="dark"] .wp-host-tab + .wp-host-tab {
     border-left-color: rgba(255, 255, 255, 0.1);
 }
 html[data-theme="dark"] .wp-host-tab:hover {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.06);
+    color: var(--wp-text);
+    background: var(--wp-sidebar-hover);
 }
 html[data-theme="dark"] .wp-host-tab.is-active {
-    color: #8fb4ff;
-    background: rgba(64, 128, 255, 0.16);
-    box-shadow: inset 0 -2px 0 #4080ff;
+    color: var(--wp-sidebar-active-text);
+    background: var(--wp-sidebar-active-bg);
+    box-shadow: inset 0 -2px 0 var(--wp-accent);
 }
 html[data-theme="dark"] .secret-box {
     background: rgba(0, 0, 0, 0.28);
@@ -1045,8 +1103,8 @@ html[data-theme="dark"] .secret-box {
 html[data-theme="dark"] .secret-box .v { color: #ff9aa8; }
 html[data-theme="dark"] .warn-text { color: #ff8a6b; }
 
-html[data-theme="dark"] .layui-progress { background-color: rgba(255, 255, 255, 0.12); }
-html[data-theme="dark"] .layui-progress-bar { background-color: #4080ff; }
+html[data-theme="dark"] .layui-progress { background-color: rgba(255, 255, 255, 0.10); }
+html[data-theme="dark"] .layui-progress-bar { background-color: var(--wp-accent); }
 
 html[data-theme="dark"] .panel-card .layui-table,
 html[data-theme="dark"] .panel-card .layui-table[lay-skin=line] {
@@ -1063,7 +1121,7 @@ html[data-theme="dark"] .panel-card .layui-table th {
     background: transparent;
 }
 html[data-theme="dark"] .panel-card .layui-table tbody tr:hover {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--wp-accent-soft);
 }
 html[data-theme="dark"] .panel-card .layui-table[lay-even] tr:nth-child(even) {
     background: rgba(255, 255, 255, 0.03);
@@ -1077,18 +1135,18 @@ html[data-theme="dark"] textarea {
     border-color: rgba(255, 255, 255, 0.16);
     color: #fff;
 }
-html[data-theme="dark"] .layui-btn { background-color: #4080ff; }
+html[data-theme="dark"] .layui-btn { background-color: var(--wp-accent); color: #111; }
 html[data-theme="dark"] .layui-btn-primary {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.16);
-    color: #fff;
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.14);
+    color: var(--wp-text);
 }
 html[data-theme="dark"] .layui-btn-primary:hover {
-    border-color: #4080ff;
-    color: #fff;
+    border-color: var(--wp-accent);
+    color: var(--wp-accent);
 }
-html[data-theme="dark"] .layui-btn-danger { background-color: #e85d3a; }
-html[data-theme="dark"] .layui-btn-normal { background-color: #4080ff; }
+html[data-theme="dark"] .layui-btn-danger { background-color: #e85d3a; color: #fff; }
+html[data-theme="dark"] .layui-btn-normal { background-color: var(--wp-accent); color: #111; }
 
 html[data-theme="dark"] .layui-layer {
     background-color: rgba(14, 18, 28, 0.86);
@@ -1105,36 +1163,41 @@ html[data-theme="dark"] .layui-layer-title {
 }
 html[data-theme="dark"] .layui-layer-content { color: rgba(244, 247, 251, 0.9); }
 html[data-theme="dark"] .layui-layer-btn { border-top-color: rgba(255, 255, 255, 0.08); }
-html[data-theme="dark"] .layui-layer-btn .layui-layer-btn0 { background: #4080ff; border-color: #4080ff; }
+html[data-theme="dark"] .layui-layer-btn .layui-layer-btn0 { background: var(--wp-accent); border-color: var(--wp-accent); color: #111; }
 
 /* File manager: keep usable on glass without rewriting its layout. */
 html[data-theme="dark"] .fm-split {
-    background: rgba(0, 0, 0, 0.22);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.28);
+    border-color: var(--wp-border);
 }
 html[data-theme="dark"] .fm-tree,
 html[data-theme="dark"] .fm-tree-head {
-    background: rgba(0, 0, 0, 0.2);
-    border-color: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.72);
+    background: rgba(0, 0, 0, 0.22);
+    border-color: var(--wp-border);
+    color: var(--wp-text-secondary);
 }
-html[data-theme="dark"] .fm-splitter { background: rgba(255, 255, 255, 0.1); }
+html[data-theme="dark"] .fm-tree-row:hover { background: var(--wp-sidebar-hover); }
+html[data-theme="dark"] .fm-tree-row.active {
+    background: var(--wp-sidebar-active-bg);
+    color: var(--wp-sidebar-active-text);
+}
+html[data-theme="dark"] .fm-splitter { background: var(--wp-border); }
 html[data-theme="dark"] .fm-splitter:hover,
 html[data-theme="dark"] .fm-splitter:focus-visible,
-html[data-theme="dark"] body.fm-resizing .fm-splitter { background: #4080ff; }
-html[data-theme="dark"] .fm-tree-row:hover { background: rgba(64, 128, 255, 0.16); }
-html[data-theme="dark"] .fm-tree-row.active { background: rgba(64, 128, 255, 0.28); }
+html[data-theme="dark"] body.fm-resizing .fm-splitter { background: var(--wp-accent); }
 html[data-theme="dark"] .fm-pathbox input {
     background: rgba(0, 0, 0, 0.35);
-    border-color: rgba(255, 255, 255, 0.14);
-    color: #fff;
+    border-color: var(--wp-border);
+    color: var(--wp-text);
 }
-html[data-theme="dark"] .fm-table thead th { background: rgba(255, 255, 255, 0.06); }
+html[data-theme="dark"] .fm-table thead th { background: var(--wp-surface-soft); }
 html[data-theme="dark"] .fm-site-switch,
 html[data-theme="dark"] .fm-crumb,
-html[data-theme="dark"] .fm-empty { color: rgba(255, 255, 255, 0.7); }
-html[data-theme="dark"] .fm-crumb a { color: #8fb4ff; }
-html[data-theme="dark"] .fm-empty .layui-icon { color: rgba(255, 255, 255, 0.35); }
+html[data-theme="dark"] .fm-empty { color: var(--wp-text-secondary); }
+html[data-theme="dark"] .fm-crumb a,
+html[data-theme="dark"] .fm-name-link { color: var(--wp-accent); }
+html[data-theme="dark"] .fm-empty .layui-icon { color: var(--wp-text-muted); }
+html[data-theme="dark"] .fm-icon-dir { color: var(--wp-accent); }
 html[data-theme="dark"] .fm-vdb-banner {
     background: rgba(255, 184, 0, 0.12);
     border-color: rgba(255, 184, 0, 0.28);

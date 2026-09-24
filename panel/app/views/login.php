@@ -7,17 +7,19 @@
 <title>WebPanel 登录</title>
 <link rel="stylesheet" href="/static/layui/css/layui.css">
 <style>
-    body { background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); height: 100vh; margin: 0; }
+    body { background: linear-gradient(135deg, #0a0b0d, #111318, #16181d); height: 100vh; margin: 0; }
     .login-box {
         width: 380px; margin: 14vh auto 0; background: #fff; border-radius: 10px;
         box-shadow: 0 18px 60px rgba(0,0,0,.35); overflow: hidden;
     }
     .login-head { padding: 34px 30px 18px; text-align: center; }
-    .login-head .logo { font-size: 30px; color: #1e9fff; }
+    .login-head .logo { font-size: 30px; color: #90BA1E; }
     .login-head h1 { font-size: 20px; margin: 10px 0 4px; }
     .login-head p { color: #999; font-size: 13px; margin: 0; }
     .login-body { padding: 10px 30px 34px; }
     .login-tip { color: #ff5722; font-size: 12px; min-height: 18px; }
+    .layui-btn { background-color: #90BA1E; color: #1a1f0a; }
+    .layui-btn:hover { background-color: #7a9e16; color: #1a1f0a; }
 </style>
 </head>
 <body>

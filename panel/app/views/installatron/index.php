@@ -171,7 +171,7 @@ $publicIp = (string) ($conn['public_ip'] ?? '');
 </div>
 
 <style>
-    .btn-copy { font-size:12px; margin-left:8px; color:#1e9fff; }
+    .btn-copy { font-size:12px; margin-left:8px; color: var(--wp-accent); }
     /* layui reset sets li{list-style:none}; restore numbering for this page */
     .itron-steps { padding-left: 22px; margin: 0 0 16px; font-size: 13px; color: #555; line-height: 2; }
     .itron-steps li { list-style: decimal; list-style-position: outside; }

@@ -7,43 +7,46 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
 <style>
     .fm-card { display: flex; flex-direction: column; min-height: calc(100vh - 92px); padding-bottom: 12px; }
     .fm-card > h3 { overflow: hidden; margin-bottom: 10px; }
-    .fm-site-switch { float: right; display: flex; align-items: center; gap: 8px; font-weight: 400; font-size: 13px; color: #666; }
+    .fm-site-switch { float: right; display: flex; align-items: center; gap: 8px; font-weight: 400; font-size: 13px; color: var(--wp-text-secondary); }
     .fm-site-switch select { height: 30px; max-width: 280px; }
     .fm-toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
     .fm-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 13px; }
     .fm-nav .layui-btn { margin: 0; }
     .fm-pathbox { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 220px; }
-    .fm-pathbox input { flex: 1; height: 30px; line-height: 30px; border: 1px solid #e6e6e6; border-radius: 2px; padding: 0 8px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
-    .fm-crumb { color: #666; }
-    .fm-crumb a { color: #1e9fff; }
-    .fm-crumb .sep { color: #bbb; margin: 0 2px; }
-    .fm-split { flex: 1; display: flex; min-height: 380px; border: 1px solid #e6e6e6; border-radius: 4px; overflow: hidden; background: #fff; }
-    .fm-tree { width: 260px; min-width: 200px; flex: 0 0 auto; background: #f7f8fa; display: flex; flex-direction: column; }
+    .fm-pathbox input { flex: 1; height: 30px; line-height: 30px; border: 1px solid var(--wp-border); border-radius: 2px; padding: 0 8px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+    .fm-crumb { color: var(--wp-text-secondary); }
+    .fm-crumb a { color: var(--wp-accent); }
+    .fm-crumb .sep { color: var(--wp-text-muted); margin: 0 2px; }
+    .fm-split { flex: 1; display: flex; min-height: 380px; border: 1px solid var(--wp-border); border-radius: 4px; overflow: hidden; background: var(--wp-surface); }
+    .fm-tree { width: 260px; min-width: 200px; flex: 0 0 auto; background: var(--wp-surface-soft); display: flex; flex-direction: column; }
     .fm-splitter {
         display: block; align-self: stretch; width: 6px; flex: 0 0 6px;
         margin: 0; padding: 0; border: 0; height: auto; min-height: 0;
-        font-size: 0; line-height: 0; background: #e6e6e6;
+        font-size: 0; line-height: 0; background: var(--wp-border);
         cursor: col-resize; position: relative; z-index: 2;
         touch-action: none; user-select: none; appearance: none; -webkit-appearance: none;
     }
-    .fm-splitter:hover, .fm-splitter:focus-visible, body.fm-resizing .fm-splitter { background: #1e9fff; }
+    .fm-splitter:hover, .fm-splitter:focus-visible, body.fm-resizing .fm-splitter { background: var(--wp-accent); }
     body.fm-resizing, body.fm-resizing * { cursor: col-resize !important; user-select: none !important; }
-    .fm-tree-head { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-bottom: 1px solid #ececec; font-size: 12px; color: #666; background: #f0f2f5; }
+    .fm-tree-head { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-bottom: 1px solid var(--wp-border); font-size: 12px; color: var(--wp-text-secondary); background: var(--wp-surface-soft); }
     .fm-tree-body { flex: 1; overflow: auto; padding: 6px 0 12px; }
     .fm-tree-ul { list-style: none; margin: 0; padding: 0 0 0 14px; }
     .fm-tree-ul.root { padding-left: 6px; }
     .fm-tree-row { display: flex; align-items: center; gap: 4px; padding: 3px 8px 3px 4px; border-radius: 3px; cursor: pointer; white-space: nowrap; user-select: none; }
-    .fm-tree-row:hover { background: #e8f3ff; }
-    .fm-tree-row.active { background: #d4ebff; font-weight: 600; }
-    .fm-twist { width: 16px; color: #888; font-size: 12px; text-align: center; flex-shrink: 0; }
+    .fm-tree-row:hover { background: var(--wp-accent-soft); }
+    .fm-tree-row.active { background: var(--wp-accent-soft); color: var(--wp-accent); font-weight: 600; }
+    .fm-twist { width: 16px; color: var(--wp-text-muted); font-size: 12px; text-align: center; flex-shrink: 0; }
     .fm-twist.empty { visibility: hidden; }
     .fm-main { flex: 1; overflow: auto; min-width: 0; }
     .fm-table { margin: 0 !important; }
-    .fm-table thead th { position: sticky; top: 0; background: #f8f8f8; z-index: 1; }
+    .fm-table thead th { position: sticky; top: 0; background: var(--wp-surface-soft); z-index: 1; }
     .fm-table td, .fm-table th { font-size: 13px; }
-    .fm-empty { text-align: center; color: #666; padding: 72px 20px; }
-    .fm-empty .layui-icon { font-size: 42px; color: #c0c4cc; display: block; margin-bottom: 12px; }
-    .fm-root-hint { color: #999; font-size: 12px; margin-left: 4px; }
+    .fm-table tbody tr:hover { background: var(--wp-accent-soft); }
+    .fm-empty { text-align: center; color: var(--wp-text-secondary); padding: 72px 20px; }
+    .fm-empty .layui-icon { font-size: 42px; color: var(--wp-text-muted); display: block; margin-bottom: 12px; }
+    .fm-root-hint { color: var(--wp-text-muted); font-size: 12px; margin-left: 4px; }
+    .fm-icon-dir { color: var(--wp-accent); }
+    .fm-name-link { cursor: pointer; color: var(--wp-accent); }
     .fm-vdb-banner {
         margin: 0 0 8px; padding: 8px 12px; border-radius: 4px;
         background: #fff7e6; border: 1px solid #ffe58f; color: #8c6d1f; font-size: 12.5px;
@@ -51,7 +54,7 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-card.fm-vdb .fm-write { display: none !important; }
     @media (max-width: 800px) {
         .fm-split { flex-direction: column; }
-        .fm-tree { width: 100% !important; min-width: 0; flex-basis: auto !important; max-height: 200px; border-bottom: 1px solid #e6e6e6; }
+        .fm-tree { width: 100% !important; min-width: 0; flex-basis: auto !important; max-height: 200px; border-bottom: 1px solid var(--wp-border); }
         .fm-splitter { display: none; }
     }
 </style>
@@ -373,10 +376,10 @@ layui.use(['layer', 'upload'], function () {
     }
 
     function iconOf(t, n) {
-        if (t === 'dir') return '<span class="layui-icon layui-icon-folder" style="color:#ffb800;font-size:18px"></span>';
+        if (t === 'dir') return '<span class="layui-icon layui-icon-folder fm-icon-dir" style="font-size:18px"></span>';
         if (/\.(jpg|jpeg|png|gif|webp|svg|ico)$/i.test(n)) return '<span class="layui-icon layui-icon-picture" style="color:#16baaa;font-size:16px"></span>';
         if (/\.(zip|tar\.gz|tgz|gz)$/i.test(n)) return '<span class="layui-icon layui-icon-file-b" style="color:#ff5722;font-size:16px"></span>';
-        if (/\.(php|html?|js|css|json)$/i.test(n)) return '<span class="layui-icon layui-icon-file" style="color:#1e9fff;font-size:16px"></span>';
+        if (/\.(php|html?|js|css|json)$/i.test(n)) return '<span class="layui-icon layui-icon-file" style="color:#16baaa;font-size:16px"></span>';
         return '<span class="layui-icon layui-icon-file" style="font-size:16px"></span>';
     }
     function typeLabel(t) {
@@ -422,13 +425,13 @@ layui.use(['layer', 'upload'], function () {
         $('#selAll').prop('checked', false);
         if (curPath !== '/') {
             rows += '<tr class="is-dir" data-name=".."><td></td><td></td>'
-                 + '<td style="cursor:pointer;color:#1e9fff">..</td>'
+                 + '<td class="fm-name-link">..</td>'
                  + '<td></td><td></td><td></td><td></td><td></td></tr>';
         }
         entries.forEach(function (f) {
             var p = joinPath(curPath, f.name);
             var nameHtml = f.type === 'dir'
-                ? '<span style="cursor:pointer;color:#1e9fff" class="go">' + esc(f.name) + '</span>'
+                ? '<span class="go fm-name-link">' + esc(f.name) + '</span>'
                 : esc(f.name);
             var size = f.type === 'dir' ? '-' : (f.size > 1048576 ? (f.size / 1048576).toFixed(1) + ' MB'
                 : f.size > 1024 ? (f.size / 1024).toFixed(1) + ' KB' : f.size + ' B');
@@ -479,8 +482,8 @@ layui.use(['layer', 'upload'], function () {
         html += '<div class="fm-tree-row' + (path === curPath ? ' active' : '') + '" data-path="' + esc(path) + '">';
         html += twistHtml(path);
         html += expanded[path]
-            ? '<span class="layui-icon layui-icon-folder-open" style="color:#ffb800"></span>'
-            : '<span class="layui-icon layui-icon-folder" style="color:#ffb800"></span>';
+            ? '<span class="layui-icon layui-icon-folder-open fm-icon-dir"></span>'
+            : '<span class="layui-icon layui-icon-folder fm-icon-dir"></span>';
         html += '<span class="fm-tname">' + esc(name) + '</span></div>';
         html += '<ul class="fm-tree-ul"' + (open ? '' : ' style="display:none"') + '>';
         if (open && kids) {
@@ -497,7 +500,7 @@ layui.use(['layer', 'upload'], function () {
         var rootKids = treeKids['/'] || [];
         var html = '<li data-path="/"><div class="fm-tree-row' + (curPath === '/' ? ' active' : '') + '" data-path="/">';
         html += twistHtml('/');
-        html += '<span class="layui-icon" style="color:#ffb800">&#xe68e;</span>';
+        html += '<span class="layui-icon fm-icon-dir">&#xe68e;</span>';
         html += '<span class="fm-tname">' + esc(treeLabel()) + '</span></div>';
         html += '<ul class="fm-tree-ul"' + (expanded['/'] ? '' : ' style="display:none"') + '>';
         if (expanded['/']) {

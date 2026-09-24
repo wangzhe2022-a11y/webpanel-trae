@@ -85,7 +85,7 @@
 <div class="panel-card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <h3 style="margin:0">SQL 浏览器</h3>
-        <a href="<?= e($pmaUrl) ?>" target="_blank" rel="noopener" style="color:#1e9fff;font-size:13px">
+        <a class="wp-link" href="<?= e($pmaUrl) ?>" target="_blank" rel="noopener" style="font-size:13px">
             <span class="layui-icon layui-icon-link"></span> 新窗口打开
         </a>
     </div>

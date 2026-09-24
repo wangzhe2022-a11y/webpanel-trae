@@ -3,7 +3,7 @@
 ?>
 <div class="layui-card" style="margin-bottom:15px;border-radius:8px">
     <div class="layui-card-body" style="color:#666;font-size:13px">
-        <span class="layui-icon layui-icon-tips" style="color:#1e9fff"></span>
+        <span class="layui-icon layui-icon-tips wp-accent"></span>
         <b>方式一（推荐）：自动签发</b> — Let's Encrypt 通过 acme.sh 自动签发（http-01 验证）并每天检查自动续期，无需人工干预。签发前请确认：
         ① 所有域名（含别名）已添加 A 记录解析到本服务器公网 IP；
         ② 腾讯云安全组与防火墙已放行 <b>80、443</b> 端口。证书有效期 90 天。<br>
