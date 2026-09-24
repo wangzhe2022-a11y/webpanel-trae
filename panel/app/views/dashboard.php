@@ -71,49 +71,49 @@ $renderStoreCard = static function (
         . '</article>';
 };
 ?>
-<div class="panel-card wp-sys-status" id="wpSysStatus">
-    <h3>System Status</h3>
-    <div class="wp-sys-status-body">
-        <div class="wp-dash-clock" id="wpDashClock">
-            <div class="wp-clock-time" id="wpDashClockTime">--:--:--</div>
-            <div class="wp-clock-date" id="wpDashClockDate"></div>
-            <div class="wp-clock-tz">本地时间</div>
-        </div>
-        <div class="wp-perf wp-perf-row wp-sys-gauges" id="wpPerf">
-            <div class="wp-ring-wrap">
-                <div class="wp-ring<?= e($ringClass($cpuRing, 85, 95)) ?>" id="ringCpu">
-                    <svg viewBox="0 0 36 36" aria-hidden="true">
-                        <circle class="wp-ring-track" cx="18" cy="18" r="15.9155"></circle>
-                        <circle class="wp-ring-value" cx="18" cy="18" r="15.9155"
-                            stroke-dasharray="<?= e($pctLabel($cpuRing)) ?> 100"></circle>
-                    </svg>
-                    <div class="wp-ring-center">
-                        <span class="wp-ring-num" id="ringCpuNum"><?= e($pctLabel($cpuRing)) ?>%</span>
-                    </div>
-                </div>
-                <div class="wp-ring-label">CPU</div>
-                <div class="wp-ring-sub mono" id="ringCpuSub"><?= e($loadavg) ?><?= $cpuCores ? ' · ' . $cpuCores . ' 核' : '' ?></div>
-            </div>
-            <div class="wp-ring-wrap">
-                <div class="wp-ring<?= e($ringClass($memRing, 85, 95)) ?>" id="ringMem">
-                    <svg viewBox="0 0 36 36" aria-hidden="true">
-                        <circle class="wp-ring-track" cx="18" cy="18" r="15.9155"></circle>
-                        <circle class="wp-ring-value" cx="18" cy="18" r="15.9155"
-                            stroke-dasharray="<?= e($pctLabel($memRing)) ?> 100"></circle>
-                    </svg>
-                    <div class="wp-ring-center">
-                        <span class="wp-ring-num" id="ringMemNum"><?= e($pctLabel($memRing)) ?>%</span>
-                    </div>
-                </div>
-                <div class="wp-ring-label">RAM</div>
-                <div class="wp-ring-sub mono" id="ringMemSub"><?= $memTotal ? e(format_bytes($memUsed) . ' / ' . format_bytes($memTotal)) : '-' ?></div>
-            </div>
-        </div>
-    </div>
-</div>
 <div class="layui-row layui-col-space15 wp-mon-band">
     <div class="layui-col-md4">
         <div class="wp-col-stack">
+        <div class="panel-card wp-sys-status" id="wpSysStatus">
+            <h3>System Status</h3>
+            <div class="wp-sys-status-body">
+                <div class="wp-dash-clock" id="wpDashClock">
+                    <div class="wp-clock-time" id="wpDashClockTime">--:--:--</div>
+                    <div class="wp-clock-date" id="wpDashClockDate"></div>
+                    <div class="wp-clock-tz">本地时间</div>
+                </div>
+                <div class="wp-perf wp-perf-row wp-sys-gauges" id="wpPerf">
+                    <div class="wp-ring-wrap">
+                        <div class="wp-ring<?= e($ringClass($cpuRing, 85, 95)) ?>" id="ringCpu">
+                            <svg viewBox="0 0 36 36" aria-hidden="true">
+                                <circle class="wp-ring-track" cx="18" cy="18" r="15.9155"></circle>
+                                <circle class="wp-ring-value" cx="18" cy="18" r="15.9155"
+                                    stroke-dasharray="<?= e($pctLabel($cpuRing)) ?> 100"></circle>
+                            </svg>
+                            <div class="wp-ring-center">
+                                <span class="wp-ring-num" id="ringCpuNum"><?= e($pctLabel($cpuRing)) ?>%</span>
+                            </div>
+                        </div>
+                        <div class="wp-ring-label">CPU</div>
+                        <div class="wp-ring-sub mono" id="ringCpuSub"><?= e($loadavg) ?><?= $cpuCores ? ' · ' . $cpuCores . ' 核' : '' ?></div>
+                    </div>
+                    <div class="wp-ring-wrap">
+                        <div class="wp-ring<?= e($ringClass($memRing, 85, 95)) ?>" id="ringMem">
+                            <svg viewBox="0 0 36 36" aria-hidden="true">
+                                <circle class="wp-ring-track" cx="18" cy="18" r="15.9155"></circle>
+                                <circle class="wp-ring-value" cx="18" cy="18" r="15.9155"
+                                    stroke-dasharray="<?= e($pctLabel($memRing)) ?> 100"></circle>
+                            </svg>
+                            <div class="wp-ring-center">
+                                <span class="wp-ring-num" id="ringMemNum"><?= e($pctLabel($memRing)) ?>%</span>
+                            </div>
+                        </div>
+                        <div class="wp-ring-label">RAM</div>
+                        <div class="wp-ring-sub mono" id="ringMemSub"><?= $memTotal ? e(format_bytes($memUsed) . ' / ' . format_bytes($memTotal)) : '-' ?></div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="panel-card">
             <h3>
                 主机监控
