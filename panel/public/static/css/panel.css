@@ -477,7 +477,7 @@ input[type="radio"] {
 }
 
 /* Three equal columns:
-   主机监控 (atop + 占用最高进程 as collapsed tabs) | 服务状态 | 最近登录 / SSH. */
+   主机监控 (atop + 占用最高进程 as collapsed tabs) | 服务状态 | 最近登录 / SSH (same tabs). */
 .wp-col-stack {
     display: flex;
     flex-direction: column;
@@ -543,6 +543,12 @@ input[type="radio"] {
     padding-top: 12px;
     border-top: 1px solid var(--wp-border);
 }
+/* Login column: tab strip is the card's only chrome, so drop the host divider. */
+.panel-card > .wp-host-extra:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+}
 .wp-host-tabs {
     display: flex;
     border: 1px solid var(--wp-border);
@@ -601,11 +607,20 @@ input[type="radio"] {
     display: none !important;
 }
 .wp-host-tab-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
     margin: 0 0 8px;
 }
 .wp-host-tab-head .mon-updated {
     float: none;
     display: block;
+}
+.wp-host-tab-head .wp-login-limit-wrap {
+    float: none;
+    margin-left: 0;
 }
 .wp-svc-card {
     overflow-x: auto;
