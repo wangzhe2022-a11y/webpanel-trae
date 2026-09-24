@@ -138,7 +138,52 @@
             return;
         }
         applyWallpaper(res.wallpaper || '');
+        applyLogo(res.logo || '', res.logo_custom || '');
         say(true, res.wallpaper ? '壁纸已更新（深色主题生效）' : '已清除壁纸');
+    }
+
+    function applyLogo(logo, custom) {
+        var box = document.getElementById('wpLogoPreview');
+        if (box) {
+            var img = box.querySelector('img');
+            if (!img) {
+                img = document.createElement('img');
+                img.alt = '当前标志';
+                box.appendChild(img);
+            }
+            img.src = custom || logo || '';
+        }
+        var brand = document.querySelector('.layui-logo');
+        if (!brand) return;
+        var existing = brand.querySelector('.wp-logo-img');
+        var icon = brand.querySelector('.wp-logo-icon');
+        if (custom) {
+            if (!existing) {
+                existing = document.createElement('img');
+                existing.className = 'wp-logo-img';
+                existing.alt = '';
+                brand.insertBefore(existing, brand.firstChild);
+            }
+            existing.src = custom;
+            if (icon) icon.style.display = 'none';
+        } else {
+            if (existing) existing.remove();
+            if (icon) icon.style.display = '';
+            else {
+                icon = document.createElement('span');
+                icon.className = 'layui-icon layui-icon-template-1 wp-logo-icon';
+                brand.insertBefore(icon, brand.firstChild);
+            }
+        }
+    }
+
+    function afterLogo(res) {
+        if (!res || !res.ok) {
+            say(false, (res && res.error) || '操作失败');
+            return;
+        }
+        applyLogo(res.logo || '', res.logo_custom || '');
+        say(true, res.logo_custom ? '登录标志已更新' : '已恢复默认标志');
     }
 
     var fileInput = document.getElementById('wpFile');
@@ -181,6 +226,35 @@
         clearBtn.addEventListener('click', function (ev) {
             ev.preventDefault();
             WP.post('/appearance/clear', {}).then(afterWallpaper);
+        });
+    }
+
+    var logoInput = document.getElementById('wpLogoFile');
+    var logoUploadBtn = document.getElementById('btnLogoUpload');
+    if (logoUploadBtn && logoInput) {
+        logoUploadBtn.addEventListener('click', function (ev) {
+            ev.preventDefault();
+            logoInput.click();
+        });
+        logoInput.addEventListener('change', function () {
+            var file = logoInput.files && logoInput.files[0];
+            logoInput.value = '';
+            if (!file) return;
+            if (file.size > 2 * 1024 * 1024) {
+                say(false, '标志不能超过 2MB');
+                return;
+            }
+            var fd = new FormData();
+            fd.append('file', file);
+            WP.post('/appearance/logo', fd).then(afterLogo);
+        });
+    }
+
+    var logoClearBtn = document.getElementById('btnLogoClear');
+    if (logoClearBtn) {
+        logoClearBtn.addEventListener('click', function (ev) {
+            ev.preventDefault();
+            WP.post('/appearance/logo/clear', {}).then(afterLogo);
         });
     }
 })();

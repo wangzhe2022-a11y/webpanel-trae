@@ -1,4 +1,7 @@
-<?php /** @var string $csrf @var string $error */ ?>
+<?php
+/** @var string $csrf @var string $error */
+$logoSrc = panel_logo_src();
+?>
 <!doctype html>
 <html lang="en">
 <head>
@@ -12,9 +15,11 @@
         width: 380px; margin: 14vh auto 0; background: #fff; border-radius: 10px;
         box-shadow: 0 18px 60px rgba(0,0,0,.35); overflow: hidden;
     }
-    .login-head { padding: 34px 30px 18px; text-align: center; }
-    .login-head .logo { font-size: 30px; color: #90BA1E; }
-    .login-head h1 { font-size: 20px; margin: 10px 0 0; }
+    .login-head { padding: 34px 30px 10px; text-align: center; }
+    .login-logo {
+        display: block; margin: 0 auto; max-width: 160px; max-height: 72px;
+        width: auto; height: auto; object-fit: contain;
+    }
     .login-body { padding: 10px 30px 34px; }
     .login-tip { color: #ff5722; font-size: 12px; min-height: 18px; }
     .layui-btn { background-color: #90BA1E; color: #1a1f0a; }
@@ -24,8 +29,7 @@
 <body>
 <div class="login-box">
     <div class="login-head">
-        <div class="logo layui-icon layui-icon-template-1"></div>
-        <h1>Login</h1>
+        <img class="login-logo" src="<?= e($logoSrc) ?>" alt="">
     </div>
     <div class="login-body">
         <form class="layui-form" id="loginForm">
@@ -34,16 +38,14 @@
                 <label class="layui-form-label">Account</label>
                 <div class="layui-input-block">
                     <input type="text" name="username" required lay-verify="required"
-                           placeholder="Account" autocomplete="username"
-                           class="layui-input" autofocus>
+                           autocomplete="username" class="layui-input" autofocus>
                 </div>
             </div>
             <div class="layui-form-item">
                 <label class="layui-form-label">Password</label>
                 <div class="layui-input-block">
                     <input type="password" name="password" required lay-verify="required"
-                           placeholder="Password" autocomplete="current-password"
-                           class="layui-input">
+                           autocomplete="current-password" class="layui-input">
                 </div>
             </div>
             <div class="login-tip" id="tip"><?= e($error) ?></div>

@@ -160,11 +160,14 @@ function panel_appearance_path(): string
 }
 
 /**
- * @return array{kind: string, file: string, url: string, updated: int}
+ * @return array{kind: string, file: string, url: string, updated: int, logo_file: string, logo_updated: int}
  */
 function panel_appearance(): array
 {
-    $defaults = ['kind' => '', 'file' => '', 'url' => '', 'updated' => 0];
+    $defaults = [
+        'kind' => '', 'file' => '', 'url' => '', 'updated' => 0,
+        'logo_file' => '', 'logo_updated' => 0,
+    ];
     $path = panel_appearance_path();
     if (!is_file($path)) {
         return $defaults;
@@ -178,16 +181,21 @@ function panel_appearance(): array
         'file' => (string) ($data['file'] ?? ''),
         'url' => (string) ($data['url'] ?? ''),
         'updated' => (int) ($data['updated'] ?? 0),
+        'logo_file' => (string) ($data['logo_file'] ?? ''),
+        'logo_updated' => (int) ($data['logo_updated'] ?? 0),
     ];
 }
 
 function panel_appearance_save(array $data): void
 {
+    $cur = panel_appearance();
     $payload = [
-        'kind' => (string) ($data['kind'] ?? ''),
-        'file' => (string) ($data['file'] ?? ''),
-        'url' => (string) ($data['url'] ?? ''),
-        'updated' => (int) ($data['updated'] ?? time()),
+        'kind' => array_key_exists('kind', $data) ? (string) $data['kind'] : $cur['kind'],
+        'file' => array_key_exists('file', $data) ? (string) $data['file'] : $cur['file'],
+        'url' => array_key_exists('url', $data) ? (string) $data['url'] : $cur['url'],
+        'updated' => array_key_exists('updated', $data) ? (int) $data['updated'] : $cur['updated'],
+        'logo_file' => array_key_exists('logo_file', $data) ? (string) $data['logo_file'] : $cur['logo_file'],
+        'logo_updated' => array_key_exists('logo_updated', $data) ? (int) $data['logo_updated'] : $cur['logo_updated'],
     ];
     @file_put_contents(
         panel_appearance_path(),
@@ -220,4 +228,44 @@ function panel_appearance_clear_files(): void
             @unlink($f);
         }
     }
+}
+
+function panel_logo_default_src(): string
+{
+    return '/static/img/logo.svg';
+}
+
+function panel_logo_clear_files(): void
+{
+    foreach (glob(panel_uploads_dir() . '/logo.*') ?: [] as $f) {
+        if (is_file($f)) {
+            @unlink($f);
+        }
+    }
+}
+
+/** Custom uploaded logo URL, or empty when using the default mark. */
+function panel_logo_custom_src(): string
+{
+    $a = panel_appearance();
+    $file = (string) ($a['logo_file'] ?? '');
+    if ($file === '' || !preg_match('/^logo\.(jpe?g|png|webp|svg)$/', $file)) {
+        return '';
+    }
+    $full = panel_uploads_dir() . '/' . $file;
+    if (!is_file($full)) {
+        return '';
+    }
+    $t = (int) ($a['logo_updated'] ?? 0);
+    if ($t <= 0) {
+        $t = (int) filemtime($full);
+    }
+    return '/static/uploads/' . $file . '?t=' . $t;
+}
+
+/** Logo URL for the login card: custom upload, otherwise the default mark. */
+function panel_logo_src(): string
+{
+    $custom = panel_logo_custom_src();
+    return $custom !== '' ? $custom : panel_logo_default_src();
 }

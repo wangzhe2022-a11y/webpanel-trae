@@ -11,6 +11,8 @@ $nav = [
     '/installatron' => ['Installatron', 'layui-icon-app'],
 ];
 $wallpaperSrc = panel_appearance_src();
+$logoCustomSrc = panel_logo_custom_src();
+$logoSrc = panel_logo_src();
 ?><!doctype html>
 <html lang="zh-CN"<?php if ($wallpaperSrc !== ''): ?> data-wallpaper="<?= e($wallpaperSrc) ?>"<?php endif; ?>>
 <head>
@@ -73,7 +75,11 @@ window.WP = (function () {
 <div class="layui-layout layui-layout-admin">
     <div class="layui-header">
         <div class="layui-logo layui-elip">
+            <?php if ($logoCustomSrc !== ''): ?>
+            <img class="wp-logo-img" src="<?= e($logoCustomSrc) ?>" alt="">
+            <?php else: ?>
             <span class="layui-icon layui-icon-template-1 wp-logo-icon"></span>
+            <?php endif; ?>
             <span class="wp-logo-text">WebPanel<span class="wp-logo-rest"> 管理面板</span></span>
         </div>
         <div class="header-right">
@@ -107,6 +113,17 @@ window.WP = (function () {
                         <?php if ($wallpaperSrc !== ''): ?>
                         <img src="<?= e($wallpaperSrc) ?>" alt="当前壁纸">
                         <?php endif; ?>
+                    </div>
+                    <div class="wp-appear-title wp-appear-title-sub">登录标志</div>
+                    <p class="wp-appear-hint">显示在登录页（未上传时使用默认图形，不含产品名）。</p>
+                    <div class="wp-appear-row">
+                        <button type="button" class="layui-btn layui-btn-sm" id="btnLogoUpload">上传标志</button>
+                        <button type="button" class="layui-btn layui-btn-sm layui-btn-primary" id="btnLogoClear">恢复默认</button>
+                        <input type="file" id="wpLogoFile" accept="image/jpeg,image/png,image/webp,image/svg+xml,.jpg,.jpeg,.png,.webp,.svg" hidden>
+                    </div>
+                    <p class="wp-appear-hint">png / jpg / webp / svg，最大 2MB</p>
+                    <div class="wp-appear-preview is-logo" id="wpLogoPreview">
+                        <img src="<?= e($logoSrc) ?>" alt="当前标志">
                     </div>
                 </div>
             </div>
