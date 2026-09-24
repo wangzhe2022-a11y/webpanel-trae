@@ -28,6 +28,9 @@ $wallpaperSrc = panel_appearance_src();
     if (t === 'dark' && src) {
         document.documentElement.style.setProperty('--wp-wallpaper-image', 'url("' + String(src).replace(/"/g, '') + '")');
     }
+    var collapsed = false;
+    try { collapsed = localStorage.getItem('wp.sideCollapsed') === '1'; } catch (e) {}
+    if (collapsed) document.documentElement.classList.add('wp-side-collapsed');
 })();
 </script>
 <link rel="stylesheet" href="/static/layui/css/layui.css">
@@ -71,15 +74,8 @@ window.WP = (function () {
     <div class="layui-header">
         <div class="layui-logo layui-elip">
             <span class="layui-icon layui-icon-template-1 wp-logo-icon"></span>
-            WebPanel<span class="wp-logo-rest"> 管理面板</span>
+            <span class="wp-logo-text">WebPanel<span class="wp-logo-rest"> 管理面板</span></span>
         </div>
-        <ul class="wp-top-nav">
-            <?php foreach ($nav as $path => [$label, $icon]): ?>
-            <li class="<?= $uri === $path ? 'is-active' : '' ?>">
-                <a href="<?= e($path) ?>" title="<?= e($label) ?>"><span class="layui-icon <?= e($icon) ?>"></span><span><?= e($label) ?></span></a>
-            </li>
-            <?php endforeach; ?>
-        </ul>
         <div class="header-right">
             <?php if ($uri !== '/'): ?>
             <div class="wp-clock" id="wpClock" title="本地时间">
@@ -120,5 +116,23 @@ window.WP = (function () {
             </span>
             <a href="javascript:;" id="btnLogout" class="wp-logout"><span class="layui-icon layui-icon-logout"></span> 退出</a>
         </div>
+    </div>
+    <div class="layui-side wp-side" id="wpSide">
+        <div class="layui-side-scroll">
+            <ul class="wp-side-nav" id="wpSideNav">
+                <?php foreach ($nav as $path => [$label, $icon]): ?>
+                <li class="<?= $uri === $path ? 'is-active' : '' ?>">
+                    <a href="<?= e($path) ?>" title="<?= e($label) ?>">
+                        <span class="layui-icon <?= e($icon) ?>"></span>
+                        <span class="wp-side-label"><?= e($label) ?></span>
+                    </a>
+                </li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+        <button type="button" class="wp-side-fold" id="btnSideToggle" title="折叠侧栏" aria-label="折叠侧栏" aria-expanded="true">
+            <span class="layui-icon layui-icon-shrink-right" id="btnSideToggleIcon"></span>
+            <span class="wp-side-label">折叠菜单</span>
+        </button>
     </div>
     <div class="layui-body">

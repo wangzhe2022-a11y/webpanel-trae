@@ -1,6 +1,7 @@
-/* Theme toggle, wallpaper (dark only), and CasaOS-style header clock. */
+/* Theme toggle, wallpaper (dark only), CasaOS-style clock, and side nav collapse. */
 (function () {
     var THEME_KEY = 'wp.theme';
+    var SIDE_KEY = 'wp.sideCollapsed';
     var WEEK = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
 
     function currentTheme() {
@@ -54,6 +55,25 @@
         applyWallpaper(document.documentElement.getAttribute('data-wallpaper') || '');
     }
 
+    function isSideCollapsed() {
+        return document.documentElement.classList.contains('wp-side-collapsed');
+    }
+
+    function applySideCollapsed(collapsed) {
+        collapsed = !!collapsed;
+        document.documentElement.classList.toggle('wp-side-collapsed', collapsed);
+        try { localStorage.setItem(SIDE_KEY, collapsed ? '1' : '0'); } catch (e) {}
+        var icon = document.getElementById('btnSideToggleIcon');
+        if (icon) {
+            icon.className = 'layui-icon ' + (collapsed ? 'layui-icon-spread-left' : 'layui-icon-shrink-right');
+        }
+        var btn = document.getElementById('btnSideToggle');
+        if (btn) {
+            btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+            btn.title = collapsed ? '展开侧栏' : '折叠侧栏';
+        }
+    }
+
     function tickClock() {
         var d = new Date();
         var hh = ('0' + d.getHours()).slice(-2);
@@ -69,6 +89,7 @@
     }
 
     applyTheme(currentTheme());
+    applySideCollapsed(isSideCollapsed());
     tickClock();
     setInterval(tickClock, 1000);
 
@@ -87,6 +108,13 @@
             applyTheme(currentTheme() === 'dark' ? 'light' : 'dark');
         });
     }
+
+    document.addEventListener('click', function (ev) {
+        var btn = ev.target && ev.target.closest ? ev.target.closest('#btnSideToggle') : null;
+        if (!btn) return;
+        ev.preventDefault();
+        applySideCollapsed(!isSideCollapsed());
+    });
 
     var appearBtn = document.getElementById('btnAppearance');
     var appear = document.getElementById('wpAppear');
