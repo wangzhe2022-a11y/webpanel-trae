@@ -344,9 +344,30 @@ html.wp-side-collapsed .layui-layout-admin .layui-body {
     line-height: 22px;
 }
 .warn-text { color: #e85d3a; }
-.mon-top { width: 100%; margin-top: 8px; }
-.mon-top td { padding: 2px 0; font-size: 13px; color: var(--wp-text-secondary); }
-.mon-top td:last-child { text-align: right; color: var(--wp-text-muted); }
+.wp-top-mem {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(3, auto);
+    gap: 4px 14px;
+    margin-top: 8px;
+}
+.wp-top-mem-item {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+    font-size: 13px;
+    color: var(--wp-text-secondary);
+}
+.wp-top-mem-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.wp-top-mem-rss {
+    flex: 0 0 auto;
+    color: var(--wp-text-muted);
+}
 .tag-alias { margin: 2px 4px 2px 0; }
 .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13.5px; }
 .secret-box {
