@@ -1027,6 +1027,10 @@ html[data-theme="dark"] .fm-tree-head {
     border-color: rgba(255, 255, 255, 0.08);
     color: rgba(255, 255, 255, 0.72);
 }
+html[data-theme="dark"] .fm-splitter { background: rgba(255, 255, 255, 0.1); }
+html[data-theme="dark"] .fm-splitter:hover,
+html[data-theme="dark"] .fm-splitter:focus-visible,
+html[data-theme="dark"] body.fm-resizing .fm-splitter { background: #4080ff; }
 html[data-theme="dark"] .fm-tree-row:hover { background: rgba(64, 128, 255, 0.16); }
 html[data-theme="dark"] .fm-tree-row.active { background: rgba(64, 128, 255, 0.28); }
 html[data-theme="dark"] .fm-pathbox input {
