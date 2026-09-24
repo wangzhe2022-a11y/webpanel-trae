@@ -51,6 +51,14 @@ function make_sysuser(string $primaryDomain): string
     return $user;
 }
 
+/**
+ * Supported PHP versions for site dropdowns and wp-site.sh (values 74–83).
+ *
+ * Array keys are written as numeric strings ('74', '82', …) but PHP stores
+ * them as integers. SQLite may return sites.php_version as a string. Always
+ * compare with panel_php_version_eq() — never === between a DB value and a
+ * foreach key, or the first dropdown option (7.4) appears selected.
+ */
 function panel_php_versions(): array
 {
     return [
@@ -60,6 +68,12 @@ function panel_php_versions(): array
         '82' => 'PHP 8.2（默认推荐）',
         '83' => 'PHP 8.3（最新）',
     ];
+}
+
+/** True when two PHP version codes match, ignoring int vs string key types. */
+function panel_php_version_eq(mixed $a, mixed $b): bool
+{
+    return (string) $a === (string) $b;
 }
 
 function format_bytes(int|float $kb): string
