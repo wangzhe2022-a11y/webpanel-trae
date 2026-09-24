@@ -109,13 +109,12 @@
         });
     }
 
-    var sideBtn = document.getElementById('btnSideToggle');
-    if (sideBtn) {
-        sideBtn.addEventListener('click', function (ev) {
-            ev.preventDefault();
-            applySideCollapsed(!isSideCollapsed());
-        });
-    }
+    document.addEventListener('click', function (ev) {
+        var btn = ev.target && ev.target.closest ? ev.target.closest('#btnSideToggle') : null;
+        if (!btn) return;
+        ev.preventDefault();
+        applySideCollapsed(!isSideCollapsed());
+    });
 
     var appearBtn = document.getElementById('btnAppearance');
     var appear = document.getElementById('wpAppear');
