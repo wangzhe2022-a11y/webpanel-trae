@@ -925,7 +925,10 @@ html[data-theme="dark"] .wp-clock-tz { color: rgba(255, 255, 255, 0.48); }
 
 /* Reserved right-column slot (future widget) + login tabs flush to the card. */
 .wp-dash-slot {
-    min-height: 168px;
+    min-height: 196px;
+    background: var(--wp-surface);
+    border: 1px solid var(--wp-border);
+    box-shadow: var(--wp-shadow-sm);
 }
 .wp-login-card {
     padding: 0;
@@ -1207,7 +1210,8 @@ html[data-theme="dark"] .wp-ring.is-crit .wp-ring-value { stroke: #ff7a6b; }
 html[data-theme="dark"] .wp-ring-num { color: #fff; }
 html[data-theme="dark"] .wp-storage,
 html[data-theme="dark"] .wp-host-meta,
-html[data-theme="dark"] .wp-store-card {
+html[data-theme="dark"] .wp-store-card,
+html[data-theme="dark"] .wp-dash-slot {
     background: rgba(255, 255, 255, 0.06);
     border-color: rgba(255, 255, 255, 0.1);
 }
