@@ -886,27 +886,31 @@ input[type="radio"] {
 }
 .wp-sys-gauges {
     display: flex;
-    flex: 1 1 0;
+    flex: 1 1 58%;
     min-width: 0;
     justify-content: space-evenly;
+    flex-wrap: nowrap;
     gap: 8px;
     margin: 0;
 }
 .wp-sys-gauges .wp-ring {
-    width: 76px;
-    height: 76px;
+    width: 72px;
+    height: 72px;
 }
-.wp-sys-gauges .wp-ring-num { font-size: 15px; }
+.wp-sys-gauges .wp-ring-num { font-size: 14px; }
 .wp-sys-gauges .wp-ring-label { margin-top: 4px; font-size: 12px; }
 .wp-sys-gauges .wp-ring-sub {
     font-size: 11px;
-    max-width: 92px;
+    max-width: 86px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .wp-dash-clock {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    flex: 1 1 0;
+    flex: 0 1 38%;
     min-width: 0;
     max-width: none;
     padding: 0;
@@ -1383,9 +1387,9 @@ html[data-theme="dark"] .fm-vdb-banner {
     .header-right > .wp-clock { max-width: 108px; }
     .header-right > .wp-clock .wp-clock-date { display: none; }
     .wp-dash-clock .wp-clock-time { font-size: 24px; }
-    .wp-sys-status-body { gap: 10px; }
-    .wp-sys-gauges { gap: 6px; }
-    .wp-sys-gauges .wp-ring { width: 68px; height: 68px; }
+    .wp-sys-status-body { gap: 10px; flex-wrap: nowrap; }
+    .wp-sys-gauges { gap: 6px; flex-wrap: nowrap; }
+    .wp-sys-gauges .wp-ring { width: 64px; height: 64px; }
 }
 @media (max-width: 720px) {
     :root { --wp-side-w: 64px; }
