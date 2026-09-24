@@ -14,8 +14,7 @@
     }
     .login-head { padding: 34px 30px 18px; text-align: center; }
     .login-head .logo { font-size: 30px; color: #90BA1E; }
-    .login-head h1 { font-size: 20px; margin: 10px 0 4px; }
-    .login-head p { color: #999; font-size: 13px; margin: 0; }
+    .login-head h1 { font-size: 20px; margin: 10px 0 0; }
     .login-body { padding: 10px 30px 34px; }
     .login-tip { color: #ff5722; font-size: 12px; min-height: 18px; }
     .layui-btn { background-color: #90BA1E; color: #1a1f0a; }
@@ -27,7 +26,6 @@
     <div class="login-head">
         <div class="logo layui-icon layui-icon-template-1"></div>
         <h1>WebPanel 服务器管理面板</h1>
-        <p>Nginx · 多版本 PHP · MySQL 8 · SSL</p>
     </div>
     <div class="login-body">
         <form class="layui-form" id="loginForm">
