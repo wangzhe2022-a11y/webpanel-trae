@@ -72,9 +72,6 @@ window.WP = (function () {
 </script>
 <div class="layui-layout layui-layout-admin">
     <div class="layui-header">
-        <button type="button" class="wp-icon-btn wp-side-toggle" id="btnSideToggle" title="折叠 / 展开侧栏" aria-label="折叠侧栏" aria-expanded="true">
-            <span class="layui-icon layui-icon-shrink-right" id="btnSideToggleIcon"></span>
-        </button>
         <div class="layui-logo layui-elip">
             <span class="layui-icon layui-icon-template-1 wp-logo-icon"></span>
             <span class="wp-logo-text">WebPanel<span class="wp-logo-rest"> 管理面板</span></span>
@@ -133,5 +130,9 @@ window.WP = (function () {
                 <?php endforeach; ?>
             </ul>
         </div>
+        <button type="button" class="wp-side-fold" id="btnSideToggle" title="折叠侧栏" aria-label="折叠侧栏" aria-expanded="true">
+            <span class="layui-icon layui-icon-shrink-right" id="btnSideToggleIcon"></span>
+            <span class="wp-side-label">折叠菜单</span>
+        </button>
     </div>
     <div class="layui-body">

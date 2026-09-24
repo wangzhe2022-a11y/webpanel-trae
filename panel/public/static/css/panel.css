@@ -67,7 +67,8 @@ html.wp-side-collapsed .layui-layout-admin .layui-header {
 
 .layui-layout-admin .layui-side,
 .layui-layout-admin .wp-side {
-    display: block !important;
+    display: flex !important;
+    flex-direction: column;
     position: fixed;
     top: 0;
     left: 0;
@@ -85,14 +86,15 @@ html.wp-side-collapsed .layui-layout-admin .wp-side {
 }
 .layui-layout-admin .layui-side-scroll {
     width: 100%;
-    height: 100%;
+    flex: 1 1 auto;
+    height: auto;
     overflow-x: hidden;
     overflow-y: auto;
 }
 .wp-side-nav {
     list-style: none;
     margin: 0;
-    padding: 12px 10px;
+    padding: 14px 10px 8px;
 }
 .wp-side-nav li { margin: 0 0 4px; }
 .wp-side-nav a {
@@ -116,7 +118,8 @@ html.wp-side-collapsed .layui-layout-admin .wp-side {
     color: var(--wp-sidebar-active-text);
     font-weight: 600;
 }
-.wp-side-nav .layui-icon {
+.wp-side-nav .layui-icon,
+.wp-side-fold .layui-icon {
     flex: 0 0 auto;
     width: 20px;
     text-align: center;
@@ -128,16 +131,44 @@ html.wp-side-collapsed .layui-layout-admin .wp-side {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+.wp-side-fold {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: calc(100% - 20px);
+    min-height: 40px;
+    margin: 8px 10px 12px;
+    padding: 0 12px;
+    border: 1px solid var(--wp-border);
+    border-radius: 10px;
+    background: var(--wp-surface-soft);
+    color: var(--wp-sidebar-text);
+    cursor: pointer;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+.wp-side-fold:hover {
+    color: var(--wp-accent);
+    background: var(--wp-sidebar-hover);
+    border-color: transparent;
+}
 html.wp-side-collapsed .wp-side-label {
     display: none;
 }
-html.wp-side-collapsed .wp-side-nav a {
+html.wp-side-collapsed .wp-side-nav a,
+html.wp-side-collapsed .wp-side-fold {
     justify-content: center;
     padding: 0;
     gap: 0;
 }
 html.wp-side-collapsed .wp-side-nav {
-    padding: 12px 8px;
+    padding: 14px 8px 8px;
+}
+html.wp-side-collapsed .wp-side-fold {
+    width: calc(100% - 16px);
+    margin: 8px 8px 12px;
 }
 
 /* Layui's .layui-body is position:absolute and only paints the viewport.
@@ -174,7 +205,6 @@ html.wp-side-collapsed .layui-layout-admin .layui-body {
     padding-right: 0;
 }
 .header-right .layui-icon { font-size: 16px; }
-.wp-side-toggle { flex: 0 0 auto; }
 .wp-user {
     display: inline-flex;
     align-items: center;
@@ -1002,8 +1032,10 @@ html[data-theme="dark"] .fm-empty .layui-icon { color: rgba(255, 255, 255, 0.35)
 @media (max-width: 720px) {
     :root { --wp-side-w: 64px; }
     html:not(.wp-side-collapsed) .wp-side-label { display: none; }
-    html:not(.wp-side-collapsed) .wp-side-nav a { justify-content: center; padding: 0; gap: 0; }
-    html:not(.wp-side-collapsed) .wp-side-nav { padding: 12px 8px; }
+    html:not(.wp-side-collapsed) .wp-side-nav a,
+    html:not(.wp-side-collapsed) .wp-side-fold { justify-content: center; padding: 0; gap: 0; }
+    html:not(.wp-side-collapsed) .wp-side-nav { padding: 14px 8px 8px; }
+    html:not(.wp-side-collapsed) .wp-side-fold { width: calc(100% - 16px); margin: 8px 8px 12px; }
     .layui-layout-admin .layui-header,
     html.wp-side-collapsed .layui-layout-admin .layui-header { left: 64px; }
     .layui-layout-admin .layui-body,
