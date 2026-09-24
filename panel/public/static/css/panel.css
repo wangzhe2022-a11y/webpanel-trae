@@ -1044,6 +1044,11 @@ html[data-theme="dark"] .fm-crumb,
 html[data-theme="dark"] .fm-empty { color: rgba(255, 255, 255, 0.7); }
 html[data-theme="dark"] .fm-crumb a { color: #8fb4ff; }
 html[data-theme="dark"] .fm-empty .layui-icon { color: rgba(255, 255, 255, 0.35); }
+html[data-theme="dark"] .fm-vdb-banner {
+    background: rgba(255, 184, 0, 0.12);
+    border-color: rgba(255, 184, 0, 0.28);
+    color: #ffd666;
+}
 
 @media (max-width: 1100px) {
     .header-right > .wp-clock { max-width: 108px; }
