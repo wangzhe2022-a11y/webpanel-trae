@@ -344,9 +344,30 @@ html.wp-side-collapsed .layui-layout-admin .layui-body {
     line-height: 22px;
 }
 .warn-text { color: #e85d3a; }
-.mon-top { width: 100%; margin-top: 8px; }
-.mon-top td { padding: 2px 0; font-size: 13px; color: var(--wp-text-secondary); }
-.mon-top td:last-child { text-align: right; color: var(--wp-text-muted); }
+.wp-top-mem {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(3, auto);
+    gap: 4px 14px;
+    margin-top: 8px;
+}
+.wp-top-mem-item {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+    font-size: 13px;
+    color: var(--wp-text-secondary);
+}
+.wp-top-mem-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.wp-top-mem-rss {
+    flex: 0 0 auto;
+    color: var(--wp-text-muted);
+}
 .tag-alias { margin: 2px 4px 2px 0; }
 .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13.5px; }
 .secret-box {
@@ -477,7 +498,7 @@ input[type="radio"] {
 }
 
 /* Three equal columns:
-   System Status + 主机监控 | 2×2 storage + 服务状态 | reserved slot + 最近登录 / SSH tabs. */
+   System Status + 主机监控 | 磁盘 2×2 storage + 服务状态 | reserved slot + 最近登录 / SSH tabs. */
 .wp-col-stack {
     display: flex;
     flex-direction: column;
@@ -876,25 +897,41 @@ input[type="radio"] {
 .wp-disk-state { font-weight: 650; color: var(--wp-text); }
 .wp-disk-meta { margin-left: auto; color: var(--wp-text-secondary); font-size: 13px; }
 
-/* System Status: first card in the left column, above 主机监控. */
+/* System Status: clock | CPU+RAM, first card in the left md4 column. */
 .wp-sys-status-body {
     display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
     min-width: 0;
 }
 .wp-sys-gauges {
-    flex: 1 1 auto;
+    display: flex;
+    flex: 1 1 58%;
+    min-width: 0;
     justify-content: space-evenly;
-    gap: 16px;
+    flex-wrap: nowrap;
+    gap: 8px;
     margin: 0;
+}
+.wp-sys-gauges .wp-ring {
+    width: 72px;
+    height: 72px;
+}
+.wp-sys-gauges .wp-ring-num { font-size: 14px; }
+.wp-sys-gauges .wp-ring-label { margin-top: 4px; font-size: 12px; }
+.wp-sys-gauges .wp-ring-sub {
+    font-size: 11px;
+    max-width: 86px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .wp-dash-clock {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    flex: 0 0 auto;
+    flex: 0 1 38%;
     min-width: 0;
     max-width: none;
     padding: 0;
@@ -902,15 +939,15 @@ input[type="radio"] {
     line-height: 1.05;
 }
 .wp-dash-clock .wp-clock-time {
-    font-size: 44px;
+    font-size: 28px;
     font-weight: 700;
     letter-spacing: 0.04em;
     line-height: 1;
 }
 .wp-dash-clock .wp-clock-date {
-    font-size: 16px;
-    margin-top: 8px;
-    white-space: nowrap;
+    font-size: 13px;
+    margin-top: 6px;
+    white-space: normal;
 }
 .wp-clock-tz {
     margin-top: 6px;
@@ -1370,9 +1407,10 @@ html[data-theme="dark"] .fm-vdb-banner {
 @media (max-width: 1100px) {
     .header-right > .wp-clock { max-width: 108px; }
     .header-right > .wp-clock .wp-clock-date { display: none; }
-    .wp-dash-clock .wp-clock-time { font-size: 40px; }
-    .wp-sys-status-body { gap: 14px; }
-    .wp-sys-gauges { gap: 14px; }
+    .wp-dash-clock .wp-clock-time { font-size: 24px; }
+    .wp-sys-status-body { gap: 10px; flex-wrap: nowrap; }
+    .wp-sys-gauges { gap: 6px; flex-wrap: nowrap; }
+    .wp-sys-gauges .wp-ring { width: 64px; height: 64px; }
 }
 @media (max-width: 720px) {
     :root { --wp-side-w: 64px; }
@@ -1386,6 +1424,7 @@ html[data-theme="dark"] .fm-vdb-banner {
     .layui-layout-admin .layui-body,
     html.wp-side-collapsed .layui-layout-admin .layui-body { left: 64px; }
     .header-right > .wp-clock { display: none; }
-    .wp-dash-clock .wp-clock-time { font-size: 36px; }
+    .wp-dash-clock .wp-clock-time { font-size: 22px; }
+    .wp-sys-status-body { flex-wrap: wrap; }
     .wp-storage-grid { grid-template-columns: 1fr; }
 }

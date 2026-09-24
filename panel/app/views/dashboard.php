@@ -135,16 +135,14 @@ $renderStoreCard = static function (
                 <div class="wp-host-line"><span>运行</span><b id="hostUptime"><?= e((string) ($info['uptime'] ?? '-')) ?></b></div>
             </div>
             <div class="mon-meta" id="topLabel" <?= empty($info['top']) ? 'style="display:none"' : '' ?>>占用内存最多</div>
-            <table class="mon-top" id="topTable" <?= empty($info['top']) ? 'style="display:none"' : '' ?>>
-                <tbody>
-                <?php foreach (($info['top'] ?? []) as $p): ?>
-                    <tr>
-                        <td class="mono"><?= e((string) ($p['name'] ?? '')) ?></td>
-                        <td class="mono"><?= isset($p['rss_kb']) ? e(format_bytes((int) $p['rss_kb'])) : '' ?></td>
-                    </tr>
+            <div class="wp-top-mem" id="topTable" <?= empty($info['top']) ? 'style="display:none"' : '' ?>>
+                <?php foreach (array_slice($info['top'] ?? [], 0, 6) as $p): ?>
+                    <div class="wp-top-mem-item">
+                        <span class="wp-top-mem-name mono"><?= e((string) ($p['name'] ?? '')) ?></span>
+                        <span class="wp-top-mem-rss mono"><?= isset($p['rss_kb']) ? e(format_bytes((int) $p['rss_kb'])) : '' ?></span>
+                    </div>
                 <?php endforeach; ?>
-                </tbody>
-            </table>
+            </div>
             <div class="wp-host-stats">
                 <div class="stat-card c-blue">
                     <span class="layui-icon layui-icon-website"></span>
@@ -261,7 +259,9 @@ $renderStoreCard = static function (
     </div>
     <div class="layui-col-md4">
         <div class="wp-col-stack">
-        <div class="wp-storage-grid" id="diskMounts">
+        <div class="panel-card wp-disk-card">
+            <h3>磁盘</h3>
+            <div class="wp-storage-grid" id="diskMounts">
             <?= $renderStoreCard(
                 'swap',
                 '交换',
@@ -285,6 +285,7 @@ $renderStoreCard = static function (
             <?php if (empty($diskMounts) && $swapTotal <= 0): ?>
                 <div class="mon-meta wp-disk-empty">暂无磁盘数据</div>
             <?php endif; ?>
+            </div>
         </div>
         <div class="panel-card wp-svc-card">
             <h3>
@@ -580,12 +581,13 @@ layui.use(['element', 'layer', 'table'], function () {
         }
 
         var top = res.top || [];
-        var $top = $('#topTable tbody').empty();
+        var $top = $('#topTable').empty();
         if (top.length) {
-            top.forEach(function (p) {
-                $top.append('<tr><td class="mono"></td><td class="mono"></td></tr>');
-                $top.find('tr:last td:eq(0)').text(p.name || '');
-                $top.find('tr:last td:eq(1)').text(p.rss_kb != null ? fmtKb(p.rss_kb) : '');
+            top.slice(0, 6).forEach(function (p) {
+                var $item = $('<div class="wp-top-mem-item"><span class="wp-top-mem-name mono"></span><span class="wp-top-mem-rss mono"></span></div>');
+                $item.find('.wp-top-mem-name').text(p.name || '');
+                $item.find('.wp-top-mem-rss').text(p.rss_kb != null ? fmtKb(p.rss_kb) : '');
+                $top.append($item);
             });
             $('#topTable').show();
             $('#topLabel').show();

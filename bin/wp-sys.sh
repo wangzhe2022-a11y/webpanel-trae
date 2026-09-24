@@ -68,7 +68,7 @@ pct_of() {
 if [ "$action" = "info" ]; then
     if is_dry_run; then
         cat <<'JSON'
-{"ok":true,"hostname":"demo-srv","os":"AlmaLinux 8.10","kernel":"4.18.x","uptime":"1 day","cpu_cores":4,"cpu_usage_pct":8.2,"loadavg":"0.10 0.05 0.01","load_1":0.10,"load_5":0.05,"load_15":0.01,"mem_total_kb":3880152,"mem_available_kb":2142200,"mem_used_kb":1737952,"mem_used_pct":44.8,"swap_total_kb":4194304,"swap_used_kb":102400,"swap_free_kb":4091904,"swap_used_pct":2.4,"disk":[{"fs":"/","size":"50G","used":"18G","avail":"32G","use_pct":36},{"fs":"/mnt/backup","size":"100G","used":"52G","avail":"48G","use_pct":52},{"fs":"/boot/efi","size":"511M","used":"9.1M","avail":"502M","use_pct":2}],"top":[{"name":"mysqld","rss_kb":412000},{"name":"php-fpm","rss_kb":186000},{"name":"nginx","rss_kb":42000}],"services":[{"name":"nginx","unit":"nginx","status":"active"},{"name":"mysql","unit":"mysqld","status":"active"}],"sites":1,"databases":1}
+{"ok":true,"hostname":"demo-srv","os":"AlmaLinux 8.10","kernel":"4.18.x","uptime":"1 day","cpu_cores":4,"cpu_usage_pct":8.2,"loadavg":"0.10 0.05 0.01","load_1":0.10,"load_5":0.05,"load_15":0.01,"mem_total_kb":3880152,"mem_available_kb":2142200,"mem_used_kb":1737952,"mem_used_pct":44.8,"swap_total_kb":4194304,"swap_used_kb":102400,"swap_free_kb":4091904,"swap_used_pct":2.4,"disk":[{"fs":"/","size":"50G","used":"18G","avail":"32G","use_pct":36},{"fs":"/mnt/backup","size":"100G","used":"52G","avail":"48G","use_pct":52},{"fs":"/boot/efi","size":"511M","used":"9.1M","avail":"502M","use_pct":2}],"top":[{"name":"mysqld","rss_kb":412000},{"name":"php-fpm","rss_kb":186000},{"name":"nginx","rss_kb":42000},{"name":"postgres","rss_kb":38000},{"name":"node","rss_kb":28000},{"name":"sshd","rss_kb":12000}],"services":[{"name":"nginx","unit":"nginx","status":"active"},{"name":"mysql","unit":"mysqld","status":"active"}],"sites":1,"databases":1}
 JSON
         exit 0
     fi
@@ -134,7 +134,7 @@ JSON
         [[ "$rss" =~ ^[0-9]+$ ]] || continue
         [ -n "${comm:-}" ] || continue
         top_json+="$(printf '{"name":"%s","rss_kb":%s},' "$(jesc "$comm")" "$rss")"
-    done < <(ps -eo rss=,comm= --sort=-rss 2>/dev/null | head -n 5)
+    done < <(ps -eo rss=,comm= --sort=-rss 2>/dev/null | head -n 6)
     top_json="${top_json%,}]"
     [ "$top_json" = "[" ] && top_json="[]"
 
