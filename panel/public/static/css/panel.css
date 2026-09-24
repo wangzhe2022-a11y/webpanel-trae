@@ -174,12 +174,7 @@ body.layui-layout-body {
 }
 .panel-card h3 .layui-btn { margin-top: -2px; }
 
-/* Desktop: 2-column band — atop | processes.
-   clear:both keeps the band below the monitoring row. */
-.dash-atop-row {
-    clear: both;
-    margin-top: 16px;
-}
+/* Former separate atop row removed — atop now stacks in the middle mon-band column. */
 .wp-atop-sample {
     display: flex;
     flex-direction: column;
@@ -292,14 +287,14 @@ body.layui-layout-body {
     border-color: var(--wp-border);
 }
 
-/* Three equal columns: 主机监控 | 服务状态 | 最近登录(+SSH stacked).
-   Right column stacks 最近登录 above SSH / 系统登录. */
-.wp-login-stack {
+/* Three equal columns, each a vertical stack of two cards:
+   主机监控 / 服务状态 | atop / 占用最高进程 | 最近登录 / SSH. */
+.wp-col-stack {
     display: flex;
     flex-direction: column;
     gap: 15px;
 }
-.wp-login-stack > .panel-card,
+.wp-col-stack > .panel-card,
 .wp-mon-band > [class*="layui-col"] > .panel-card {
     min-width: 0;
     margin-bottom: 0;
