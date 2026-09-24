@@ -31,10 +31,12 @@ $router->post('/logout', [AuthController::class, 'logout']);
 /* ---- dashboard ----------------------------------------------------------- */
 $router->get('/', [DashboardController::class, 'index']);
 
-/* ---- appearance (dark-theme wallpaper; no schema change) ----------------- */
+/* ---- appearance (dark-theme wallpaper + login logo) ---------------------- */
 $router->get('/appearance', [AppearanceController::class, 'info']);
 $router->post('/appearance/wallpaper', [AppearanceController::class, 'wallpaper']);
 $router->post('/appearance/clear', [AppearanceController::class, 'clear']);
+$router->post('/appearance/logo', [AppearanceController::class, 'logo']);
+$router->post('/appearance/logo/clear', [AppearanceController::class, 'logoClear']);
 
 /* ---- websites ------------------------------------------------------------ */
 $router->get('/sites', [SiteController::class, 'index']);

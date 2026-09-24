@@ -22,7 +22,7 @@
 <div class="panel-card" id="jobCard" style="display:none">
     <h3 id="jobTitle">任务进行中</h3>
     <div style="display:flex;align-items:center;gap:12px">
-        <i class="layui-icon layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop" style="font-size:26px;color:#1e9fff"></i>
+        <i class="layui-icon layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop wp-accent" style="font-size:26px"></i>
         <div style="flex:1">
             <div id="jobPhase" style="font-size:14px;margin-bottom:8px">准备</div>
             <div class="layui-progress layui-progress-big" lay-filter="jobBar">
