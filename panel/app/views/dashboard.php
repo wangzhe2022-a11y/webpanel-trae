@@ -301,71 +301,79 @@ $ringClass = static function (float $pct, float $warn, float $crit): string {
     <div class="layui-col-md4">
         <div class="wp-col-stack">
         <div class="panel-card">
-            <h3>
-                最近登录
-                <label class="wp-login-limit-wrap">
-                    显示
-                    <select id="recentLoginLimit" class="wp-login-limit" aria-label="最近登录显示条数">
-                        <option value="6" selected>6</option>
-                        <option value="12">12</option>
-                    </select>
-                </label>
-                <span class="mon-updated" id="recentLoginHint">最近 6 条登录记录</span>
-            </h3>
-            <table class="layui-table wp-login-table" style="margin:0">
-                <thead><tr><th>用户</th><th>IP 地址</th><th>登录时间</th></tr></thead>
-                <tbody id="recentLoginBody">
-                <?php if (empty($recentLogins)): ?>
-                    <tr class="wp-login-empty"><td colspan="3" style="text-align:center;color:#999">暂无登录记录</td></tr>
-                <?php else: ?>
-                    <?php foreach ($recentLogins as $i => $log): ?>
-                        <tr class="wp-login-row" data-i="<?= (int) $i ?>"<?= $i >= 6 ? ' hidden' : '' ?>>
-                            <td><?= e($log['actor'] ?? '-') ?></td>
-                            <td class="mono"><?= e($log['ip'] ?? '-') ?></td>
-                            <td class="mono"><?= e($log['ts'] ?? '-') ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
-        <div class="panel-card">
-            <h3>
-                SSH / 系统登录
-                <label class="wp-login-limit-wrap">
-                    显示
-                    <select id="sshLoginLimit" class="wp-login-limit" aria-label="SSH 登录显示条数">
-                        <option value="6" selected>6</option>
-                        <option value="12">12</option>
-                    </select>
-                </label>
-                <span class="mon-updated" id="sshLoginHint">SSH 认证成功 · 最近 6 条</span>
-            </h3>
-            <table class="layui-table wp-login-table" style="margin:0">
-                <thead><tr><th>用户</th><th>来源 IP</th><th style="width:80px">认证</th><th>登录时间</th></tr></thead>
-                <tbody id="sshLoginBody">
-                <?php if (empty($sshLogins)): ?>
-                    <tr class="wp-login-empty"><td colspan="4" style="text-align:center;color:#999">暂无 SSH 登录记录</td></tr>
-                <?php else: ?>
-                    <?php foreach ($sshLogins as $i => $sl): ?>
-                        <tr class="wp-login-row" data-i="<?= (int) $i ?>"<?= $i >= 6 ? ' hidden' : '' ?>>
-                            <td><?= e($sl['user'] ?? '-') ?></td>
-                            <td class="mono"><?= e($sl['ip'] ?? '-') ?></td>
-                            <td>
-                                <?php if (($sl['method'] ?? '') === 'publickey'): ?>
-                                    <span class="layui-badge layui-bg-blue">密钥</span>
-                                <?php elseif (($sl['method'] ?? '') === 'password'): ?>
-                                    <span class="layui-badge layui-bg-orange">密码</span>
-                                <?php else: ?>
-                                    <?= e($sl['method'] ?? '-') ?>
-                                <?php endif; ?>
-                            </td>
-                            <td class="mono"><?= e($sl['time'] ?? '-') ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-                </tbody>
-            </table>
+            <div class="wp-host-extra" id="loginExtra">
+                <div class="wp-host-tabs" role="tablist">
+                    <button type="button" class="wp-host-tab" role="tab" id="loginTabRecent" data-tab="recent" aria-controls="recentLoginCard" aria-selected="false" aria-expanded="false">最近登录</button>
+                    <button type="button" class="wp-host-tab" role="tab" id="loginTabSsh" data-tab="ssh" aria-controls="sshLoginCard" aria-selected="false" aria-expanded="false">SSH / 系统登录</button>
+                </div>
+                <div class="wp-host-tab-panels">
+                    <div id="recentLoginCard" class="wp-host-tab-panel" role="tabpanel" data-tab="recent" aria-labelledby="loginTabRecent" hidden>
+                        <div class="wp-host-tab-head">
+                            <label class="wp-login-limit-wrap">
+                                显示
+                                <select id="recentLoginLimit" class="wp-login-limit" aria-label="最近登录显示条数">
+                                    <option value="6" selected>6</option>
+                                    <option value="12">12</option>
+                                </select>
+                            </label>
+                            <span class="mon-updated" id="recentLoginHint">最近 6 条登录记录</span>
+                        </div>
+                        <table class="layui-table wp-login-table" style="margin:0">
+                            <thead><tr><th>用户</th><th>IP 地址</th><th>登录时间</th></tr></thead>
+                            <tbody id="recentLoginBody">
+                            <?php if (empty($recentLogins)): ?>
+                                <tr class="wp-login-empty"><td colspan="3" style="text-align:center;color:#999">暂无登录记录</td></tr>
+                            <?php else: ?>
+                                <?php foreach ($recentLogins as $i => $log): ?>
+                                    <tr class="wp-login-row" data-i="<?= (int) $i ?>"<?= $i >= 6 ? ' hidden' : '' ?>>
+                                        <td><?= e($log['actor'] ?? '-') ?></td>
+                                        <td class="mono"><?= e($log['ip'] ?? '-') ?></td>
+                                        <td class="mono"><?= e($log['ts'] ?? '-') ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="sshLoginCard" class="wp-host-tab-panel" role="tabpanel" data-tab="ssh" aria-labelledby="loginTabSsh" hidden>
+                        <div class="wp-host-tab-head">
+                            <label class="wp-login-limit-wrap">
+                                显示
+                                <select id="sshLoginLimit" class="wp-login-limit" aria-label="SSH 登录显示条数">
+                                    <option value="6" selected>6</option>
+                                    <option value="12">12</option>
+                                </select>
+                            </label>
+                            <span class="mon-updated" id="sshLoginHint">SSH 认证成功 · 最近 6 条</span>
+                        </div>
+                        <table class="layui-table wp-login-table" style="margin:0">
+                            <thead><tr><th>用户</th><th>来源 IP</th><th style="width:80px">认证</th><th>登录时间</th></tr></thead>
+                            <tbody id="sshLoginBody">
+                            <?php if (empty($sshLogins)): ?>
+                                <tr class="wp-login-empty"><td colspan="4" style="text-align:center;color:#999">暂无 SSH 登录记录</td></tr>
+                            <?php else: ?>
+                                <?php foreach ($sshLogins as $i => $sl): ?>
+                                    <tr class="wp-login-row" data-i="<?= (int) $i ?>"<?= $i >= 6 ? ' hidden' : '' ?>>
+                                        <td><?= e($sl['user'] ?? '-') ?></td>
+                                        <td class="mono"><?= e($sl['ip'] ?? '-') ?></td>
+                                        <td>
+                                            <?php if (($sl['method'] ?? '') === 'publickey'): ?>
+                                                <span class="layui-badge layui-bg-blue">密钥</span>
+                                            <?php elseif (($sl['method'] ?? '') === 'password'): ?>
+                                                <span class="layui-badge layui-bg-orange">密码</span>
+                                            <?php else: ?>
+                                                <?= e($sl['method'] ?? '-') ?>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="mono"><?= e($sl['time'] ?? '-') ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
         </div>
     </div>
@@ -395,8 +403,8 @@ layui.use(['element', 'layer', 'table'], function () {
         applyLoginLimit('sshLoginBody', this.value, 'sshLoginHint', 'SSH 认证成功 · 最近 %n 条');
     });
 
-    $('#hostExtra').on('click', '.wp-host-tab', function () {
-        var $extra = $('#hostExtra');
+    $('.wp-host-extra').on('click', '.wp-host-tab', function () {
+        var $extra = $(this).closest('.wp-host-extra');
         var tab = this.getAttribute('data-tab');
         var wasActive = $(this).hasClass('is-active');
         $extra.find('.wp-host-tab').removeClass('is-active')
