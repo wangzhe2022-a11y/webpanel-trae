@@ -477,7 +477,7 @@ input[type="radio"] {
 }
 
 /* Three equal columns:
-   主机监控 (atop + 占用最高进程 as collapsed tabs) | 服务状态 | 最近登录 / SSH (collapsed tabs). */
+   主机监控 | 2×2 storage + 服务状态 | reserved slot + 最近登录 / SSH tabs. */
 .wp-col-stack {
     display: flex;
     flex-direction: column;
@@ -548,6 +548,14 @@ input[type="radio"] {
     padding-top: 0;
     border-top: 0;
 }
+.wp-eq-tabs {
+    display: flex;
+}
+.wp-eq-tabs > [role="tab"],
+.wp-eq-tabs > button {
+    flex: 1 1 0;
+    min-width: 0;
+}
 .wp-host-tabs {
     display: flex;
     border: 1px solid var(--wp-border);
@@ -557,6 +565,7 @@ input[type="radio"] {
 }
 .wp-host-tab {
     flex: 1 1 0;
+    min-width: 0;
     appearance: none;
     border: 0;
     background: transparent;
@@ -673,8 +682,91 @@ input[type="radio"] {
 }
 .wp-disk-empty {
     flex: 1 1 100%;
+    grid-column: 1 / -1;
     text-align: center;
 }
+.wp-storage-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    min-width: 0;
+}
+.wp-store-card {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 12px 14px 10px;
+    border-radius: var(--wp-radius);
+    background: var(--wp-surface);
+    border: 1px solid var(--wp-border);
+    box-shadow: var(--wp-shadow-sm);
+}
+.wp-store-head {
+    margin-bottom: 8px;
+}
+.wp-store-title {
+    display: block;
+    font-size: 15px;
+    font-weight: 650;
+    color: var(--wp-text);
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.wp-store-body {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 52px;
+}
+.wp-drive-svg {
+    display: block;
+    width: 44px;
+    height: 36px;
+    flex: 0 0 auto;
+}
+.wp-drive-case { fill: #e4eaf1; }
+.wp-drive-lid { fill: #f7f9fc; }
+.wp-drive-led { fill: var(--wp-accent); }
+.wp-store-info {
+    min-width: 0;
+    font-size: 12px;
+    line-height: 1.35;
+    color: var(--wp-text-secondary);
+}
+.wp-store-state {
+    font-weight: 650;
+    font-size: 13px;
+    color: var(--wp-text);
+    margin-bottom: 2px;
+}
+.wp-store-used,
+.wp-store-total {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.wp-store-bar {
+    margin-top: 10px;
+    height: 6px;
+    background: #eef2f7;
+    border-radius: 999px;
+    overflow: hidden;
+}
+.wp-store-bar-fill {
+    height: 100%;
+    width: 0;
+    background: var(--wp-accent);
+    border-radius: 999px;
+    transition: width .35s ease;
+}
+.wp-store-card.is-warn .wp-store-state { color: #c4841a; }
+.wp-store-card.is-crit .wp-store-state { color: #d14a30; }
+.wp-store-card.is-warn .wp-store-bar-fill,
+.wp-store-card.is-warn .wp-drive-led { background: #f5a623; fill: #f5a623; }
+.wp-store-card.is-crit .wp-store-bar-fill,
+.wp-store-card.is-crit .wp-drive-led { background: #e85d3a; fill: #e85d3a; }
 .wp-ring-wrap {
     flex: 0 0 auto;
     text-align: center;
@@ -784,34 +876,32 @@ input[type="radio"] {
 .wp-disk-state { font-weight: 650; color: var(--wp-text); }
 .wp-disk-meta { margin-left: auto; color: var(--wp-text-secondary); font-size: 13px; }
 
-/* CasaOS-style date/time + disk usage on one top row. */
-.wp-dash-clock-row {
+/* System Status: clock + CPU/RAM rings. Disks live in the middle column. */
+.wp-sys-status {
+    margin-bottom: 16px;
+}
+.wp-sys-status-body {
     display: flex;
-    align-items: stretch;
-    gap: 15px;
-    margin: 0 0 16px;
+    align-items: center;
+    gap: 36px;
+    min-width: 0;
+}
+.wp-sys-gauges {
+    flex: 1 1 auto;
+    justify-content: flex-start;
+    gap: 36px;
+    margin: 0;
 }
 .wp-dash-clock {
     display: flex;
     flex-direction: column;
     justify-content: center;
     flex: 0 0 auto;
-    min-width: 260px;
+    min-width: 220px;
     max-width: 360px;
-    padding: 18px 26px 16px;
+    padding: 0;
     margin-bottom: 0;
     line-height: 1.05;
-}
-.wp-dash-disk {
-    flex: 1 1 auto;
-    min-width: 0;
-    margin-bottom: 0;
-}
-.wp-dash-disk > h3 {
-    margin-top: 0;
-}
-.wp-dash-disk .wp-perf-row {
-    margin-bottom: 0;
 }
 .wp-dash-clock .wp-clock-time {
     font-size: 56px;
@@ -832,6 +922,33 @@ input[type="radio"] {
 html[data-theme="dark"] .wp-dash-clock .wp-clock-time { color: #fff; }
 html[data-theme="dark"] .wp-dash-clock .wp-clock-date { color: rgba(255, 255, 255, 0.72); }
 html[data-theme="dark"] .wp-clock-tz { color: rgba(255, 255, 255, 0.48); }
+
+/* Reserved right-column slot (future widget) + login tabs flush to the card. */
+.wp-dash-slot {
+    min-height: 196px;
+    background: var(--wp-surface);
+    border: 1px solid var(--wp-border);
+    box-shadow: var(--wp-shadow-sm);
+}
+.wp-login-card {
+    padding: 0;
+    overflow: hidden;
+}
+.wp-login-card .wp-host-extra {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+.wp-login-card .wp-login-tabs,
+.wp-login-card .wp-host-tabs {
+    border: 0;
+    border-bottom: 1px solid var(--wp-border);
+    border-radius: 0;
+}
+.wp-login-card .wp-host-tab-panels {
+    margin-top: 0;
+    padding: 12px 22px 20px;
+}
 
 /* ---- header chrome: compact clock + top nav (both themes) ---------------- */
 /* Dashboard uses the large CasaOS clock card — no header companion there. */
@@ -1092,10 +1209,22 @@ html[data-theme="dark"] .wp-ring.is-warn .wp-ring-value { stroke: #ffc266; }
 html[data-theme="dark"] .wp-ring.is-crit .wp-ring-value { stroke: #ff7a6b; }
 html[data-theme="dark"] .wp-ring-num { color: #fff; }
 html[data-theme="dark"] .wp-storage,
-html[data-theme="dark"] .wp-host-meta {
+html[data-theme="dark"] .wp-host-meta,
+html[data-theme="dark"] .wp-store-card,
+html[data-theme="dark"] .wp-dash-slot {
     background: rgba(255, 255, 255, 0.06);
     border-color: rgba(255, 255, 255, 0.1);
 }
+html[data-theme="dark"] .wp-store-bar { background: rgba(255, 255, 255, 0.10); }
+html[data-theme="dark"] .wp-store-bar-fill { background: var(--wp-accent); }
+html[data-theme="dark"] .wp-drive-case { fill: #e8edf2; }
+html[data-theme="dark"] .wp-drive-lid { fill: #fff; }
+html[data-theme="dark"] .wp-store-card.is-warn .wp-store-state { color: #ffd48a; }
+html[data-theme="dark"] .wp-store-card.is-crit .wp-store-state { color: #ffb0a4; }
+html[data-theme="dark"] .wp-store-card.is-warn .wp-store-bar-fill,
+html[data-theme="dark"] .wp-store-card.is-warn .wp-drive-led { background: #ffc266; fill: #ffc266; }
+html[data-theme="dark"] .wp-store-card.is-crit .wp-store-bar-fill,
+html[data-theme="dark"] .wp-store-card.is-crit .wp-drive-led { background: #ff7a6b; fill: #ff7a6b; }
 
 html[data-theme="dark"] .atop-badge.ok { background: rgba(46, 196, 182, 0.2); color: #8ef0dc; }
 html[data-theme="dark"] .atop-badge.warn { background: rgba(245, 166, 35, 0.2); color: #ffd48a; }
@@ -1126,6 +1255,11 @@ html[data-theme="dark"] .wp-host-tab.is-active {
     color: var(--wp-sidebar-active-text);
     background: var(--wp-sidebar-active-bg);
     box-shadow: inset 0 -2px 0 var(--wp-accent);
+}
+html[data-theme="dark"] .wp-login-card .wp-login-tabs,
+html[data-theme="dark"] .wp-login-card .wp-host-tabs {
+    border-color: rgba(255, 255, 255, 0.1);
+    border-top-color: transparent;
 }
 html[data-theme="dark"] .secret-box {
     background: rgba(0, 0, 0, 0.28);
@@ -1238,8 +1372,10 @@ html[data-theme="dark"] .fm-vdb-banner {
 @media (max-width: 1100px) {
     .header-right > .wp-clock { max-width: 108px; }
     .header-right > .wp-clock .wp-clock-date { display: none; }
-    .wp-dash-clock { min-width: 220px; max-width: 280px; }
+    .wp-dash-clock { min-width: 200px; max-width: 280px; }
     .wp-dash-clock .wp-clock-time { font-size: 48px; }
+    .wp-sys-status-body { gap: 20px; }
+    .wp-sys-gauges { gap: 20px; }
 }
 @media (max-width: 720px) {
     :root { --wp-side-w: 64px; }
@@ -1253,9 +1389,13 @@ html[data-theme="dark"] .fm-vdb-banner {
     .layui-layout-admin .layui-body,
     html.wp-side-collapsed .layui-layout-admin .layui-body { left: 64px; }
     .header-right > .wp-clock { display: none; }
-    .wp-dash-clock-row {
+    .wp-sys-status-body {
         flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
     }
     .wp-dash-clock { min-width: 0; max-width: none; display: flex; }
     .wp-dash-clock .wp-clock-time { font-size: 44px; }
+    .wp-sys-gauges { justify-content: space-evenly; }
+    .wp-storage-grid { grid-template-columns: 1fr; }
 }
