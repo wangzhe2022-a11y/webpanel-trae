@@ -7,26 +7,40 @@
  *
  * Hard rules:
  *  - every path must resolve inside /www/wwwroot/<siteUser>
+ *  - siteUser __vdb is a host-root: jail is /mnt/backup (VDB_ROOT), read-only except extract
  *  - symlinks pointing outside the jail are rejected
- *  - writes are chown()ed back to the site user
+ *  - writes are chown()ed back to the site user (skipped for vdb)
  *  - only a narrow set of text files is editable in the browser
  *  - setuid/setgid bits are never allowed
  *  - extract (zip / tar.gz / tgz) stays inside the jail; zip-slip / symlinks rejected
  */
 
-const DRY_MARKER = '/usr/local/webpanel/.dryrun';
+const VDB_USER = '__vdb';
 
+$DRY_MARKER = getenv('DRY_RUN_MARKER') ?: '/usr/local/webpanel/.dryrun';
 $WEB_ROOT = getenv('WEB_ROOT') ?: '/www/wwwroot';
-$DRY = file_exists(DRY_MARKER);
+$DRY = file_exists($DRY_MARKER);
 
 function out(array $a): void { fwrite(STDOUT, json_encode($a, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n"); exit(0); }
 function err(string $m, int $c = 1): void { fwrite(STDERR, json_encode(['ok' => false, 'error' => $m], JSON_UNESCAPED_UNICODE) . "\n"); exit($c); }
 
 function valid_user(string $u): bool { return (bool) preg_match('/^[a-z][a-z0-9_]{2,30}$/', $u); }
 
-function jail(string $user, string $rel): string {
-    global $WEB_ROOT;
-    $base = $WEB_ROOT . '/' . $user;
+function vdb_base_raw(): string {
+    $raw = getenv('VDB_ROOT');
+    $raw = ($raw !== false && $raw !== '') ? $raw : '/mnt/backup';
+    return rtrim($raw, '/');
+}
+
+function vdb_resolved_base(): string {
+    $base = vdb_base_raw();
+    if (!is_dir($base)) err('backup disk /mnt/backup is not available');
+    $real = realpath($base);
+    if ($real === false) err('backup disk /mnt/backup is not available');
+    return $real;
+}
+
+function jail_in(string $base, string $rel, string $escape = 'path escapes site jail'): string {
     $abs  = realpath($base . '/' . ltrim($rel, '/'));
     if ($abs === false) {
         // target does not exist yet - resolve the parent
@@ -34,16 +48,69 @@ function jail(string $user, string $rel): string {
         $parent = realpath($base . '/' . dirname($rel2 === '' ? '.' : $rel2));
         $name = basename($rel2);
         if ($parent === false) err('parent directory does not exist');
-        if ($parent !== $base && strpos($parent . '/', $base . '/') !== 0) err('path escapes site jail');
+        if ($parent !== $base && strpos($parent . '/', $base . '/') !== 0) err($escape);
         if (!preg_match('/^[A-Za-z0-9._ -]+$/u', $name)) err('invalid file name');
         return $parent . '/' . $name;
     }
-    if ($abs !== $base && strpos($abs . '/', $base . '/') !== 0) err('path escapes site jail');
+    if ($abs !== $base && strpos($abs . '/', $base . '/') !== 0) err($escape);
     if (is_link($base . '/' . ltrim($rel, '/'))) {
-        $target = readlink($base . '/' . ltrim($rel, '/'));
         err('symlink rejected');
     }
     return $abs;
+}
+
+function jail(string $user, string $rel): string {
+    global $WEB_ROOT;
+    return jail_in($WEB_ROOT . '/' . $user, $rel, 'path escapes site jail');
+}
+
+function abs_path(string $user, string $rel): string {
+    global $isVdb;
+    if ($isVdb) {
+        return jail_in(vdb_resolved_base(), $rel, 'path escapes backup disk jail');
+    }
+    return jail($user, $rel);
+}
+
+function jail_base(string $user): string {
+    global $isVdb, $WEB_ROOT;
+    return $isVdb ? vdb_resolved_base() : ($WEB_ROOT . '/' . $user);
+}
+
+function rel_from_base(string $abs, string $base): string {
+    if ($abs === $base) return '/';
+    return '/' . ltrim(substr($abs, strlen($base)), '/');
+}
+
+function dry_vdb_entries(string $rel): array {
+    $now = date('Y-m-d H:i:s');
+    $file = static function (string $name, int $size = 4096, string $perms = '0644') use ($now): array {
+        return ['name' => $name, 'type' => 'file', 'size' => $size, 'mtime' => $now, 'perms' => $perms];
+    };
+    $dir = static function (string $name, string $perms = '0755') use ($now): array {
+        return ['name' => $name, 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => $perms];
+    };
+    return match ($rel) {
+        '/', '' => [
+            $dir('archives'),
+            $dir('snapshots'),
+            $file('README.txt', 186),
+            $file('site-backup-20260924.tar.gz', 284569907),
+        ],
+        '/archives' => [
+            $file('webpanel-full-20260924-033000.tar.gz', 284569907),
+            $file('webpanel-db-20260923-033000.tar.gz', 18743296),
+            $file('theme-export.zip', 204800),
+        ],
+        '/snapshots' => [
+            $dir('2026-09'),
+            $file('notes.txt', 128),
+        ],
+        '/snapshots/2026-09' => [
+            $file('vdb-20260920.img', 10485760),
+        ],
+        default => [],
+    };
 }
 
 function site_user_id(string $user): array {
@@ -290,7 +357,7 @@ function extract_tar_archive(string $archive, string $dest): void {
     }
 }
 
-function harden_extracted(string $dest, array $rels, string $user, string $jailBase): void {
+function harden_extracted(string $dest, array $rels, string $user, string $jailBase, bool $chown = true): void {
     $seen = [];
     foreach ($rels as $rel) {
         foreach (path_prefixes($rel) as $pre) $seen[$pre] = true;
@@ -308,12 +375,12 @@ function harden_extracted(string $dest, array $rels, string $user, string $jailB
             || ($real !== $dest && strpos($real . '/', $dest . '/') !== 0)
         ) {
             if (is_dir($p)) @rmdir($p); else @unlink($p);
-            err('解压结果超出站点目录，已拒绝');
+            err('解压结果超出允许目录，已拒绝');
         }
         $mode = fileperms($p) & 0777; // strip setuid/setgid/sticky
         if ($mode === 0) $mode = is_dir($p) ? 0755 : 0644;
         @chmod($p, $mode);
-        chown_to($p, $user);
+        if ($chown) chown_to($p, $user);
     }
 }
 
@@ -383,36 +450,45 @@ function compress_zip_archive(string $dest, string $archiveName, array $names, s
 
 $action = $argv[1] ?? '';
 $user   = $argv[2] ?? '';
-if (!valid_user($user)) err('invalid site user');
+$isVdb  = ($user === VDB_USER);
+if (!$isVdb && !valid_user($user)) err('invalid site user');
+
+$VDB_FORBIDDEN = ['write', 'mkdir', 'rename', 'chmod', 'delete', 'upload', 'compress', 'zip', 'read'];
+if ($isVdb && in_array($action, $VDB_FORBIDDEN, true)) {
+    err('vdb is read-only');
+}
 
 /* ------------------------------ list ------------------------------------ */
 if ($action === 'list') {
     $rel = $argv[3] ?? '/';
     if ($GLOBALS['DRY']) {
-        $now = date('Y-m-d H:i:s');
         $norm = '/' . trim(str_replace('\\', '/', (string) $rel), '/');
-        $entries = match ($norm) {
-            '/', '' => [
-                ['name' => 'public', 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => '0755'],
-                ['name' => 'app', 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => '0755'],
-                ['name' => 'logs', 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => '0755'],
-            ],
-            '/public' => [
-                ['name' => 'wp-content', 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => '0755'],
-                ['name' => 'index.php', 'type' => 'file', 'size' => 4521, 'mtime' => $now, 'perms' => '0644'],
-                ['name' => 'wp-config.php', 'type' => 'file', 'size' => 3012, 'mtime' => $now, 'perms' => '0640'],
-                ['name' => 'theme.zip', 'type' => 'file', 'size' => 204800, 'mtime' => $now, 'perms' => '0644'],
-            ],
-            '/app' => [
-                ['name' => 'node_modules', 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => '0755'],
-                ['name' => 'index.js', 'type' => 'file', 'size' => 1204, 'mtime' => $now, 'perms' => '0644'],
-                ['name' => 'package.json', 'type' => 'file', 'size' => 812, 'mtime' => $now, 'perms' => '0644'],
-            ],
-            default => [],
-        };
+        if ($norm === '//') $norm = '/';
+        $entries = $isVdb ? dry_vdb_entries($norm) : (function () use ($norm) {
+            $now = date('Y-m-d H:i:s');
+            return match ($norm) {
+                '/', '' => [
+                    ['name' => 'public', 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => '0755'],
+                    ['name' => 'app', 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => '0755'],
+                    ['name' => 'logs', 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => '0755'],
+                ],
+                '/public' => [
+                    ['name' => 'wp-content', 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => '0755'],
+                    ['name' => 'index.php', 'type' => 'file', 'size' => 4521, 'mtime' => $now, 'perms' => '0644'],
+                    ['name' => 'wp-config.php', 'type' => 'file', 'size' => 3012, 'mtime' => $now, 'perms' => '0640'],
+                    ['name' => 'theme.zip', 'type' => 'file', 'size' => 204800, 'mtime' => $now, 'perms' => '0644'],
+                ],
+                '/app' => [
+                    ['name' => 'node_modules', 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => '0755'],
+                    ['name' => 'index.js', 'type' => 'file', 'size' => 1204, 'mtime' => $now, 'perms' => '0644'],
+                    ['name' => 'package.json', 'type' => 'file', 'size' => 812, 'mtime' => $now, 'perms' => '0644'],
+                ],
+                default => [],
+            };
+        })();
         out(['ok' => true, 'path' => $norm === '' ? '/' : $norm, 'entries' => $entries]);
     }
-    $dir = jail($user, $rel);
+    $dir = abs_path($user, $rel);
     if (!is_dir($dir)) err('not a directory');
     $entries = [];
     foreach (scandir($dir) as $n) {
@@ -430,28 +506,38 @@ if ($action === 'list') {
     usort($entries, fn($a, $b) => $a['type'] !== $b['type']
         ? ($a['type'] === 'dir' ? -1 : 1)
         : strcasecmp($a['name'], $b['name']));
-    out(['ok' => true, 'path' => '/' . trim(str_replace($GLOBALS['WEB_ROOT'] . '/' . $user, '', $dir), '/'), 'entries' => $entries]);
+    out(['ok' => true, 'path' => rel_from_base($dir, jail_base($user)), 'entries' => $entries]);
 }
 
 /* --------------------------- read (edit) -------------------------------- */
 $EDIT_EXT = ['php','txt','html','htm','css','js','json','xml','yml','yaml','ini','conf','log','md','htaccess','po','mo','sql','svg'];
 
-if ($action === 'read' || $action === 'cat') {
+if ($action === 'cat') {
+    $rel = $argv[3] ?? '';
+    if ($GLOBALS['DRY']) { fwrite(STDOUT, "dry-run placeholder\n"); exit(0); }
+    $p = abs_path($user, $rel);
+    if (!is_file($p) || is_dir($p)) err('file not found');
+    $fh = fopen($p, 'rb');
+    if ($fh === false) err('file not found');
+    fpassthru($fh);
+    fclose($fh);
+    exit(0);
+}
+
+if ($action === 'read') {
     $rel = $argv[3] ?? '';
     if ($GLOBALS['DRY']) {
-        if ($action === 'cat') { fwrite(STDOUT, "<?php // dry-run\n"); exit(0); }
         out(['ok' => true, 'path' => $rel, 'content' => "<?php\n// dry-run placeholder\n"]);
     }
     $p = jail($user, $rel);
     if (!is_file($p)) err('file not found');
     if (filesize($p) > 5 * 1024 * 1024) err('file too large for online editor (max 5MB)');
     $ext = strtolower(pathinfo($p, PATHINFO_EXTENSION));
-    if ($action === 'read' && !in_array($ext, $EDIT_EXT, true) && basename($p) !== '.htaccess') {
+    if (!in_array($ext, $EDIT_EXT, true) && basename($p) !== '.htaccess') {
         err('this file type is not editable online');
     }
     $data = file_get_contents($p);
     if (strpos($data, "\0") !== false) err('binary file cannot be edited');
-    if ($action === 'cat') { fwrite(STDOUT, $data); exit(0); }
     out(['ok' => true, 'path' => $rel, 'content' => $data]);
 }
 
@@ -557,16 +643,16 @@ if ($action === 'extract' || $action === 'unzip') {
     }
     @set_time_limit(EXTRACT_TIMEOUT + 30);
 
-    $archive = jail($user, $rel);
+    $archive = abs_path($user, $rel);
     if (!is_file($archive)) err('压缩包不存在');
     $kind = archive_kind($archive);
     if ($kind === '') err('仅支持 .zip / .tar.gz / .tgz 压缩包');
     if (!archive_magic_ok($archive, $kind)) err('文件内容与扩展名不符（不是有效的压缩包）');
     if (filesize($archive) > EXTRACT_MAX_ARCHIVE) err('压缩包不能超过 1GB');
 
-    $jailBase = jail($user, '/');
+    $jailBase = abs_path($user, '/');
     $dest = dirname($archive);
-    if ($dest !== $jailBase && strpos($dest . '/', $jailBase . '/') !== 0) err('目标目录超出站点目录');
+    if ($dest !== $jailBase && strpos($dest . '/', $jailBase . '/') !== 0) err('目标目录超出允许目录');
 
     $rawNames = $kind === 'zip' ? zip_list_members($archive) : tar_list_members($archive);
     $rels = [];
@@ -581,9 +667,9 @@ if ($action === 'extract' || $action === 'unzip') {
     if ($kind === 'zip') extract_zip_archive($archive, $dest);
     else extract_tar_archive($archive, $dest);
 
-    harden_extracted($dest, $rels, $user, $jailBase);
+    harden_extracted($dest, $rels, $user, $jailBase, !$isVdb);
 
-    $destRel = ($dest === $jailBase) ? '/' : '/' . ltrim(substr($dest, strlen($jailBase)), '/');
+    $destRel = rel_from_base($dest, $jailBase);
     out(['ok' => true, 'extracted' => count($rels), 'dest' => $destRel]);
 }
 

@@ -13,7 +13,7 @@
 | 数据库 | **MySQL 8.0** 与 **PostgreSQL 16**（PGDG 官方仓库）双引擎并存，建库/建用户/改密/删除任选；MySQL utf8mb4 账号仅授权本库；PG 仅监听 127.0.0.1（scram-sha-256）；密码自动生成、只显示一次 |
 | phpMyAdmin | **内置 SQL 浏览器**（官方 5.2.x）：导航栏 / 数据库页入口，挂在面板同一 HTTPS:8888 的 `/phpmyadmin/`，Nginx `auth_request` 校验面板登录会话；专用 MySQL 账号与 blowfish_secret 仅安装时生成，仓库不含密钥 |
 | SSL | 方式一：acme.sh 自动签发 Let's Encrypt（http-01）+ 自动续签（cron）+ 一键 HTTPS 跳转 + HSTS；方式二：**上传第三方证书**（腾讯云 TrustAsia 等，粘贴 PEM 或选文件，自动校验证书/私钥/域名匹配与有效期）。PHP 与 Node 站点均支持 |
-| 文件管理 | 目录浏览、在线编辑文本、上传/下载、**解压 / 压缩 zip**（tar.gz 可解压）、新建、重命名、改权限、删除；**严格 jailed 在站点目录内**，拒绝路径穿越、zip-slip 与符号链接逃逸 |
+| 文件管理 | 目录浏览、在线编辑文本、上传/下载、**解压 / 压缩 zip**（tar.gz 可解压）、新建、重命名、改权限、删除；**严格 jailed 在站点目录内**，拒绝路径穿越、zip-slip 与符号链接逃逸。另可只读浏览 CVM 备份盘 **vdb（/mnt/backup）**（列表/下载/解压，禁止写入） |
 | WordPress | WP-CLI 一键部署中文版 WordPress（wp-config、固定链接、WooCommerce 内存参数、FS_METHOD 全部配好），自动生成管理员密码 |
 | 备份恢复 | **一键备份/恢复**：全量（站点文件+证书+vhost+FPM/Node 配置+MySQL+PostgreSQL+面板库）/仅文件/仅数据库三种范围，后台异步执行、页面实时进度；恢复需输入 RESTORE 二次确认；每日 3:30 自动全量备份，保留最近 10 份自动轮转，支持下载到本地 |
 | Installatron Remote | 对接官方云端 **Installatron Remote**（[installatron.com/apps](https://installatron.com/apps)）：面板提供本机 SFTP/SSH 连接参数（主机、端口 22、站点 sysuser、文档根 `/www/wwwroot/<站点用户>/public`）；数据库在「数据库」页建好后填入安装向导。**不**在本机安装 Installatron Server，也**不**保存 installatron.com 密码 |
@@ -800,7 +800,7 @@ bin/
   wp-pma.sh                 内置 phpMyAdmin 安装/状态/卸载（官方 tarball + SHA256）
   wp-ssl.sh                 acme.sh 签发/第三方证书部署/删除/列表
   wp-backup.sh              一键备份/恢复（异步任务、文件锁互斥、轮转清理）
-  wp-fs.sh + fs-worker.php  文件管理（jail、chown、禁 setuid）
+  wp-fs.sh + fs-worker.php  文件管理（站点 jail + vdb /mnt/backup 只读 jail、chown、禁 setuid）
   wp-sys.sh                 主机信息与服务控制
   wp-atop.sh                只读解析 /var/log/atop（仪表盘历史采样）
   wp-wp.sh                  WP-CLI 一键部署 WordPress

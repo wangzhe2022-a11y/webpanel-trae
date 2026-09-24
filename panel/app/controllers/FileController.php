@@ -6,31 +6,73 @@ use WebPanel\Shell;
 
 class FileController extends Controller
 {
+    /** Synthetic file-manager root: CVM backup disk, jailed to /mnt/backup. */
+    public const VDB_ID = 'vdb';
+    /** Sentinel passed to wp-fs.sh (not a real Linux user; fs-worker special-cases it). */
+    public const VDB_SYSUSER = '__vdb';
+
+    private function requestSiteKey(string $key = 'site_id'): string
+    {
+        $raw = $_POST[$key] ?? $_GET[$key] ?? '';
+        return is_string($raw) ? trim($raw) : (string) $raw;
+    }
+
+    private function isVdbRequest(string $key = 'site_id'): bool
+    {
+        return $this->requestSiteKey($key) === self::VDB_ID;
+    }
+
+    private function vdbSite(): array
+    {
+        return [
+            'id' => self::VDB_ID,
+            'domain' => 'vdb (/mnt/backup)',
+            'sysuser' => self::VDB_SYSUSER,
+            'type' => 'vdb',
+            'root' => 'vdb',
+            'aliases' => '',
+        ];
+    }
+
     private function siteFromRequest(string $key = 'site_id'): array
     {
-        $site = $this->findSite((int) ($_POST[$key] ?? $_GET[$key] ?? 0));
+        if ($this->isVdbRequest($key)) {
+            return $this->vdbSite();
+        }
+        $site = $this->findSite((int) $this->requestSiteKey($key));
         if (!$site) {
             $this->fail('请先选择一个站点');
         }
         return $site;
     }
 
+    private function refuseVdbWrite(): void
+    {
+        if ($this->isVdbRequest()) {
+            $this->fail('vdb（/mnt/backup）为只读：不允许上传、编辑、新建、重命名、改权限、删除或压缩');
+        }
+    }
+
     public function index(): void
     {
         $this->requireLogin();
         $sites = $this->sites();
+        $vdb = $this->vdbSite();
         $selected = null;
-        if (isset($_GET['site'])) {
-            $selected = $this->findSite((int) $_GET['site']);
+        $want = (string) ($_GET['site'] ?? '');
+        if ($want === '') {
+            $want = (string) ($_COOKIE['wp_files_site'] ?? '');
         }
-        if (!$selected) {
-            $cookieId = (int) ($_COOKIE['wp_files_site'] ?? 0);
-            if ($cookieId > 0) {
-                $selected = $this->findSite($cookieId);
-            }
+        if ($want === self::VDB_ID) {
+            $selected = $vdb;
+        } elseif ($want !== '' && ctype_digit($want)) {
+            $selected = $this->findSite((int) $want);
         }
         if (!$selected && $sites) {
             $selected = $sites[0];
+        }
+        if (!$selected) {
+            $selected = $vdb;
         }
 
         $sitesClient = [];
@@ -41,14 +83,25 @@ class FileController extends Controller
                 'sysuser' => (string) $s['sysuser'],
                 'type' => (($s['type'] ?? 'php') === 'node') ? 'node' : 'php',
                 'defaultPath' => site_default_rel($s),
+                'root' => 'site',
             ];
         }
+        $sitesClient[] = [
+            'id' => self::VDB_ID,
+            'domain' => 'vdb (/mnt/backup)',
+            'sysuser' => 'vdb',
+            'type' => 'vdb',
+            'defaultPath' => '/',
+            'root' => 'vdb',
+        ];
 
+        $isVdb = (($selected['root'] ?? '') === 'vdb') || (($selected['id'] ?? '') === self::VDB_ID);
         $this->render('files/index', [
             'sites' => $sites,
             'sitesClient' => $sitesClient,
             'selected' => $selected,
-            'defaultPath' => $selected ? site_default_rel($selected) : '/',
+            'defaultPath' => $isVdb ? '/' : site_default_rel($selected),
+            'vdbSelected' => $isVdb,
         ]);
     }
 
@@ -60,7 +113,7 @@ class FileController extends Controller
         $rel = (string) $this->input('path', '/');
         $r = Shell::sudo('wp-fs.sh', ['list', $site['sysuser'], $rel]);
         if (!$r['ok']) {
-            $this->fail($r['error']);
+            $this->fail($this->fsErrorZh($r['error']));
         }
         $this->ok(['path' => $r['data']['path'] ?? $rel, 'entries' => $r['data']['entries'] ?? []]);
     }
@@ -69,6 +122,7 @@ class FileController extends Controller
     {
         $this->requireLogin();
         $this->verifyCsrf();
+        $this->refuseVdbWrite();
         $site = $this->siteFromRequest();
         $r = Shell::sudo('wp-fs.sh', ['read', $site['sysuser'], (string) $this->input('path', '')]);
         if (!$r['ok']) {
@@ -81,6 +135,7 @@ class FileController extends Controller
     {
         $this->requireLogin();
         $this->verifyCsrf();
+        $this->refuseVdbWrite();
         $site = $this->siteFromRequest();
         $path = (string) $this->input('path', '');
         $content = (string) ($_POST['content'] ?? '');
@@ -98,6 +153,7 @@ class FileController extends Controller
     {
         $this->requireLogin();
         $this->verifyCsrf();
+        $this->refuseVdbWrite();
         $site = $this->siteFromRequest();
         $r = Shell::sudo('wp-fs.sh', ['mkdir', $site['sysuser'], (string) $this->input('path', '')]);
         if (!$r['ok']) {
@@ -110,6 +166,7 @@ class FileController extends Controller
     {
         $this->requireLogin();
         $this->verifyCsrf();
+        $this->refuseVdbWrite();
         $site = $this->siteFromRequest();
         $r = Shell::sudo('wp-fs.sh', [
             'rename', $site['sysuser'],
@@ -126,6 +183,7 @@ class FileController extends Controller
     {
         $this->requireLogin();
         $this->verifyCsrf();
+        $this->refuseVdbWrite();
         $site = $this->siteFromRequest();
         $r = Shell::sudo('wp-fs.sh', [
             'chmod', $site['sysuser'],
@@ -142,6 +200,7 @@ class FileController extends Controller
     {
         $this->requireLogin();
         $this->verifyCsrf();
+        $this->refuseVdbWrite();
         $site = $this->siteFromRequest();
         $r = Shell::sudo('wp-fs.sh', ['delete', $site['sysuser'], (string) $this->input('path', '')]);
         if (!$r['ok']) {
@@ -154,6 +213,7 @@ class FileController extends Controller
     {
         $this->requireLogin();
         $this->verifyCsrf();
+        $this->refuseVdbWrite();
         $site = $this->siteFromRequest();
 
         if (empty($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
@@ -207,6 +267,7 @@ class FileController extends Controller
     {
         $this->requireLogin();
         $this->verifyCsrf();
+        $this->refuseVdbWrite();
         $site = $this->siteFromRequest();
         $dir = (string) $this->input('path', '/');
         $name = (string) $this->input('name', '');
@@ -283,6 +344,9 @@ class FileController extends Controller
     {
         $map = [
             'path escapes site jail' => '路径超出站点目录',
+            'path escapes backup disk jail' => '路径超出备份盘 /mnt/backup',
+            'backup disk /mnt/backup is not available' => '备份盘 /mnt/backup 不可用（未挂载或目录不存在）',
+            'vdb is read-only' => 'vdb（/mnt/backup）为只读：不允许此操作',
             'symlink rejected' => '不允许操作符号链接',
             'invalid site user' => '站点用户无效',
             'site user does not exist' => '站点系统用户不存在',

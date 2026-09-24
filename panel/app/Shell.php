@@ -99,8 +99,10 @@ final class Shell
                 => ['ok' => true, 'data' => ['ok' => true, 'certs' => [['domain' => 'demo.example.com', 'not_before' => 'dryrun', 'not_after' => 'dryrun']]], 'error' => ''],
             str_starts_with($script, 'wp-ssl')
                 => ['ok' => true, 'data' => ['ok' => true], 'error' => ''],
+            str_starts_with($script, 'wp-fs') && self::isVdbUser((string) ($args[1] ?? '')) && self::vdbForbidden($a)
+                => ['ok' => false, 'data' => [], 'error' => 'vdb（/mnt/backup）为只读：不允许此操作'],
             str_starts_with($script, 'wp-fs') && $a === 'list'
-                => self::dryFsList((string) ($args[2] ?? '/')),
+                => self::dryFsList((string) ($args[2] ?? '/'), (string) ($args[1] ?? '')),
             str_starts_with($script, 'wp-fs') && ($a === 'extract' || $a === 'unzip')
                 => ['ok' => true, 'data' => ['ok' => true, 'extracted' => 3, 'dest' => dirname((string) ($args[2] ?? '/')) ?: '/'], 'error' => ''],
             str_starts_with($script, 'wp-fs') && ($a === 'compress' || $a === 'zip')
@@ -152,12 +154,25 @@ final class Shell
         };
     }
 
+    private static function isVdbUser(string $user): bool
+    {
+        return $user === '__vdb';
+    }
+
+    private static function vdbForbidden(string $action): bool
+    {
+        return in_array($action, ['write', 'mkdir', 'rename', 'chmod', 'delete', 'upload', 'compress', 'zip', 'read'], true);
+    }
+
     /** Path-aware demo listing so the file-manager tree/browse UI is clickable. */
-    private static function dryFsList(string $rel): array
+    private static function dryFsList(string $rel, string $user = ''): array
     {
         $rel = '/' . trim(str_replace('\\', '/', $rel), '/');
         if ($rel === '//') {
             $rel = '/';
+        }
+        if (self::isVdbUser($user)) {
+            return self::dryVdbList($rel);
         }
         $now = date('Y-m-d H:i:s');
         $file = static function (string $name, int $size = 4096, string $perms = '0644') use ($now): array {
@@ -189,6 +204,40 @@ final class Shell
             '/app' => [$dir('node_modules'), $file('index.js', 1204), $file('package.json', 812)],
             '/app/node_modules' => [$dir('express')],
             '/logs' => [$file('access.log', 2048), $file('error.log', 512)],
+            default => [],
+        };
+        return ['ok' => true, 'data' => ['ok' => true, 'path' => $rel === '' ? '/' : $rel, 'entries' => $entries], 'error' => ''];
+    }
+
+    /** Fake CVM backup-disk tree so vdb is demoable without /mnt/backup. */
+    private static function dryVdbList(string $rel): array
+    {
+        $now = date('Y-m-d H:i:s');
+        $file = static function (string $name, int $size = 4096, string $perms = '0644') use ($now): array {
+            return ['name' => $name, 'type' => 'file', 'size' => $size, 'mtime' => $now, 'perms' => $perms];
+        };
+        $dir = static function (string $name, string $perms = '0755') use ($now): array {
+            return ['name' => $name, 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => $perms];
+        };
+        $entries = match ($rel) {
+            '/', '' => [
+                $dir('archives'),
+                $dir('snapshots'),
+                $file('README.txt', 186),
+                $file('site-backup-20260924.tar.gz', 284569907),
+            ],
+            '/archives' => [
+                $file('webpanel-full-20260924-033000.tar.gz', 284569907),
+                $file('webpanel-db-20260923-033000.tar.gz', 18743296),
+                $file('theme-export.zip', 204800),
+            ],
+            '/snapshots' => [
+                $dir('2026-09'),
+                $file('notes.txt', 128),
+            ],
+            '/snapshots/2026-09' => [
+                $file('vdb-20260920.img', 10485760),
+            ],
             default => [],
         };
         return ['ok' => true, 'data' => ['ok' => true, 'path' => $rel === '' ? '/' : $rel, 'entries' => $entries], 'error' => ''];

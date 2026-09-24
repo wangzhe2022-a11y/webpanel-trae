@@ -1,7 +1,7 @@
 <?php
-/** @var array $sites @var array $sitesClient @var array|null $selected @var string $defaultPath */
-$siteId = (int) ($selected['id'] ?? 0);
-$hasSites = $sites !== [];
+/** @var array $sites @var array $sitesClient @var array|null $selected @var string $defaultPath @var bool $vdbSelected */
+$vdbSelected = !empty($vdbSelected);
+$siteId = $vdbSelected ? 'vdb' : (int) ($selected['id'] ?? 0);
 $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
 ?>
 <style>
@@ -44,6 +44,11 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-empty { text-align: center; color: #666; padding: 72px 20px; }
     .fm-empty .layui-icon { font-size: 42px; color: #c0c4cc; display: block; margin-bottom: 12px; }
     .fm-root-hint { color: #999; font-size: 12px; margin-left: 4px; }
+    .fm-vdb-banner {
+        margin: 0 0 8px; padding: 8px 12px; border-radius: 4px;
+        background: #fff7e6; border: 1px solid #ffe58f; color: #8c6d1f; font-size: 12.5px;
+    }
+    .fm-card.fm-vdb .fm-write { display: none !important; }
     @media (max-width: 800px) {
         .fm-split { flex-direction: column; }
         .fm-tree { width: 100% !important; min-width: 0; flex-basis: auto !important; max-height: 200px; border-bottom: 1px solid #e6e6e6; }
@@ -51,51 +56,42 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     }
 </style>
 
-<div class="panel-card fm-card">
+<div class="panel-card fm-card<?= $vdbSelected ? ' fm-vdb' : '' ?>">
     <h3>
         文件管理
-        <?php if ($hasSites): ?>
         <div class="fm-site-switch">
-            <span>站点</span>
-            <select id="siteSelect" lay-ignore title="切换站点">
+            <span>位置</span>
+            <select id="siteSelect" lay-ignore title="切换浏览位置">
                 <?php foreach ($sites as $s): ?>
-                <option value="<?= (int) $s['id'] ?>" <?= $siteId === (int) $s['id'] ? 'selected' : '' ?>>
+                <option value="<?= (int) $s['id'] ?>" <?= (!$vdbSelected && $siteId === (int) $s['id']) ? 'selected' : '' ?>>
                     <?= e($s['domain']) ?>（<?= e($s['sysuser']) ?>）
                 </option>
                 <?php endforeach; ?>
+                <option value="vdb" <?= $vdbSelected ? 'selected' : '' ?>>vdb (/mnt/backup)</option>
             </select>
         </div>
-        <?php endif; ?>
     </h3>
 
-    <?php if (!$hasSites): ?>
-    <div class="fm-empty">
-        <span class="layui-icon layui-icon-file"></span>
-        还没有网站，无法浏览文件。
-        <div style="margin-top:16px">
-            <a class="layui-btn" href="/sites">
-                <span class="layui-icon layui-icon-add-1"></span> 去创建网站
-            </a>
-        </div>
+    <div class="fm-vdb-banner" id="vdbBanner"<?= $vdbSelected ? '' : ' hidden' ?>>
+        只读浏览 CVM 备份盘 <span class="mono">/mnt/backup</span>：可列表、下载、解压；不可上传、编辑、新建、重命名、改权限、删除或压缩。
     </div>
-    <?php else: ?>
     <div class="fm-toolbar">
-        <button class="layui-btn layui-btn-sm" id="btnUpload"><span class="layui-icon layui-icon-upload"></span> 上传</button>
-        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btnNewFile">新建文件</button>
-        <button class="layui-btn layui-btn-sm layui-btn-primary" id="btnNewDir">新建文件夹</button>
+        <button class="layui-btn layui-btn-sm fm-write" id="btnUpload"><span class="layui-icon layui-icon-upload"></span> 上传</button>
+        <button class="layui-btn layui-btn-sm layui-btn-primary fm-write" id="btnNewFile">新建文件</button>
+        <button class="layui-btn layui-btn-sm layui-btn-primary fm-write" id="btnNewDir">新建文件夹</button>
         <button class="layui-btn layui-btn-sm layui-btn-normal" id="btnExtract" title="解压选中的压缩包">
             <span class="layui-icon layui-icon-screen-full"></span> 解压
         </button>
-        <button class="layui-btn layui-btn-sm layui-btn-normal" id="btnCompress" title="压缩选中的文件/文件夹">
+        <button class="layui-btn layui-btn-sm layui-btn-normal fm-write" id="btnCompress" title="压缩选中的文件/文件夹">
             <span class="layui-icon layui-icon-screen-restore"></span> 压缩
         </button>
-        <button class="layui-btn layui-btn-sm layui-btn-danger" id="btnDelSel" title="删除勾选的项目">删除</button>
+        <button class="layui-btn layui-btn-sm layui-btn-danger fm-write" id="btnDelSel" title="删除勾选的项目">删除</button>
         <button class="layui-btn layui-btn-sm layui-btn-primary" id="btnRefresh"><span class="layui-icon layui-icon-refresh"></span> 刷新</button>
         <input type="file" id="fileInput" style="display:none">
     </div>
 
     <div class="fm-nav">
-        <button class="layui-btn layui-btn-xs layui-btn-primary" id="btnHome" title="站点根目录">站点根目录</button>
+        <button class="layui-btn layui-btn-xs layui-btn-primary" id="btnHome" title="<?= $vdbSelected ? '备份盘根目录' : '站点根目录' ?>"><?= $vdbSelected ? '备份盘根目录' : '站点根目录' ?></button>
         <button class="layui-btn layui-btn-xs layui-btn-primary" id="btnUp" title="上一级">上一级</button>
         <button class="layui-btn layui-btn-xs layui-btn-primary" id="btnBack" title="后退">后退</button>
         <button class="layui-btn layui-btn-xs layui-btn-primary" id="btnFwd" title="前进">前进</button>
@@ -145,15 +141,13 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
             </table>
         </div>
     </div>
-    <?php endif; ?>
 </div>
 
-<?php if ($hasSites): ?>
 <script>
 layui.use(['layer', 'upload'], function () {
     var layer = layui.layer, $ = layui.$;
     var SITES = <?= json_encode($sitesClient, $jsFlags) ?>;
-    var SITE = <?= (int) $siteId ?>;
+    var SITE = <?= json_encode($siteId, $jsFlags) ?>;
     var DEFAULT_PATH = <?= json_encode($defaultPath, $jsFlags) ?>;
     var curPath = '/';
     var listGen = 0;
@@ -164,10 +158,28 @@ layui.use(['layer', 'upload'], function () {
     var treeKids = {};
 
     function siteOf(id) {
+        var key = String(id);
         for (var i = 0; i < SITES.length; i++) {
-            if (SITES[i].id === id) return SITES[i];
+            if (String(SITES[i].id) === key) return SITES[i];
         }
         return SITES[0] || null;
+    }
+    function isVdb() {
+        var s = currentSite();
+        return !!(s && s.root === 'vdb');
+    }
+    function refuseIfVdb() {
+        if (!isVdb()) return false;
+        layer.msg('vdb（/mnt/backup）为只读，不允许此操作', { icon: 0 });
+        return true;
+    }
+    function applyRootMode() {
+        var vdb = isVdb();
+        $('.fm-card').toggleClass('fm-vdb', vdb);
+        if (vdb) $('#vdbBanner').removeAttr('hidden');
+        else $('#vdbBanner').attr('hidden', 'hidden');
+        $('#btnHome').text(vdb ? '备份盘根目录' : '站点根目录')
+            .attr('title', vdb ? '备份盘根目录 /mnt/backup' : '站点根目录');
     }
     function esc(s) { return layui.util.escape(String(s == null ? '' : s)); }
     function joinPath(dir, name) {
@@ -302,11 +314,15 @@ layui.use(['layer', 'upload'], function () {
         return s ? s.defaultPath : '/';
     }
     function updateUrl() {
-        try { history.replaceState(null, '', '/files?site=' + SITE); } catch (e) {}
+        try { history.replaceState(null, '', '/files?site=' + encodeURIComponent(String(SITE))); } catch (e) {}
     }
     function updateRootHint() {
         var s = currentSite();
         if (!s) return;
+        if (s.root === 'vdb') {
+            $('#rootHint').text('备份盘：/mnt/backup　只读（可下载 / 解压）');
+            return;
+        }
         var sub = s.type === 'node' ? 'app' : 'public';
         $('#rootHint').text('站点根目录：/www/wwwroot/' + s.sysuser + '　默认：/' + sub);
     }
@@ -417,7 +433,8 @@ layui.use(['layer', 'upload'], function () {
             var size = f.type === 'dir' ? '-' : (f.size > 1048576 ? (f.size / 1048576).toFixed(1) + ' MB'
                 : f.size > 1024 ? (f.size / 1024).toFixed(1) + ' KB' : f.size + ' B');
             var acts = '';
-            if (f.type !== 'dir' && EDITABLE.test(f.name)) {
+            var vdb = isVdb();
+            if (!vdb && f.type !== 'dir' && EDITABLE.test(f.name)) {
                 acts += '<button class="layui-btn layui-btn-xs layui-btn-primary act-edit">编辑</button> ';
             }
             if (f.type !== 'dir' && ARCHIVE.test(f.name)) {
@@ -426,9 +443,11 @@ layui.use(['layer', 'upload'], function () {
             if (f.type !== 'dir') {
                 acts += '<button class="layui-btn layui-btn-xs layui-btn-primary act-dl">下载</button> ';
             }
-            acts += '<button class="layui-btn layui-btn-xs act-rename">重命名</button> '
-                 +  '<button class="layui-btn layui-btn-xs act-chmod">权限</button> '
-                 +  '<button class="layui-btn layui-btn-xs layui-btn-danger act-del">删除</button>';
+            if (!vdb) {
+                acts += '<button class="layui-btn layui-btn-xs act-rename">重命名</button> '
+                     +  '<button class="layui-btn layui-btn-xs act-chmod">权限</button> '
+                     +  '<button class="layui-btn layui-btn-xs layui-btn-danger act-del">删除</button>';
+            }
             rows += '<tr data-path="' + esc(p) + '" data-name="' + esc(f.name) + '" data-type="' + f.type + '">'
                  +  '<td><input type="checkbox" class="sel"></td>'
                  +  '<td>' + iconOf(f.type, f.name) + '</td>'
@@ -446,7 +465,8 @@ layui.use(['layer', 'upload'], function () {
     /* ---------- directory tree ---------- */
     function treeLabel() {
         var s = currentSite();
-        return s ? s.domain : '/';
+        if (!s) return '/';
+        return s.root === 'vdb' ? 'vdb' : s.domain;
     }
     function twistHtml(path) {
         return expanded[path]
@@ -487,7 +507,10 @@ layui.use(['layer', 'upload'], function () {
         }
         html += '</ul></li>';
         $('#treeRoot').html(html);
-        if (s) $('#treeRoot .fm-tree-row[data-path="/"]').attr('title', '/www/wwwroot/' + s.sysuser);
+        if (s) {
+            $('#treeRoot .fm-tree-row[data-path="/"]').attr('title',
+                s.root === 'vdb' ? '/mnt/backup' : '/www/wwwroot/' + s.sysuser);
+        }
     }
     function highlightTree(path) {
         $('#treeRoot .fm-tree-row').removeClass('active').each(function () {
@@ -609,6 +632,7 @@ layui.use(['layer', 'upload'], function () {
 
     /* edit */
     $('#fileBody').on('click', '.act-edit', function () {
+        if (refuseIfVdb()) return;
         var p = $(this).closest('tr').attr('data-path');
         var loadI = layer.load(2);
         WP.post('/files/read', { site_id: SITE, path: p }).then(function (res) {
@@ -642,6 +666,7 @@ layui.use(['layer', 'upload'], function () {
     });
 
     $('#btnCompress').on('click', function () {
+        if (refuseIfVdb()) return;
         var names = selectedNames();
         if (!names.length) {
             layer.msg('请先勾选要压缩的文件或文件夹', { icon: 0 });
@@ -669,6 +694,7 @@ layui.use(['layer', 'upload'], function () {
     });
 
     $('#btnDelSel').on('click', function () {
+        if (refuseIfVdb()) return;
         var names = selectedNames();
         if (!names.length) {
             layer.msg('请先勾选要删除的文件或文件夹', { icon: 0 });
@@ -704,13 +730,14 @@ layui.use(['layer', 'upload'], function () {
     /* download */
     $('#fileBody').on('click', '.act-dl', function () {
         var p = $(this).closest('tr').attr('data-path');
-        var url = '/files/download?site_id=' + SITE + '&path=' + encodeURIComponent(p) + '&_csrf=' + WP.csrf;
+        var url = '/files/download?site_id=' + encodeURIComponent(String(SITE)) + '&path=' + encodeURIComponent(p) + '&_csrf=' + WP.csrf;
         var a = document.createElement('a');
         a.href = url; a.download = ''; document.body.appendChild(a); a.click(); a.remove();
     });
 
     /* rename */
     $('#fileBody').on('click', '.act-rename', function () {
+        if (refuseIfVdb()) return;
         var $tr = $(this).closest('tr'), p = $tr.attr('data-path'), name = $tr.attr('data-name');
         layer.prompt({ title: '重命名', value: name, formType: 0 }, function (val, idx) {
             if (!/^[A-Za-z0-9._ -]+$/.test(val)) { layer.msg('名称含非法字符', { icon: 2 }); return; }
@@ -723,6 +750,7 @@ layui.use(['layer', 'upload'], function () {
 
     /* chmod */
     $('#fileBody').on('click', '.act-chmod', function () {
+        if (refuseIfVdb()) return;
         var $tr = $(this).closest('tr'), p = $tr.attr('data-path');
         var cur = $tr.find('.fm-perms').text().trim().replace(/^0?/, '');
         layer.prompt({ title: '权限（三位八进制，如 644 / 755）', value: cur.slice(-3), formType: 0 }, function (val, idx) {
@@ -736,6 +764,7 @@ layui.use(['layer', 'upload'], function () {
 
     /* delete */
     $('#fileBody').on('click', '.act-del', function () {
+        if (refuseIfVdb()) return;
         var $tr = $(this).closest('tr'), p = $tr.attr('data-path');
         layer.confirm('删除 <b>' + esc($tr.attr('data-name')) + '</b>？' +
             ($tr.attr('data-type') === 'dir' ? '<br><span style="color:#ff5722">目录内所有内容将被递归删除。</span>' : ''), {
@@ -750,6 +779,7 @@ layui.use(['layer', 'upload'], function () {
 
     /* new file / dir */
     $('#btnNewFile').on('click', function () {
+        if (refuseIfVdb()) return;
         layer.prompt({ title: '在当前目录新建文件（相对名称）', value: 'new.txt' }, function (val, idx) {
             if (!/^[A-Za-z0-9._ -]+$/.test(val)) { layer.msg('名称含非法字符', { icon: 2 }); return; }
             WP.post('/files/write', { site_id: SITE, path: joinPath(curPath, val), content: '' }).then(function (r) {
@@ -759,6 +789,7 @@ layui.use(['layer', 'upload'], function () {
         });
     });
     $('#btnNewDir').on('click', function () {
+        if (refuseIfVdb()) return;
         layer.prompt({ title: '在当前目录新建文件夹', value: 'newdir' }, function (val, idx) {
             if (!/^[A-Za-z0-9._ -]+$/.test(val)) { layer.msg('名称含非法字符', { icon: 2 }); return; }
             WP.post('/files/mkdir', { site_id: SITE, path: joinPath(curPath, val) }).then(function (r) {
@@ -769,7 +800,10 @@ layui.use(['layer', 'upload'], function () {
     });
 
     /* upload */
-    $('#btnUpload').on('click', function () { $('#fileInput').trigger('click'); });
+    $('#btnUpload').on('click', function () {
+        if (refuseIfVdb()) return;
+        $('#fileInput').trigger('click');
+    });
     $('#fileInput').on('change', function () {
         var f = this.files[0];
         if (!f) return;
@@ -787,37 +821,43 @@ layui.use(['layer', 'upload'], function () {
     });
 
     $('#siteSelect').on('change', function () {
-        var id = parseInt(this.value, 10);
-        if (!id || id === SITE) return;
-        switchSite(id);
+        var raw = this.value;
+        var s = siteOf(raw);
+        if (!s || String(s.id) === String(SITE)) return;
+        switchSite(s.id);
     });
 
     function switchSite(id) {
-        SITE = id;
-        rememberSite(id);
+        var s = siteOf(id);
+        if (!s) return;
+        SITE = s.id;
+        rememberSite(SITE);
         updateUrl();
-        $('#siteSelect').val(String(id));
+        $('#siteSelect').val(String(SITE));
+        applyRootMode();
         updateRootHint();
         resetTree();
         hist = [];
         histIdx = -1;
-        var start = lastPath(id) || defaultFor(id);
+        var start = lastPath(SITE) || defaultFor(SITE);
         load(start, { fallback: true });
         ensureTreePath(start === '/' ? '/' : dirOf(start));
     }
 
     function boot() {
-        var urlSite = <?= (int) (isset($_GET['site']) ? (int) $_GET['site'] : 0) ?>;
+        var urlSite = <?= json_encode((string) ($_GET['site'] ?? ''), $jsFlags) ?>;
         if (!urlSite) {
-            var last = 0;
-            try { last = parseInt(localStorage.getItem('wp.files.lastSite') || '0', 10); } catch (e) { last = 0; }
-            if (last && siteOf(last) && last !== SITE) {
-                SITE = last;
+            var last = '';
+            try { last = localStorage.getItem('wp.files.lastSite') || ''; } catch (e) { last = ''; }
+            var lastSite = last ? siteOf(last) : null;
+            if (lastSite && String(lastSite.id) !== String(SITE)) {
+                SITE = lastSite.id;
                 $('#siteSelect').val(String(SITE));
             }
         }
         rememberSite(SITE);
         updateUrl();
+        applyRootMode();
         updateRootHint();
         resetTree();
         var start = lastPath(SITE) || defaultFor(SITE) || DEFAULT_PATH;
@@ -829,4 +869,3 @@ layui.use(['layer', 'upload'], function () {
     boot();
 });
 </script>
-<?php endif; ?>
