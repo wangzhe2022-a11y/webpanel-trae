@@ -261,7 +261,9 @@ $renderStoreCard = static function (
     </div>
     <div class="layui-col-md4">
         <div class="wp-col-stack">
-        <div class="wp-storage-grid" id="diskMounts">
+        <div class="panel-card wp-disk-card">
+            <h3>磁盘</h3>
+            <div class="wp-storage-grid" id="diskMounts">
             <?= $renderStoreCard(
                 'swap',
                 '交换',
@@ -285,6 +287,7 @@ $renderStoreCard = static function (
             <?php if (empty($diskMounts) && $swapTotal <= 0): ?>
                 <div class="mon-meta wp-disk-empty">暂无磁盘数据</div>
             <?php endif; ?>
+            </div>
         </div>
         <div class="panel-card wp-svc-card">
             <h3>
