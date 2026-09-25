@@ -84,6 +84,127 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         .fm-tree { width: 100% !important; min-width: 0; flex-basis: auto !important; max-height: 200px; border-bottom: 1px solid var(--wp-border); }
         .fm-splitter { display: none; }
     }
+
+    /* ===== 浅色文件管理界面（覆盖暗色主题，始终保持浅灰背景） ===== */
+    .fm-card {
+        background: #f0f2f5 !important;
+        color: #1e293b !important;
+    }
+    .fm-card > h3 { color: #1e293b !important; }
+    .fm-split {
+        background: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
+        color: #1e293b !important;
+    }
+    .fm-tree, .fm-tree-head {
+        background: #f5f7fb !important;
+        border-color: #e2e8f0 !important;
+        color: #475569 !important;
+    }
+    .fm-tree-row:hover { background: #eef2f7 !important; }
+    .fm-tree-row.active {
+        background: #e6f4d0 !important;
+        color: #6b8e1a !important;
+    }
+    .fm-twist { color: #94a3b8 !important; }
+    .fm-splitter { background: #e2e8f0 !important; }
+    .fm-splitter:hover, .fm-splitter:focus-visible,
+    body.fm-resizing .fm-splitter { background: #90BA1E !important; }
+    .fm-main-bar {
+        background: #ffffff !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+    }
+    .fm-site-row label, .fm-crumb, .fm-root-hint { color: #64748b !important; }
+    .fm-site-row select, .fm-pathbox input, .fm-search input {
+        background: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
+        color: #1e293b !important;
+    }
+    .fm-search-ico { color: #94a3b8 !important; }
+    .fm-name-link, .fm-crumb a { color: #6b8e1a !important; }
+
+    /* 统一浅灰按钮风格（工具栏 + 导航 + 行内操作） */
+    .fm-card .layui-btn {
+        background-color: #f0f2f5 !important;
+        color: #334155 !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 6px !important;
+        font-weight: 500;
+    }
+    .fm-card .layui-btn:hover {
+        background-color: #e2e8f0 !important;
+        color: #1e293b !important;
+        border-color: #cbd5e1 !important;
+    }
+    .fm-card .layui-btn-primary {
+        background-color: #f0f2f5 !important;
+        color: #334155 !important;
+        border: 1px solid #e2e8f0 !important;
+    }
+    .fm-card .layui-btn-primary:hover {
+        background-color: #e2e8f0 !important;
+        color: #1e293b !important;
+        border-color: #cbd5e1 !important;
+    }
+    .fm-card .layui-btn-danger {
+        background-color: #fef2f2 !important;
+        color: #dc2626 !important;
+        border: 1px solid #fecaca !important;
+    }
+    .fm-card .layui-btn-danger:hover {
+        background-color: #fee2e2 !important;
+        color: #b91c1c !important;
+        border-color: #fca5a5 !important;
+    }
+    .fm-card .layui-btn-normal {
+        background-color: #f0f2f5 !important;
+        color: #334155 !important;
+        border: 1px solid #e2e8f0 !important;
+    }
+    .fm-card .layui-btn-normal:hover {
+        background-color: #e2e8f0 !important;
+        color: #1e293b !important;
+        border-color: #cbd5e1 !important;
+    }
+    .fm-card .layui-btn[disabled],
+    .fm-card .layui-btn-disabled {
+        background-color: #f8fafc !important;
+        color: #cbd5e1 !important;
+        border-color: #e2e8f0 !important;
+        cursor: not-allowed;
+    }
+
+    /* 文件夹图标改为橙色 */
+    .fm-icon-dir { color: #e8a33d !important; }
+
+    /* 表格：浅灰表头 + 白色行 */
+    .fm-table { background: #ffffff !important; color: #1e293b !important; }
+    .fm-table thead th {
+        background: #f8fafc !important;
+        color: #475569 !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+    }
+    .fm-table td, .fm-table th {
+        border-color: #f1f5f9 !important;
+        color: #1e293b !important;
+        background: #ffffff !important;
+    }
+    .fm-table tbody tr:hover { background: #f8fafc !important; }
+    .fm-table tbody tr.fm-hit {
+        background: #f0fdf4 !important;
+        box-shadow: inset 3px 0 0 #90BA1E !important;
+    }
+
+    /* 搜索下拉 */
+    .fm-search-drop {
+        background: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 8px 24px rgba(0,0,0,.10) !important;
+    }
+    .fm-search-item:hover, .fm-search-item.active { background: #f5f7fb !important; }
+    .fm-search-name { color: #1e293b !important; }
+    .fm-search-path { color: #94a3b8 !important; }
+    .fm-search-meta { color: #64748b !important; border-top-color: #e2e8f0 !important; }
 </style>
 
 <div class="panel-card fm-card<?= $vdbSelected ? ' fm-vdb' : '' ?>">
@@ -126,15 +247,17 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
             <div class="fm-main-bar">
                 <div class="fm-toolbar">
                     <button class="layui-btn layui-btn-sm fm-write" id="btnUpload"><span class="layui-icon layui-icon-upload"></span> 上传</button>
-                    <button class="layui-btn layui-btn-sm layui-btn-primary fm-write" id="btnNewFile">新建文件</button>
-                    <button class="layui-btn layui-btn-sm layui-btn-primary fm-write" id="btnNewDir">新建文件夹</button>
+                    <button class="layui-btn layui-btn-sm layui-btn-primary fm-write" id="btnNewFile"><span class="layui-icon layui-icon-file"></span> 新建文件</button>
+                    <button class="layui-btn layui-btn-sm layui-btn-primary fm-write" id="btnNewDir"><span class="layui-icon layui-icon-folder"></span> 新建文件夹</button>
                     <button class="layui-btn layui-btn-sm layui-btn-normal" id="btnExtract" title="解压选中的压缩包">
-                        <span class="layui-icon layui-icon-screen-full"></span> 解压
+                        <span class="layui-icon layui-icon-release"></span> 解压
                     </button>
                     <button class="layui-btn layui-btn-sm layui-btn-normal fm-write" id="btnCompress" title="压缩选中的文件/文件夹">
-                        <span class="layui-icon layui-icon-screen-restore"></span> 压缩
+                        <span class="layui-icon layui-icon-404"></span> 压缩
                     </button>
-                    <button class="layui-btn layui-btn-sm layui-btn-danger fm-write" id="btnDelSel" title="删除勾选的项目">删除</button>
+                    <button class="layui-btn layui-btn-sm layui-btn-danger fm-write" id="btnDelSel" title="删除勾选的项目">
+                        <span class="layui-icon layui-icon-delete"></span> 删除
+                    </button>
                     <button class="layui-btn layui-btn-sm layui-btn-primary" id="btnRefresh"><span class="layui-icon layui-icon-refresh"></span> 刷新</button>
                     <div class="fm-search">
                         <input id="fmSearch" type="search" spellcheck="false" autocomplete="off"
