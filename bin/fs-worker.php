@@ -257,9 +257,21 @@ function search_tree(string $absStart, string $jailBase, string $q): array {
 }
 
 function site_user_id(string $user): array {
-    $info = posix_getpwnam($user);
-    if (!$info) err('site user does not exist');
-    return [$info['uid'], $info['gid']];
+    // Prefer posix; fall back to getent when php-process (posix) is missing.
+    if (function_exists('posix_getpwnam')) {
+        $info = @posix_getpwnam($user);
+        if (is_array($info) && isset($info['uid'], $info['gid'])) {
+            return [(int) $info['uid'], (int) $info['gid']];
+        }
+    }
+    $lines = []; $code = 0;
+    exec('/usr/bin/getent passwd ' . escapeshellarg($user) . ' 2>/dev/null', $lines, $code);
+    if ($code !== 0 || $lines === [] || !isset($lines[0])) err('site user does not exist');
+    $parts = explode(':', $lines[0], 5);
+    if (count($parts) < 4 || !ctype_digit($parts[2]) || !ctype_digit($parts[3])) {
+        err('site user does not exist');
+    }
+    return [(int) $parts[2], (int) $parts[3]];
 }
 
 function chown_to(string $path, string $user): void {

@@ -88,7 +88,7 @@ c_ok "Nginx / MySQL 软件包安装完成"
 c_blue "==> [3/12] 安装 PHP（面板用系统 PHP，站点支持多版本切换）"
 # 面板自身使用 AlmaLinux 10 系统 PHP（8.4）
 dnf install -y php-cli php-fpm php-pdo php-sqlite3 php-mbstring php-gd php-xml \
-    php-curl php-opcache php-mysqlnd php-zip php-intl php-bcmath php-soap
+    php-curl php-opcache php-mysqlnd php-zip php-intl php-bcmath php-soap php-process
 
 # 站点多版本：Remi SCL 并行安装，服务名 phpXX-php-fpm
 for v in "${PHP_VERSIONS[@]}"; do
