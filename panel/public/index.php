@@ -83,6 +83,7 @@ $router->get('/files/download', [FileController::class, 'download']);
 /* ---- host / services ----------------------------------------------------- */
 $router->get('/sys/info', [ServiceController::class, 'info']);
 $router->get('/sys/atop', [ServiceController::class, 'atop']);
+$router->get('/sys/access', [ServiceController::class, 'access']);
 $router->post('/sys/svc', [ServiceController::class, 'svc']);
 
 /* ---- backup / restore ------------------------------------------------------ */

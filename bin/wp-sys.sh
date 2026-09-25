@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=wp-lib.sh
 . "$SCRIPT_DIR/wp-lib.sh"
 
-usage() { fail "usage: wp-sys.sh {info|svc|logins}" 64; }
+usage() { fail "usage: wp-sys.sh {info|svc|logins|access}" 64; }
 [ $# -ge 1 ] || usage
 action="$1"; shift
 require_root
@@ -246,6 +246,113 @@ JSON
             }'
     fi
     printf ']}\n'
+    exit 0
+fi
+
+if [ "$action" = "access" ]; then
+    # Recent access to the WebPanel management UI from /www/wwwlogs/panel.log
+    # (nginx combined format). Also flags suspicious IPs: many failed logins,
+    # many requests, or scans for sensitive paths (.env, wp-admin, etc.).
+    n="${1:-30}"
+    case "$n" in ''|*[!0-9]*) fail "usage: access [limit]" ;; esac
+    [ "$n" -gt 200 ] && n=200
+
+    if is_dry_run; then
+        cat <<'JSON'
+{"ok":true,"total":42,"unique_ips":5,"recent":[{"time":"23/Sep/2026:14:32:01 +0800","ip":"203.0.113.10","method":"GET","uri":"/","status":200,"ua":"Mozilla/5.0 (Windows NT 10.0; Win64; x64)"},{"time":"23/Sep/2026:14:31:58 +0800","ip":"203.0.113.10","method":"POST","uri":"/login","status":200,"ua":"Mozilla/5.0 (Windows NT 10.0; Win64; x64)"},{"time":"23/Sep/2026:14:31:40 +0800","ip":"198.51.100.24","method":"POST","uri":"/login","status":401,"ua":"python-requests/2.31"},{"time":"23/Sep/2026:14:31:38 +0800","ip":"198.51.100.24","method":"POST","uri":"/login","status":401,"ua":"python-requests/2.31"},{"time":"23/Sep/2026:14:30:12 +0800","ip":"45.33.22.11","method":"GET","uri":"/.env","status":404,"ua":"Mozilla/5.0 (compatible; Nmap Scripting Engine)"},{"time":"23/Sep/2026:14:29:55 +0800","ip":"45.33.22.11","method":"GET","uri":"/wp-admin/","status":404,"ua":"Mozilla/5.0 (compatible; Nmap Scripting Engine)"}],"failed_logins":[{"ip":"198.51.100.24","count":12}],"suspicious":[{"ip":"198.51.100.24","reason":"12 次登录失败","count":12,"level":"high"},{"ip":"45.33.22.11","reason":"扫描敏感路径（/.env, /wp-admin/）","count":2,"level":"medium"}]}
+JSON
+        exit 0
+    fi
+
+    log="${PANEL_ACCESS_LOG:-/www/wwwlogs/panel.log}"
+    if [ ! -f "$log" ]; then
+        # Try rotated logs too, but if none exist, return empty.
+        printf '{"ok":true,"total":0,"unique_ips":0,"recent":[],"failed_logins":[],"suspicious":[]}\n'
+        exit 0
+    fi
+
+    # Parse combined log. Output one record per line for the last $n entries,
+    # then aggregate failed-logins and suspicious IPs in awk.
+    tmp="$(mktemp)"
+    tail -n 2000 "$log" > "$tmp"
+
+    total=$(wc -l < "$tmp" | tr -d ' ')
+    unique_ips=$(awk '{print $1}' "$tmp" | sort -u | wc -l | tr -d ' ')
+
+    # Recent entries (newest first)
+    recent_json="["
+    recent_json+=$(tail -n "$n" "$tmp" | tac | awk '
+    {
+        # combined format: ip - user [time] "request" status bytes "referer" "ua"
+        ip=$1;
+        # time is between [ and ]
+        s=index($0,"["); e=index($0,"]");
+        time=(s&&e)?substr($0,s+1,e-s-1):"";
+        # request is between first pair of quotes after ]
+        rest=substr($0,e+1);
+        q1=index(rest,"\""); q2=index(substr(rest,q1+1),"\"");
+        req=(q1&&q2)?substr(rest,q1+1,q2-1):"";
+        split(req,rq," "); method=rq[1]; uri=rq[2];
+        # status is the token after the closing quote of request
+        after=substr(rest,q1+q2+1);
+        # remove leading spaces
+        gsub(/^[ \t]+/,"",after);
+        split(after,st," "); status=st[1];
+        # user agent is the last quoted field
+        n=split($0,parts,"\"");
+        ua=parts[n-1];
+        gsub(/[\\"]/,"",ua); gsub(/[\\"]/,"",uri); gsub(/[\\"]/,"",method);
+        if (ip!="" && time!="") {
+            printf "%s{\"time\":\"%s\",\"ip\":\"%s\",\"method\":\"%s\",\"uri\":\"%s\",\"status\":%s,\"ua\":\"%s\"}",
+                (NR>1?",":""), time, ip, method, uri, (status+0), ua;
+        }
+    }')
+    recent_json+="]"
+
+    # Failed logins (401 on /login) grouped by IP
+    failed_json="["
+    failed_json+=$(grep -E '"(POST|GET) /login' "$tmp" 2>/dev/null | awk '$0 ~ / 401 / {print $1}' | sort | uniq -c | sort -rn | awk '
+    { printf "%s{\"ip\":\"%s\",\"count\":%d}", (NR>1?",":""), $2, $1 }')
+    failed_json+="]"
+
+    # Suspicious IPs: >=3 failed logins OR scanned sensitive paths OR >=20 requests
+    # Sensitive path patterns (no lookahead — awk ERE doesn't support it).
+    # .well-known/acme-challenge is legitimate (Let's Encrypt), so not flagged.
+    sens='\.(env|git|svn|htaccess|htpasswd|sql|bak|old|zip|tar|gz|rar|7z)$|/(wp-admin|wp-login|phpmyadmin|pma|manager|console|xmlrpc|actuator|debug)(/|$)|^/env$|^/admin(\?|/)'
+    susp_json="["
+    susp_json+=$(awk -v sens="$sens" '
+    {
+        ip=$1;
+        # parse status and uri
+        s=index($0,"["); e=index($0,"]");
+        rest=substr($0,e+1);
+        q1=index(rest,"\""); q2=index(substr(rest,q1+1),"\"");
+        req=substr(rest,q1+1,q2-1);
+        split(req,rq," "); uri=rq[2];
+        after=substr(rest,q1+q2+1); gsub(/^[ \t]+/,"",after);
+        split(after,st," "); status=st[1]+0;
+        count[ip]++;
+        if (status==401 && uri ~ /^\/login/) fail[ip]++;
+        if (uri ~ sens) scan[ip]++;
+    }
+    END {
+        for (ip in count) {
+            reason=""; level="low"; cnt=0;
+            if ((fail[ip]+0) >= 3) { reason=fail[ip]" 次登录失败"; cnt=fail[ip]; level="high"; }
+            else if ((scan[ip]+0) >= 1) { reason="扫描敏感路径"; cnt=scan[ip]; level="medium"; }
+            else if ((count[ip]+0) >= 20) { reason="高频访问 "count[ip]" 次"; cnt=count[ip]; level="low"; }
+            if (reason != "") {
+                printf "%s{\"ip\":\"%s\",\"reason\":\"%s\",\"count\":%d,\"level\":\"%s\"}",
+                    (NR_seen++?",":""), ip, reason, cnt, level;
+            }
+        }
+    }' "$tmp")
+    susp_json+="]"
+
+    rm -f "$tmp"
+
+    printf '{"ok":true,"total":%s,"unique_ips":%s,"recent":%s,"failed_logins":%s,"suspicious":%s}\n' \
+        "$total" "$unique_ips" "$recent_json" "$failed_json" "$susp_json"
     exit 0
 fi
 usage

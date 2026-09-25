@@ -142,6 +142,26 @@ final class Shell
                     ['time' => 'Sep 19 08:40:12', 'user' => 'demo', 'ip' => '203.0.113.55', 'method' => 'publickey'],
                     ['time' => 'Sep 18 19:05:55', 'user' => 'root', 'ip' => '203.0.113.10', 'method' => 'publickey'],
                 ]], 'error' => ''],
+            str_starts_with($script, 'wp-sys') && $a === 'access'
+                => ['ok' => true, 'data' => ['ok' => true,
+                    'total' => 42,
+                    'unique_ips' => 5,
+                    'recent' => [
+                        ['time' => date('d/M/Y:H:i:s O'), 'ip' => '203.0.113.10', 'method' => 'GET', 'uri' => '/', 'status' => 200, 'ua' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'],
+                        ['time' => date('d/M/Y:H:i:s O', time() - 3), 'ip' => '203.0.113.10', 'method' => 'POST', 'uri' => '/login', 'status' => 200, 'ua' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'],
+                        ['time' => date('d/M/Y:H:i:s O', time() - 20), 'ip' => '198.51.100.24', 'method' => 'POST', 'uri' => '/login', 'status' => 401, 'ua' => 'python-requests/2.31'],
+                        ['time' => date('d/M/Y:H:i:s O', time() - 22), 'ip' => '198.51.100.24', 'method' => 'POST', 'uri' => '/login', 'status' => 401, 'ua' => 'python-requests/2.31'],
+                        ['time' => date('d/M/Y:H:i:s O', time() - 110), 'ip' => '45.33.22.11', 'method' => 'GET', 'uri' => '/.env', 'status' => 404, 'ua' => 'Mozilla/5.0 (compatible; Nmap Scripting Engine)'],
+                        ['time' => date('d/M/Y:H:i:s O', time() - 127), 'ip' => '45.33.22.11', 'method' => 'GET', 'uri' => '/wp-admin/', 'status' => 404, 'ua' => 'Mozilla/5.0 (compatible; Nmap Scripting Engine)'],
+                    ],
+                    'failed_logins' => [
+                        ['ip' => '198.51.100.24', 'count' => 12],
+                    ],
+                    'suspicious' => [
+                        ['ip' => '198.51.100.24', 'reason' => '12 次登录失败', 'count' => 12, 'level' => 'high'],
+                        ['ip' => '45.33.22.11', 'reason' => '扫描敏感路径', 'count' => 2, 'level' => 'medium'],
+                    ],
+                ], 'error' => ''],
             str_starts_with($script, 'wp-wp')
                 => ['ok' => true, 'data' => ['ok' => true, 'domain' => $args[2] ?? 'demo', 'admin' => $args[6] ?? 'admin', 'url' => 'http://demo/wp-admin/'], 'error' => ''],
             str_starts_with($script, 'wp-pma') && $a === 'status'

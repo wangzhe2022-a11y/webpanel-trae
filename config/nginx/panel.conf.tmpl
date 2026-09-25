@@ -13,6 +13,9 @@ server {
     root /usr/local/webpanel/panel/public;
     index index.php;
 
+    access_log /www/wwwlogs/panel.log;
+    error_log  /www/wwwlogs/panel.error.log;
+
     # Hardening: uncomment and edit to allow only your office/home IPs
     # allow 1.2.3.4;
     # deny all;

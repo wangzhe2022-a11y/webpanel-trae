@@ -329,6 +329,7 @@ $renderStoreCard = static function (
                 <div class="wp-eq-tabs wp-host-tabs wp-login-tabs" role="tablist">
                     <button type="button" class="wp-host-tab is-active" role="tab" id="loginTabRecent" data-tab="recent" aria-controls="recentLoginCard" aria-selected="true" aria-expanded="true">最近登录</button>
                     <button type="button" class="wp-host-tab" role="tab" id="loginTabSsh" data-tab="ssh" aria-controls="sshLoginCard" aria-selected="false" aria-expanded="false">SSH / 系统登录</button>
+                    <button type="button" class="wp-host-tab" role="tab" id="loginTabAccess" data-tab="access" aria-controls="accessCard" aria-selected="false" aria-expanded="false">面板访问 / 安全</button>
                 </div>
                 <div class="wp-host-tab-panels">
                     <div id="recentLoginCard" class="wp-host-tab-panel" role="tabpanel" data-tab="recent" aria-labelledby="loginTabRecent">
@@ -396,6 +397,47 @@ $renderStoreCard = static function (
                             </tbody>
                         </table>
                     </div>
+                    <div id="accessCard" class="wp-host-tab-panel" role="tabpanel" data-tab="access" aria-labelledby="loginTabAccess" hidden>
+                        <div class="wp-host-tab-head">
+                            <button class="layui-btn layui-btn-sm layui-btn-primary" id="btnAccessRefresh">
+                                <span class="layui-icon layui-icon-refresh"></span> 刷新
+                            </button>
+                            <span class="mon-updated" id="accessHint">点击「刷新」加载面板访问日志</span>
+                        </div>
+                        <div id="accessAlert" style="display:none;margin-bottom:12px"></div>
+                        <div id="accessStats" class="wp-host-stats" style="margin-bottom:12px;display:none">
+                            <div class="stat-card c-blue">
+                                <span class="layui-icon layui-icon-log"></span>
+                                <div class="num" id="accessTotal">0</div><div class="label">总请求数</div>
+                            </div>
+                            <div class="stat-card c-green">
+                                <span class="layui-icon layui-icon-group"></span>
+                                <div class="num" id="accessUnique">0</div><div class="label">独立 IP</div>
+                            </div>
+                            <div class="stat-card c-orange">
+                                <span class="layui-icon layui-icon-auz"></span>
+                                <div class="num" id="accessFailed">0</div><div class="label">登录失败 IP</div>
+                            </div>
+                            <div class="stat-card c-red">
+                                <span class="layui-icon layui-icon-about"></span>
+                                <div class="num" id="accessSusp">0</div><div class="label">可疑 IP</div>
+                            </div>
+                        </div>
+                        <div class="mon-meta" style="margin:0 0 8px">可疑 / 攻击 IP</div>
+                        <table class="layui-table wp-login-table" style="margin:0 0 14px">
+                            <thead><tr><th>IP 地址</th><th>原因</th><th style="width:70px">次数</th><th style="width:60px">等级</th></tr></thead>
+                            <tbody id="suspiciousBody">
+                                <tr class="wp-login-empty"><td colspan="4" style="text-align:center;color:#999">暂无可疑 IP</td></tr>
+                            </tbody>
+                        </table>
+                        <div class="mon-meta" style="margin:0 0 8px">最近访问记录</div>
+                        <table class="layui-table wp-login-table" style="margin:0">
+                            <thead><tr><th>时间</th><th>IP 地址</th><th>方法</th><th>路径</th><th>状态</th></tr></thead>
+                            <tbody id="accessBody">
+                                <tr class="wp-login-empty"><td colspan="5" style="text-align:center;color:#999">暂无访问记录</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -427,6 +469,99 @@ layui.use(['element', 'layer', 'table'], function () {
         applyLoginLimit('sshLoginBody', this.value, 'sshLoginHint', 'SSH 认证成功 · 最近 %n 条');
     });
 
+    // ---- Panel access / security monitoring --------------------------------
+    function statusBadge(status) {
+        var s = Number(status) || 0;
+        var cls, text;
+        if (s >= 500) { cls = 'layui-bg-red'; text = s + ' 错误'; }
+        else if (s >= 400) { cls = 'layui-bg-orange'; text = s + ' 拒绝'; }
+        else if (s >= 300) { cls = 'layui-bg-blue'; text = s + ' 跳转'; }
+        else if (s >= 200) { cls = 'layui-bg-green'; text = s + ' 成功'; }
+        else { cls = ''; text = String(s); }
+        return '<span class="layui-badge ' + cls + '">' + text + '</span>';
+    }
+    function levelBadge(level) {
+        if (level === 'high') return '<span class="layui-badge layui-bg-red">高危</span>';
+        if (level === 'medium') return '<span class="layui-badge layui-bg-orange">中危</span>';
+        return '<span class="layui-badge">低危</span>';
+    }
+    function loadAccess(showErr) {
+        fetch('/sys/access?limit=30', { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+            .then(function (r) {
+                if (r.status === 401) { if (showErr) layer.msg('未登录或会话已过期', { icon: 2 }); return null; }
+                return r.json();
+            })
+            .then(function (res) {
+                if (!res) return;
+                if (!res.ok) {
+                    if (showErr) layer.msg(res.error || '获取失败', { icon: 2 });
+                    return;
+                }
+                $('#accessStats').show();
+                $('#accessTotal').text(res.total || 0);
+                $('#accessUnique').text(res.unique_ips || 0);
+                var failedIps = res.failed_logins || [];
+                $('#accessFailed').text(failedIps.length);
+                var susp = res.suspicious || [];
+                $('#accessSusp').text(susp.length);
+
+                // Alert banner
+                var $alert = $('#accessAlert');
+                if (susp.length) {
+                    var highCount = susp.filter(function (s) { return s.level === 'high'; }).length;
+                    var msg = susp.length + ' 个可疑 IP';
+                    if (highCount) msg += '（' + highCount + ' 个高危）';
+                    msg += '正在访问面板，请在腾讯云安全组或 /etc/nginx 中封禁。';
+                    $alert.show().html('<div class="layui-bg-red" style="padding:10px 14px;border-radius:4px;color:#fff">'
+                        + '<i class="layui-icon layui-icon-about"></i> <b>安全告警：</b>' + msg + '</div>');
+                } else {
+                    $alert.hide();
+                }
+
+                // Suspicious IP table
+                var $susp = $('#suspiciousBody').empty();
+                if (susp.length) {
+                    susp.forEach(function (s) {
+                        $susp.append('<tr><td class="mono"></td><td></td><td class="mono"></td><td></td></tr>');
+                        var $td = $susp.find('tr:last td');
+                        $td.eq(0).text(s.ip);
+                        $td.eq(1).text(s.reason);
+                        $td.eq(2).text(s.count);
+                        $td.eq(3).html(levelBadge(s.level));
+                    });
+                } else {
+                    $susp.append('<tr class="wp-login-empty"><td colspan="4" style="text-align:center;color:#999">暂无可疑 IP</td></tr>');
+                }
+
+                // Recent access table
+                var $body = $('#accessBody').empty();
+                var recent = res.recent || [];
+                if (recent.length) {
+                    recent.forEach(function (r) {
+                        $body.append('<tr><td class="mono"></td><td class="mono"></td><td></td><td class="mono"></td><td></td></tr>');
+                        var $td = $body.find('tr:last td');
+                        $td.eq(0).text(r.time || '');
+                        $td.eq(1).text(r.ip || '');
+                        $td.eq(2).text(r.method || '');
+                        $td.eq(3).text(r.uri || '');
+                        $td.eq(4).html(statusBadge(r.status));
+                    });
+                } else {
+                    $body.append('<tr class="wp-login-empty"><td colspan="5" style="text-align:center;color:#999">暂无访问记录</td></tr>');
+                }
+
+                var now = new Date();
+                var hh = ('0' + now.getHours()).slice(-2);
+                var mm = ('0' + now.getMinutes()).slice(-2);
+                var ss = ('0' + now.getSeconds()).slice(-2);
+                $('#accessHint').text('更新于 ' + hh + ':' + mm + ':' + ss);
+            })
+            .catch(function () {
+                if (showErr) layer.msg('网络错误', { icon: 2 });
+            });
+    }
+    $('#btnAccessRefresh').on('click', function () { loadAccess(true); });
+
     $('.wp-host-extra').on('click', '.wp-host-tab', function () {
         var $extra = $(this).closest('.wp-host-extra');
         var tab = this.getAttribute('data-tab');
@@ -443,6 +578,9 @@ layui.use(['element', 'layer', 'table'], function () {
         $extra.addClass('is-open');
         if (tab === 'atop') {
             element.render('progress');
+        }
+        if (tab === 'access') {
+            loadAccess(false);
         }
     });
 
