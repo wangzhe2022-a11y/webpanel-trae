@@ -49,7 +49,8 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-table thead th { position: sticky; top: 0; background: var(--wp-surface-soft); z-index: 1; white-space: nowrap; }
     .fm-table td, .fm-table th { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .fm-table td:last-child, .fm-table th:last-child { white-space: normal; overflow: visible; }
-    .fm-table tbody tr:hover { background: var(--wp-accent-soft); }
+    .fm-table tbody tr:hover { background: #ecfccb !important; box-shadow: inset 3px 0 0 #90BA1E !important; }
+    .fm-table tbody tr:hover td { background: transparent !important; }
     .fm-empty { text-align: center; color: var(--wp-text-secondary); padding: 72px 20px; }
     .fm-empty .layui-icon { font-size: 42px; color: var(--wp-text-muted); display: block; margin-bottom: 12px; }
     .fm-root-hint { color: var(--wp-text-muted); font-size: 12px; margin-left: 4px; }
