@@ -220,7 +220,8 @@ body.layui-layout-body {
     width: auto;
     background: var(--wp-bg);
     padding: 20px 24px 28px;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     transition: left .2s ease;
 }
 html.wp-side-collapsed .layui-layout-admin .layui-body {
