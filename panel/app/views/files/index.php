@@ -52,6 +52,27 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         background: #fff7e6; border: 1px solid #ffe58f; color: #8c6d1f; font-size: 12.5px;
     }
     .fm-card.fm-vdb .fm-write { display: none !important; }
+    .fm-search { position: relative; margin-left: auto; flex: 1 1 240px; min-width: 200px; max-width: 420px; }
+    .fm-search input {
+        width: 100%; height: 30px; line-height: 30px; box-sizing: border-box;
+        border: 1px solid var(--wp-border); border-radius: 2px; padding: 0 28px 0 8px;
+        background: var(--wp-surface); color: var(--wp-text); font-size: 12.5px;
+    }
+    .fm-search .fm-search-ico { position: absolute; right: 8px; top: 6px; color: var(--wp-text-muted); pointer-events: none; }
+    .fm-search-drop {
+        display: none; position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 30;
+        max-height: 360px; overflow: auto; background: var(--wp-surface);
+        border: 1px solid var(--wp-border); border-radius: 4px;
+        box-shadow: 0 8px 24px rgba(0,0,0,.18);
+    }
+    .fm-search-drop.open { display: block; }
+    .fm-search-item { display: block; width: 100%; text-align: left; border: 0; background: transparent; padding: 7px 10px; cursor: pointer; }
+    .fm-search-item:hover, .fm-search-item.active { background: var(--wp-accent-soft); }
+    .fm-search-name { font-size: 13px; color: var(--wp-text); }
+    .fm-search-path { font-size: 11px; color: var(--wp-text-muted); font-family: ui-monospace, Menlo, Consolas, monospace; margin-top: 2px; }
+    .fm-search-meta { padding: 6px 10px; font-size: 12px; color: var(--wp-text-secondary); border-top: 1px solid var(--wp-border); }
+    .fm-search-empty { padding: 14px 10px; font-size: 12px; color: var(--wp-text-secondary); text-align: center; }
+    .fm-table tbody tr.fm-hit { background: var(--wp-accent-soft); box-shadow: inset 3px 0 0 var(--wp-accent); }
     @media (max-width: 800px) {
         .fm-split { flex-direction: column; }
         .fm-tree { width: 100% !important; min-width: 0; flex-basis: auto !important; max-height: 200px; border-bottom: 1px solid var(--wp-border); }
@@ -76,7 +97,7 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     </h3>
 
     <div class="fm-vdb-banner" id="vdbBanner"<?= $vdbSelected ? '' : ' hidden' ?>>
-        只读浏览 CVM 备份盘 <span class="mono">/mnt/backup</span>：可列表、下载、解压；不可上传、编辑、新建、重命名、改权限、删除或压缩。
+        只读浏览 CVM 备份盘 <span class="mono">/mnt/backup</span>：可列表、搜索、下载、解压；不可上传、编辑、新建、重命名、改权限、删除或压缩。
     </div>
     <div class="fm-toolbar">
         <button class="layui-btn layui-btn-sm fm-write" id="btnUpload"><span class="layui-icon layui-icon-upload"></span> 上传</button>
@@ -90,6 +111,12 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         </button>
         <button class="layui-btn layui-btn-sm layui-btn-danger fm-write" id="btnDelSel" title="删除勾选的项目">删除</button>
         <button class="layui-btn layui-btn-sm layui-btn-primary" id="btnRefresh"><span class="layui-icon layui-icon-refresh"></span> 刷新</button>
+        <div class="fm-search">
+            <input id="fmSearch" type="search" spellcheck="false" autocomplete="off"
+                   placeholder="搜索当前目录及子目录…" title="按文件名搜索当前目录及子目录，支持部分匹配">
+            <span class="layui-icon layui-icon-search fm-search-ico"></span>
+            <div class="fm-search-drop" id="fmSearchDrop"></div>
+        </div>
         <input type="file" id="fileInput" style="display:none">
     </div>
 
@@ -356,6 +383,7 @@ layui.use(['layer', 'upload'], function () {
                 curPath = res.path || n;
                 renderCrumb(curPath);
                 render(res.entries || []);
+                if (opts.highlight) highlightRow(opts.highlight);
                 rememberPath(SITE, curPath);
                 updateTreeFromList(curPath, res.entries || []);
                 highlightTree(curPath);
@@ -463,6 +491,19 @@ layui.use(['layer', 'upload'], function () {
         });
         if (!rows) rows = '<tr><td colspan="8" style="text-align:center;color:#999;padding:30px">空目录</td></tr>';
         $('#fileBody').html(rows);
+    }
+
+    function highlightRow(name) {
+        $('#fileBody tr.fm-hit').removeClass('fm-hit');
+        $('#fileBody tr').each(function () {
+            if ($(this).attr('data-name') === name) {
+                $(this).addClass('fm-hit');
+                var el = this;
+                setTimeout(function () {
+                    if (el.scrollIntoView) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                }, 0);
+            }
+        });
     }
 
     /* ---------- directory tree ---------- */
@@ -823,6 +864,119 @@ layui.use(['layer', 'upload'], function () {
         this.value = '';
     });
 
+    /* filename search (current directory + descendants) */
+    var searchTimer = null;
+    var searchGen = 0;
+    var searchHits = [];
+    var searchActive = -1;
+    function searchDrop() { return document.getElementById('fmSearchDrop'); }
+    function closeSearchDrop() {
+        var el = searchDrop();
+        if (el) el.classList.remove('open');
+        searchActive = -1;
+    }
+    function openSearchDrop() {
+        var el = searchDrop();
+        if (el) el.classList.add('open');
+    }
+    function clearSearch() {
+        $('#fmSearch').val('');
+        searchHits = [];
+        closeSearchDrop();
+        if (searchTimer) { clearTimeout(searchTimer); searchTimer = null; }
+        searchGen++;
+    }
+    function jumpToHit(hit) {
+        if (!hit || !hit.path) return;
+        closeSearchDrop();
+        if (hit.type === 'dir') {
+            load(hit.path);
+            return;
+        }
+        load(hit.dir || dirOf(hit.path), { highlight: hit.name });
+    }
+    function paintSearchActive() {
+        $('#fmSearchDrop .fm-search-item').removeClass('active').each(function (i) {
+            if (i === searchActive) $(this).addClass('active');
+        });
+    }
+    function renderSearchHits(res, q) {
+        var hits = res.hits || [];
+        searchHits = hits;
+        searchActive = hits.length ? 0 : -1;
+        var html = '';
+        if (!hits.length) {
+            html = '<div class="fm-search-empty">未找到匹配「' + esc(q) + '」的文件</div>';
+        } else {
+            hits.forEach(function (h, i) {
+                var kind = h.type === 'dir' ? '文件夹' : (h.type === 'link' ? '链接' : '文件');
+                html += '<button type="button" class="fm-search-item' + (i === 0 ? ' active' : '') + '" data-i="' + i + '">'
+                     +  '<div class="fm-search-name">' + iconOf(h.type, h.name) + ' ' + esc(h.name)
+                     +  ' <span style="color:var(--wp-text-muted);font-weight:400">· ' + kind + '</span></div>'
+                     +  '<div class="fm-search-path">' + esc(h.path) + '</div></button>';
+            });
+            html += '<div class="fm-search-meta">在 ' + esc(res.path || curPath) + ' 下找到 ' + hits.length + ' 项'
+                 +  (res.truncated ? '（结果已截断，请缩小范围或改用更具体的名称）' : '')
+                 +  '</div>';
+        }
+        $('#fmSearchDrop').html(html);
+        openSearchDrop();
+    }
+    function runSearch(q) {
+        q = String(q || '').trim();
+        if (q.length < 1) {
+            closeSearchDrop();
+            return;
+        }
+        var gen = ++searchGen;
+        WP.post('/files/search', { site_id: SITE, path: curPath, q: q }).then(function (res) {
+            if (gen !== searchGen) return;
+            if (!res.ok) {
+                $('#fmSearchDrop').html('<div class="fm-search-empty">' + esc(res.error || '搜索失败') + '</div>');
+                openSearchDrop();
+                return;
+            }
+            renderSearchHits(res, q);
+        });
+    }
+    $('#fmSearch').on('input', function () {
+        var q = this.value;
+        if (searchTimer) clearTimeout(searchTimer);
+        if (String(q || '').trim().length < 2) { closeSearchDrop(); return; }
+        searchTimer = setTimeout(function () { runSearch(q); }, 300);
+    });
+    $('#fmSearch').on('keydown', function (e) {
+        if (e.key === 'Escape') { closeSearchDrop(); return; }
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (searchTimer) { clearTimeout(searchTimer); searchTimer = null; }
+            if (searchHits.length && searchActive >= 0 && searchHits[searchActive]) {
+                jumpToHit(searchHits[searchActive]);
+            } else {
+                runSearch(this.value);
+            }
+            return;
+        }
+        if (!$('#fmSearchDrop').hasClass('open') || !searchHits.length) return;
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            searchActive = (searchActive + 1) % searchHits.length;
+            paintSearchActive();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            searchActive = (searchActive - 1 + searchHits.length) % searchHits.length;
+            paintSearchActive();
+        }
+    });
+    $('#fmSearchDrop').on('mousedown', '.fm-search-item', function (e) {
+        e.preventDefault();
+        var i = parseInt($(this).attr('data-i'), 10);
+        if (searchHits[i]) jumpToHit(searchHits[i]);
+    });
+    $(document).on('mousedown', function (e) {
+        if (!$(e.target).closest('.fm-search').length) closeSearchDrop();
+    });
+
     $('#siteSelect').on('change', function () {
         var raw = this.value;
         var s = siteOf(raw);
@@ -840,6 +994,7 @@ layui.use(['layer', 'upload'], function () {
         applyRootMode();
         updateRootHint();
         resetTree();
+        clearSearch();
         hist = [];
         histIdx = -1;
         var start = lastPath(SITE) || defaultFor(SITE);

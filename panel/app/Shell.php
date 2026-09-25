@@ -117,6 +117,8 @@ final class Shell
                 ], 'error' => ''],
             str_starts_with($script, 'wp-fs') && $a === 'list'
                 => self::dryFsList((string) ($args[2] ?? '/'), (string) ($args[1] ?? '')),
+            str_starts_with($script, 'wp-fs') && $a === 'search'
+                => self::dryFsSearch((string) ($args[2] ?? '/'), (string) ($args[3] ?? ''), (string) ($args[1] ?? '')),
             str_starts_with($script, 'wp-fs') && ($a === 'extract' || $a === 'unzip')
                 => ['ok' => true, 'data' => ['ok' => true, 'extracted' => 3, 'dest' => dirname((string) ($args[2] ?? '/')) ?: '/'], 'error' => ''],
             str_starts_with($script, 'wp-fs') && ($a === 'compress' || $a === 'zip')
@@ -223,6 +225,58 @@ final class Shell
             default => [],
         };
         return ['ok' => true, 'data' => ['ok' => true, 'path' => $rel === '' ? '/' : $rel, 'entries' => $entries], 'error' => ''];
+    }
+
+    /** Filename search over the demo tree (current dir + descendants). */
+    private static function dryFsSearch(string $rel, string $q, string $user = ''): array
+    {
+        $rel = '/' . trim(str_replace('\\', '/', $rel), '/');
+        if ($rel === '//') {
+            $rel = '/';
+        }
+        $dirs = self::isVdbUser($user)
+            ? ['/', '/archives', '/snapshots', '/snapshots/2026-09']
+            : [
+                '/',
+                '/public',
+                '/public/account_live_order@t-shirtshanghai.com',
+                '/public/account_live_order@t-shirtshanghai.com/orderid_5c714d42e445c0a1b2',
+                '/public/wp-content',
+                '/public/wp-content/plugins',
+                '/public/wp-content/themes',
+                '/public/wp-content/uploads',
+                '/app',
+                '/app/node_modules',
+                '/logs',
+            ];
+        $hits = [];
+        foreach ($dirs as $dir) {
+            $listed = self::dryFsList($dir, $user);
+            foreach ($listed['data']['entries'] ?? [] as $e) {
+                $name = (string) ($e['name'] ?? '');
+                $path = $dir === '/' ? '/' . $name : $dir . '/' . $name;
+                if ($rel !== '/' && $path !== $rel && !str_starts_with($path, $rel . '/')) {
+                    continue;
+                }
+                if ($name === '' || stripos($name, $q) === false) {
+                    continue;
+                }
+                $hits[] = [
+                    'name' => $name,
+                    'path' => $path,
+                    'dir' => $dir,
+                    'type' => $e['type'] ?? 'file',
+                    'size' => (int) ($e['size'] ?? 0),
+                ];
+            }
+        }
+        return ['ok' => true, 'data' => [
+            'ok' => true,
+            'path' => $rel === '' ? '/' : $rel,
+            'q' => $q,
+            'hits' => $hits,
+            'truncated' => false,
+        ], 'error' => ''];
     }
 
     /** Fake CVM backup-disk tree so vdb is demoable without /mnt/backup. */

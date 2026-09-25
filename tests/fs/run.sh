@@ -142,6 +142,17 @@ assert "symlink" in d.get("error","") or "jail" in d.get("error","")
 print("ok symlink file:", d.get("error"))
 '
 
+echo "== search README from vdb root =="
+out="$(run search __vdb / README)"
+echo "$out" | python3 -c '
+import json,sys
+d=json.load(sys.stdin)
+assert d.get("ok") is True
+names={h["name"] for h in d["hits"]}
+assert "README.txt" in names, names
+print("ok vdb search", names)
+'
+
 echo "== refuse write/mkdir/delete/compress/read =="
 for act in write mkdir delete compress read upload chmod rename; do
     err="$(run_err "$act" __vdb /README.txt 2>/dev/null || true)"
