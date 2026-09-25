@@ -12,15 +12,15 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-nav .layui-btn { margin: 0; }
     .fm-pathbox { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 220px; }
     .fm-pathbox input { flex: 1; height: 30px; line-height: 30px; border: 1px solid var(--wp-border); border-radius: 2px; padding: 0 8px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
-    .fm-crumb { color: var(--wp-text-secondary); }
+    .fm-crumb { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; font-size: 13px; color: var(--wp-text-secondary); }
     .fm-crumb a { color: var(--wp-accent); }
     .fm-crumb .sep { color: var(--wp-text-muted); margin: 0 2px; }
+    .fm-crumb-path { min-width: 0; }
+    .fm-crumb-site { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+    .fm-crumb-site label { font-size: 12px; color: var(--wp-text-secondary); white-space: nowrap; }
+    .fm-crumb-site select { height: 28px; max-width: 300px; box-sizing: border-box; border: 1px solid var(--wp-border); border-radius: 2px; background: var(--wp-surface); color: var(--wp-text); font-size: 12.5px; }
     .fm-split { flex: 1; display: flex; min-height: 380px; border: 1px solid var(--wp-border); border-radius: 4px; overflow: hidden; background: var(--wp-surface); }
     .fm-tree { width: 260px; min-width: 200px; flex: 0 0 auto; background: var(--wp-surface-soft); display: flex; flex-direction: column; }
-    .fm-main-head { padding: 10px 12px; border-bottom: 1px solid var(--wp-border); background: var(--wp-surface-soft); display: flex; align-items: center; gap: 12px; }
-    .fm-main-site { display: flex; align-items: center; gap: 8px; }
-    .fm-main-site label { font-size: 12px; color: var(--wp-text-secondary); white-space: nowrap; }
-    .fm-main-site select { height: 30px; min-width: 220px; box-sizing: border-box; border: 1px solid var(--wp-border); border-radius: 2px; background: var(--wp-surface); color: var(--wp-text); font-size: 12.5px; }
     .fm-splitter {
         display: block; align-self: stretch; width: 6px; flex: 0 0 6px;
         margin: 0; padding: 0; border: 0; height: auto; min-height: 0;
@@ -122,9 +122,20 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
             <button class="layui-btn layui-btn-xs" id="btnGo">转到</button>
         </div>
     </div>
-    <div class="fm-crumb" style="margin-bottom:8px;font-size:13px">
-        当前目录：<span id="crumb"></span>
-        <span class="fm-root-hint mono" id="rootHint"></span>
+    <div class="fm-crumb">
+        <span class="fm-crumb-path">当前目录：<span id="crumb"></span>
+        <span class="fm-root-hint mono" id="rootHint"></span></span>
+        <span class="fm-crumb-site">
+            <label for="siteSelect">位置</label>
+            <select id="siteSelect" lay-ignore title="切换浏览位置">
+                <?php foreach ($sites as $s): ?>
+                <option value="<?= (int) $s['id'] ?>" <?= (!$vdbSelected && $siteId === (int) $s['id']) ? 'selected' : '' ?>>
+                    <?= e($s['domain']) ?>（<?= e($s['sysuser']) ?>）
+                </option>
+                <?php endforeach; ?>
+                <option value="vdb" <?= $vdbSelected ? 'selected' : '' ?>>vdb (/mnt/backup)</option>
+            </select>
+        </span>
     </div>
 
     <div class="fm-split">
@@ -141,19 +152,6 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
                 aria-orientation="vertical" aria-valuemin="200" aria-valuemax="800"
                 aria-label="拖动调整目录栏宽度" title="拖动调整目录栏宽度"></button>
         <div class="fm-main">
-            <div class="fm-main-head">
-                <div class="fm-main-site">
-                    <label for="siteSelect">位置</label>
-                    <select id="siteSelect" lay-ignore title="切换浏览位置">
-                        <?php foreach ($sites as $s): ?>
-                        <option value="<?= (int) $s['id'] ?>" <?= (!$vdbSelected && $siteId === (int) $s['id']) ? 'selected' : '' ?>>
-                            <?= e($s['domain']) ?>（<?= e($s['sysuser']) ?>）
-                        </option>
-                        <?php endforeach; ?>
-                        <option value="vdb" <?= $vdbSelected ? 'selected' : '' ?>>vdb (/mnt/backup)</option>
-                    </select>
-                </div>
-            </div>
             <table class="layui-table fm-table">
                 <thead>
                 <tr>
