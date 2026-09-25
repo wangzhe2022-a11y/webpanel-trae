@@ -162,6 +162,12 @@ final class Shell
                         ['ip' => '45.33.22.11', 'reason' => '扫描敏感路径', 'count' => 2, 'level' => 'medium'],
                     ],
                 ], 'error' => ''],
+            str_starts_with($script, 'wp-sys') && $a === 'denylist'
+                => ['ok' => true, 'data' => ['ok' => true, 'denied' => ['45.33.22.11', '198.51.100.24']], 'error' => ''],
+            str_starts_with($script, 'wp-sys') && $a === 'deny'
+                => ['ok' => true, 'data' => ['ok' => true, 'action' => 'deny', 'ip' => $args[1] ?? '0.0.0.0'], 'error' => ''],
+            str_starts_with($script, 'wp-sys') && $a === 'undeny'
+                => ['ok' => true, 'data' => ['ok' => true, 'action' => 'undeny', 'ip' => $args[1] ?? '0.0.0.0'], 'error' => ''],
             str_starts_with($script, 'wp-wp')
                 => ['ok' => true, 'data' => ['ok' => true, 'domain' => $args[2] ?? 'demo', 'admin' => $args[6] ?? 'admin', 'url' => 'http://demo/wp-admin/'], 'error' => ''],
             str_starts_with($script, 'wp-pma') && $a === 'status'

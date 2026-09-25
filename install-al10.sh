@@ -30,6 +30,10 @@ set -euo pipefail
 PANEL_PORT="${PANEL_PORT:-8888}"
 PANEL_ADMIN="${PANEL_ADMIN:-admin}"
 ACME_EMAIL="${ACME_EMAIL:-}"
+# Comma-separated IPv4 addresses allowed to access the panel.
+# If empty, no IP whitelist is enforced (panel login lockout still applies).
+# Example: PANEL_ALLOW_IPS="1.2.3.4,5.6.7.8"
+PANEL_ALLOW_IPS="${PANEL_ALLOW_IPS:-}"
 INSTALL_DIR="/usr/local/webpanel"
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -212,6 +216,26 @@ if [ ! -f "$CERT_ROOT/panel/fullchain.pem" ]; then
 fi
 sed "s|{{PORT}}|$PANEL_PORT|g" "$INSTALL_DIR/config/nginx/panel.conf.tmpl" \
     > /etc/nginx/conf.d/00-webpanel.conf
+
+# Panel IP access control files (deny list + allow list)
+install -d -m 755 /www/server/panel
+install -m 644 "$INSTALL_DIR/config/nginx/deny-ips.conf.tmpl" /www/server/panel/deny-ips.conf
+if [ -n "$PANEL_ALLOW_IPS" ]; then
+    {
+        cat "$INSTALL_DIR/config/nginx/allow-ips.conf.tmpl"
+        printf '\n'
+        IFS=',' read -ra _allow_ips <<< "$PANEL_ALLOW_IPS"
+        for _ip in "${_allow_ips[@]}"; do
+            _ip="${_ip// /}"
+            [ -n "$_ip" ] && printf 'allow %s;\n' "$_ip"
+        done
+        printf 'deny all;\n'
+    } > /www/server/panel/allow-ips.conf
+    c_ok "面板 IP 白名单已启用：$PANEL_ALLOW_IPS"
+else
+    install -m 644 "$INSTALL_DIR/config/nginx/allow-ips.conf.tmpl" /www/server/panel/allow-ips.conf
+    c_warn "未设置面板 IP 白名单（PANEL_ALLOW_IPS 为空），所有 IP 均可访问面板登录页"
+fi
 
 # 内置 phpMyAdmin（下载失败不阻断面板安装，可稍后 wp-pma.sh install）
 if "$INSTALL_DIR/bin/wp-pma.sh" install; then

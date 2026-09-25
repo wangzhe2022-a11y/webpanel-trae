@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=wp-lib.sh
 . "$SCRIPT_DIR/wp-lib.sh"
 
-usage() { fail "usage: wp-sys.sh {info|svc|logins|access}" 64; }
+usage() { fail "usage: wp-sys.sh {info|svc|logins|access|deny|undeny|denylist}" 64; }
 [ $# -ge 1 ] || usage
 action="$1"; shift
 require_root
@@ -353,6 +353,81 @@ JSON
 
     printf '{"ok":true,"total":%s,"unique_ips":%s,"recent":%s,"failed_logins":%s,"suspicious":%s}\n' \
         "$total" "$unique_ips" "$recent_json" "$failed_json" "$susp_json"
+    exit 0
+fi
+
+if [ "$action" = "denylist" ]; then
+    # List currently blocked IPs in /www/server/panel/deny-ips.conf
+    deny_file="${PANEL_DENY_FILE:-/www/server/panel/deny-ips.conf}"
+    if [ ! -f "$deny_file" ]; then
+        printf '{"ok":true,"denied":[]}\n'
+        exit 0
+    fi
+    # Extract deny directives, ignore comments and blank lines
+    ips="["
+    ips+=$(grep -E '^[[:space:]]*deny[[:space:]]' "$deny_file" 2>/dev/null \
+        | sed -E 's/^[[:space:]]*deny[[:space:]]+([0-9.]+).*/\1/' \
+        | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' \
+        | awk '{ printf "%s\"%s\"", (NR>1?",":""), $1 }')
+    ips+="]"
+    printf '{"ok":true,"denied":%s}\n' "$ips"
+    exit 0
+fi
+
+if [ "$action" = "deny" ] || [ "$action" = "undeny" ]; then
+    # Block / unblock an IP from the panel via /www/server/panel/deny-ips.conf
+    ip="$1"
+    case "$ip" in
+        ''|*[!0-9.]*) fail "usage: $action <ipv4>" ;;
+    esac
+    # Validate IPv4 octets
+    IFS='.' read -r o1 o2 o3 o4 <<< "$ip"
+    for o in "$o1" "$o2" "$o3" "$o4"; do
+        [ -n "$o" ] && [ "$o" -ge 0 ] 2>/dev/null && [ "$o" -le 255 ] 2>/dev/null || fail "invalid IPv4: $ip"
+    done
+
+    deny_file="${PANEL_DENY_FILE:-/www/server/panel/deny-ips.conf}"
+    allow_file="${PANEL_ALLOW_FILE:-/www/server/panel/allow-ips.conf}"
+
+    if is_dry_run; then
+        printf '{"ok":true,"action":"%s","ip":"%s"}\n' "$action" "$ip"
+        exit 0
+    fi
+
+    [ -d "$(dirname "$deny_file")" ] || mkdir -p "$(dirname "$deny_file")"
+
+    if [ "$action" = "deny" ]; then
+        # Safety: refuse to block an IP that is in the allow list (would lock
+        # out the legitimate admin if allow list is enforced).
+        if grep -qE "^[[:space:]]*allow[[:space:]]+${ip}[[:space:]]*;" "$allow_file" 2>/dev/null; then
+            fail "refuse to deny an IP that is in the allow list: $ip"
+        fi
+        # Idempotent: skip if already denied
+        if grep -qE "^[[:space:]]*deny[[:space:]]+${ip}[[:space:]]*;" "$deny_file" 2>/dev/null; then
+            printf '{"ok":true,"action":"deny","ip":"%s","already":true}\n' "$ip"
+            exit 0
+        fi
+        # Append deny directive with timestamp comment
+        printf '# blocked %s\ndeny %s;\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$ip" >> "$deny_file"
+    else
+        # undeny: remove all deny lines for this IP (and their preceding comment)
+        if [ -f "$deny_file" ]; then
+            # Use a temp file: drop comment lines immediately before a matching deny
+            awk -v ip="$ip" '
+                /^[[:space:]]*#[[:space:]]*blocked/ { prev=$0; prev_is_comment=1; next }
+                $0 ~ "^[[:space:]]*deny[[:space:]]+" ip "[[:space:]]*;" { prev=""; prev_is_comment=0; next }
+                { if (prev_is_comment) print prev; print $0; prev=""; prev_is_comment=0 }
+            ' "$deny_file" > "${deny_file}.tmp" && mv "${deny_file}.tmp" "$deny_file"
+        fi
+    fi
+
+    # Validate and reload nginx
+    if ! nginx -t >/dev/null 2>&1; then
+        fail "nginx config test failed after modifying deny list"
+    fi
+    systemctl reload nginx >/dev/null 2>&1 || fail "failed to reload nginx"
+
+    printf '{"ok":true,"action":"%s","ip":"%s"}\n' "$action" "$ip"
     exit 0
 fi
 usage

@@ -157,4 +157,64 @@ class ServiceController extends Controller
         unset($data['ok']);
         $this->ok($data);
     }
+
+    /**
+     * Block an IP from accessing the panel (writes to deny-ips.conf + nginx reload).
+     * POST /sys/deny { ip: "1.2.3.4" }
+     */
+    public function deny(): void
+    {
+        $this->requireLogin();
+        $this->verifyCsrf();
+
+        $ip = trim((string) $this->input('ip', ''));
+        if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            $this->fail('无效的 IPv4 地址');
+        }
+
+        $r = Shell::sudo('wp-sys.sh', ['deny', $ip]);
+        if (!$r['ok']) {
+            $this->fail('封禁失败：' . ($r['error'] ?: '未知错误'));
+        }
+        Auth::log('panel.deny', 'blocked ' . $ip);
+        $this->ok(['ip' => $ip]);
+    }
+
+    /**
+     * Unblock a previously denied IP.
+     * POST /sys/undeny { ip: "1.2.3.4" }
+     */
+    public function undeny(): void
+    {
+        $this->requireLogin();
+        $this->verifyCsrf();
+
+        $ip = trim((string) $this->input('ip', ''));
+        if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            $this->fail('无效的 IPv4 地址');
+        }
+
+        $r = Shell::sudo('wp-sys.sh', ['undeny', $ip]);
+        if (!$r['ok']) {
+            $this->fail('解封失败：' . ($r['error'] ?: '未知错误'));
+        }
+        Auth::log('panel.undeny', 'unblocked ' . $ip);
+        $this->ok(['ip' => $ip]);
+    }
+
+    /**
+     * List currently denied IPs.
+     * GET /sys/denylist
+     */
+    public function denylist(): void
+    {
+        $this->requireLogin();
+
+        $r = Shell::sudo('wp-sys.sh', ['denylist']);
+        if (!$r['ok']) {
+            $this->ok(['denied' => []]);
+            return;
+        }
+        $this->ok(['denied' => $r['data']['denied'] ?? []]);
+    }
 }

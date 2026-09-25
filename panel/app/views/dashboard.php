@@ -425,16 +425,23 @@ $renderStoreCard = static function (
                         </div>
                         <div class="mon-meta" style="margin:0 0 8px">可疑 / 攻击 IP</div>
                         <table class="layui-table wp-login-table" style="margin:0 0 14px">
-                            <thead><tr><th>IP 地址</th><th>原因</th><th style="width:70px">次数</th><th style="width:60px">等级</th></tr></thead>
+                            <thead><tr><th>IP 地址</th><th>原因</th><th style="width:70px">次数</th><th style="width:60px">等级</th><th style="width:80px">操作</th></tr></thead>
                             <tbody id="suspiciousBody">
-                                <tr class="wp-login-empty"><td colspan="4" style="text-align:center;color:#999">暂无可疑 IP</td></tr>
+                                <tr class="wp-login-empty"><td colspan="5" style="text-align:center;color:#999">暂无可疑 IP</td></tr>
+                            </tbody>
+                        </table>
+                        <div class="mon-meta" style="margin:0 0 8px">已封禁 IP</div>
+                        <table class="layui-table wp-login-table" style="margin:0 0 14px">
+                            <thead><tr><th>IP 地址</th><th style="width:80px">操作</th></tr></thead>
+                            <tbody id="deniedBody">
+                                <tr class="wp-login-empty"><td colspan="2" style="text-align:center;color:#999">暂无封禁 IP</td></tr>
                             </tbody>
                         </table>
                         <div class="mon-meta" style="margin:0 0 8px">最近访问记录</div>
                         <table class="layui-table wp-login-table" style="margin:0">
-                            <thead><tr><th>时间</th><th>IP 地址</th><th>方法</th><th>路径</th><th>状态</th></tr></thead>
+                            <thead><tr><th>时间</th><th>IP 地址</th><th>方法</th><th>路径</th><th>状态</th><th style="width:80px">操作</th></tr></thead>
                             <tbody id="accessBody">
-                                <tr class="wp-login-empty"><td colspan="5" style="text-align:center;color:#999">暂无访问记录</td></tr>
+                                <tr class="wp-login-empty"><td colspan="6" style="text-align:center;color:#999">暂无访问记录</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -522,15 +529,16 @@ layui.use(['element', 'layer', 'table'], function () {
                 var $susp = $('#suspiciousBody').empty();
                 if (susp.length) {
                     susp.forEach(function (s) {
-                        $susp.append('<tr><td class="mono"></td><td></td><td class="mono"></td><td></td></tr>');
+                        $susp.append('<tr><td class="mono"></td><td></td><td class="mono"></td><td></td><td></td></tr>');
                         var $td = $susp.find('tr:last td');
                         $td.eq(0).text(s.ip);
                         $td.eq(1).text(s.reason);
                         $td.eq(2).text(s.count);
                         $td.eq(3).html(levelBadge(s.level));
+                        $td.eq(4).html('<button class="layui-btn layui-btn-xs layui-btn-danger btn-deny" data-ip="' + s.ip + '">封禁</button>');
                     });
                 } else {
-                    $susp.append('<tr class="wp-login-empty"><td colspan="4" style="text-align:center;color:#999">暂无可疑 IP</td></tr>');
+                    $susp.append('<tr class="wp-login-empty"><td colspan="5" style="text-align:center;color:#999">暂无可疑 IP</td></tr>');
                 }
 
                 // Recent access table
@@ -538,17 +546,20 @@ layui.use(['element', 'layer', 'table'], function () {
                 var recent = res.recent || [];
                 if (recent.length) {
                     recent.forEach(function (r) {
-                        $body.append('<tr><td class="mono"></td><td class="mono"></td><td></td><td class="mono"></td><td></td></tr>');
+                        $body.append('<tr><td class="mono"></td><td class="mono"></td><td></td><td class="mono"></td><td></td><td></td></tr>');
                         var $td = $body.find('tr:last td');
                         $td.eq(0).text(r.time || '');
                         $td.eq(1).text(r.ip || '');
                         $td.eq(2).text(r.method || '');
                         $td.eq(3).text(r.uri || '');
                         $td.eq(4).html(statusBadge(r.status));
+                        $td.eq(5).html('<button class="layui-btn layui-btn-xs layui-btn-danger btn-deny" data-ip="' + (r.ip || '') + '">封禁</button>');
                     });
                 } else {
-                    $body.append('<tr class="wp-login-empty"><td colspan="5" style="text-align:center;color:#999">暂无访问记录</td></tr>');
+                    $body.append('<tr class="wp-login-empty"><td colspan="6" style="text-align:center;color:#999">暂无访问记录</td></tr>');
                 }
+
+                loadDenied();
 
                 var now = new Date();
                 var hh = ('0' + now.getHours()).slice(-2);
@@ -561,6 +572,70 @@ layui.use(['element', 'layer', 'table'], function () {
             });
     }
     $('#btnAccessRefresh').on('click', function () { loadAccess(true); });
+
+    // ---- IP deny / undeny ----------------------------------------------------
+    function denyIp(ip) {
+        if (!ip) return;
+        layer.confirm('确定要封禁 IP ' + ip + ' 吗？封禁后该 IP 将无法访问面板。', {
+            icon: 3, title: '确认封禁', btn: ['封禁', '取消']
+        }, function (idx) {
+            layer.close(idx);
+            var loadIdx = layer.load(2);
+            fetch('/sys/deny', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Accept': 'application/json' },
+                body: new URLSearchParams({ ip: ip, _csrf: WP.csrf })
+            }).then(function (r) { return r.json(); }).then(function (res) {
+                layer.close(loadIdx);
+                if (res.ok) {
+                    layer.msg('已封禁 ' + ip, { icon: 1 });
+                    loadDenied();
+                } else {
+                    layer.msg(res.error || '封禁失败', { icon: 2 });
+                }
+            }).catch(function () { layer.close(loadIdx); layer.msg('网络错误', { icon: 2 }); });
+        });
+    }
+    function undenyIp(ip) {
+        if (!ip) return;
+        var loadIdx = layer.load(2);
+        fetch('/sys/undeny', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json' },
+            body: new URLSearchParams({ ip: ip, _csrf: WP.csrf })
+        }).then(function (r) { return r.json(); }).then(function (res) {
+            layer.close(loadIdx);
+            if (res.ok) {
+                layer.msg('已解封 ' + ip, { icon: 1 });
+                loadDenied();
+            } else {
+                layer.msg(res.error || '解封失败', { icon: 2 });
+            }
+        }).catch(function () { layer.close(loadIdx); layer.msg('网络错误', { icon: 2 }); });
+    }
+    function loadDenied() {
+        fetch('/sys/denylist', { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+                var $db = $('#deniedBody').empty();
+                var denied = (res && res.ok && res.denied) ? res.denied : [];
+                if (denied.length) {
+                    denied.forEach(function (ip) {
+                        $db.append('<tr><td class="mono"></td><td></td></tr>');
+                        var $td = $db.find('tr:last td');
+                        $td.eq(0).text(ip);
+                        $td.eq(1).html('<button class="layui-btn layui-btn-xs layui-btn-primary btn-undeny" data-ip="' + ip + '">解封</button>');
+                    });
+                } else {
+                    $db.append('<tr class="wp-login-empty"><td colspan="2" style="text-align:center;color:#999">暂无封禁 IP</td></tr>');
+                }
+            })
+            .catch(function () {});
+    }
+    $('#accessCard').on('click', '.btn-deny', function () { denyIp(this.getAttribute('data-ip')); });
+    $('#accessCard').on('click', '.btn-undeny', function () { undenyIp(this.getAttribute('data-ip')); });
 
     $('.wp-host-extra').on('click', '.wp-host-tab', function () {
         var $extra = $(this).closest('.wp-host-extra');

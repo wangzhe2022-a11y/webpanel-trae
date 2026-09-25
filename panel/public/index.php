@@ -84,7 +84,10 @@ $router->get('/files/download', [FileController::class, 'download']);
 $router->get('/sys/info', [ServiceController::class, 'info']);
 $router->get('/sys/atop', [ServiceController::class, 'atop']);
 $router->get('/sys/access', [ServiceController::class, 'access']);
+$router->get('/sys/denylist', [ServiceController::class, 'denylist']);
 $router->post('/sys/svc', [ServiceController::class, 'svc']);
+$router->post('/sys/deny', [ServiceController::class, 'deny']);
+$router->post('/sys/undeny', [ServiceController::class, 'undeny']);
 
 /* ---- backup / restore ------------------------------------------------------ */
 $router->get('/backup', [BackupController::class, 'index']);
