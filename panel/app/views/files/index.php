@@ -101,10 +101,11 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         border-color: #e2e8f0 !important;
         color: #475569 !important;
     }
-    .fm-tree-row:hover { background: #eef2f7 !important; }
+    .fm-tree-row:hover { background: #dcedc8 !important; color: #33691e !important; }
     .fm-tree-row.active {
-        background: #e6f4d0 !important;
-        color: #6b8e1a !important;
+        background: #c5e1a5 !important;
+        color: #33691e !important;
+        font-weight: 600;
     }
     .fm-twist { color: #94a3b8 !important; }
     .fm-splitter { background: #e2e8f0 !important; }
@@ -194,9 +195,9 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         color: #1e293b !important;
         background: #ffffff !important;
     }
-    .fm-table tbody tr:hover { background: #eef2f7 !important; }
+    .fm-table tbody tr:hover { background: #ecfccb !important; box-shadow: inset 3px 0 0 #90BA1E !important; }
     .fm-table tbody tr.fm-hit {
-        background: #f0fdf4 !important;
+        background: #d9f99d !important;
         box-shadow: inset 3px 0 0 #90BA1E !important;
     }
 
@@ -206,7 +207,7 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         border: 1px solid #e2e8f0 !important;
         box-shadow: 0 8px 24px rgba(0,0,0,.10) !important;
     }
-    .fm-search-item:hover, .fm-search-item.active { background: #f5f7fb !important; }
+    .fm-search-item:hover, .fm-search-item.active { background: #dcedc8 !important; color: #33691e !important; }
     .fm-search-name { color: #1e293b !important; }
     .fm-search-path { color: #94a3b8 !important; }
     .fm-search-meta { color: #64748b !important; border-top-color: #e2e8f0 !important; }
@@ -240,8 +241,8 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         cursor: pointer;
     }
     .fm-ctx-item:hover {
-        background: #f0f2f5;
-        color: #1e293b;
+        background: #ecfccb;
+        color: #33691e;
     }
     .fm-ctx-item.fm-ctx-danger { color: #dc2626; }
     .fm-ctx-item.fm-ctx-danger:hover { background: #fef2f2; color: #b91c1c; }
