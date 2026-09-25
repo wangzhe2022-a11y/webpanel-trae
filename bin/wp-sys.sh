@@ -3,13 +3,14 @@
 # wp-sys.sh - host status + service control (root only via sudo)
 #   info
 #   svc <nginx|mysql|phpfpm|php74fpm|...> <start|stop|restart|reload>
+#   fpm-safe-restart
 # ============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=wp-lib.sh
 . "$SCRIPT_DIR/wp-lib.sh"
 
-usage() { fail "usage: wp-sys.sh {info|svc|logins|access|deny|undeny|denylist}" 64; }
+usage() { fail "usage: wp-sys.sh {info|svc|fpm-safe-restart|logins|access|deny|undeny|denylist}" 64; }
 [ $# -ge 1 ] || usage
 action="$1"; shift
 require_root
@@ -202,6 +203,120 @@ if [ "$action" = "svc" ]; then
     esac
     dr systemctl "$act" "$unit"
     ok
+fi
+
+# Restart panel php-fpm, then try-restart every installed Remi site pool.
+# A lone `svc phpfpm restart` can wipe /run/php-fpm (RuntimeDirectory) and
+# leave Remi sockets gone (nginx 502). This action always follows the panel
+# unit with try-restart of php74/80/81/82/83 when those units exist.
+# Does not touch nginx or RuntimeDirectoryPreserve.
+if [ "$action" = "fpm-safe-restart" ]; then
+    REMI_FPM_UNITS=(php74-php-fpm php80-php-fpm php81-php-fpm php82-php-fpm php83-php-fpm)
+    self="$SCRIPT_DIR/wp-sys.sh"
+
+    json_named_array() {
+        local -n _items=$1
+        local i first=1
+        printf '['
+        for ((i=0; i<${#_items[@]}; i++)); do
+            [ "$first" = 1 ] || printf ','
+            first=0
+            printf '"%s"' "$(jesc "${_items[i]}")"
+        done
+        printf ']'
+    }
+
+    fpm_unit_exists() {
+        local u="$1"
+        case "$u" in
+            php74-php-fpm|php80-php-fpm|php81-php-fpm|php82-php-fpm|php83-php-fpm) ;;
+            *) return 1 ;;
+        esac
+        [ -f "/usr/lib/systemd/system/${u}.service" ] && return 0
+        [ -f "/etc/systemd/system/${u}.service" ] && return 0
+        systemctl cat "${u}.service" >/dev/null 2>&1
+    }
+
+    emit_fpm_safe_json() {
+        printf '{"ok":true,"restarted":%s,"skipped":%s,"failed":%s}\n' \
+            "$(json_named_array "$1")" \
+            "$(json_named_array "$2")" \
+            "$(json_named_array "$3")"
+    }
+
+    classify_remi_units() {
+        will_restart=("php-fpm")
+        skipped=()
+        local u
+        for u in "${REMI_FPM_UNITS[@]}"; do
+            if fpm_unit_exists "$u"; then
+                will_restart+=("$u")
+            else
+                skipped+=("$u")
+            fi
+        done
+    }
+
+    run_fpm_safe_restart() {
+        local u
+        restarted=()
+        skipped=()
+        failed=()
+
+        if ! systemctl restart php-fpm; then
+            fail "php-fpm restart failed"
+        fi
+        restarted+=("php-fpm")
+
+        for u in "${REMI_FPM_UNITS[@]}"; do
+            if ! fpm_unit_exists "$u"; then
+                skipped+=("$u")
+                continue
+            fi
+            if systemctl try-restart "$u"; then
+                restarted+=("$u")
+            else
+                failed+=("$u")
+            fi
+        done
+
+        emit_fpm_safe_json restarted skipped failed
+        exit 0
+    }
+
+    if is_dry_run; then
+        printf '%s\n' '{"ok":true,"restarted":["php-fpm","php74-php-fpm","php83-php-fpm"],"skipped":["php80-php-fpm","php81-php-fpm","php82-php-fpm"],"failed":[]}'
+        exit 0
+    fi
+
+    # Hidden worker flag: actual restart sequence, already outside php-fpm.
+    if [ "${1:-}" = "--inner" ]; then
+        run_fpm_safe_restart
+    fi
+
+    in_php_fpm_cgroup() {
+        grep -q 'php-fpm' /proc/self/cgroup 2>/dev/null
+    }
+
+    # Invoked from the panel worker: detaching avoids deadlock / cgroup kill
+    # when this script restarts the same php-fpm unit that is waiting on us.
+    # CLI / tests run the sequence synchronously and can report real failures.
+    if in_php_fpm_cgroup; then
+        classify_remi_units
+        failed=()
+        if command -v systemd-run >/dev/null 2>&1; then
+            systemd-run --quiet --collect \
+                --description="WebPanel safe PHP-FPM restart" \
+                -- "$self" fpm-safe-restart --inner \
+                || fail "failed to schedule php-fpm safe restart"
+        else
+            nohup bash -c 'sleep 0.8; exec "$1" fpm-safe-restart --inner' _ "$self" >/dev/null 2>&1 &
+        fi
+        emit_fpm_safe_json will_restart skipped failed
+        exit 0
+    fi
+
+    run_fpm_safe_restart
 fi
 
 if [ "$action" = "logins" ]; then

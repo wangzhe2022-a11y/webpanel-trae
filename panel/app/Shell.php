@@ -170,6 +170,13 @@ final class Shell
                 => ['ok' => true, 'data' => ['ok' => true, 'action' => 'deny', 'ip' => $args[1] ?? '0.0.0.0'], 'error' => ''],
             str_starts_with($script, 'wp-sys') && $a === 'undeny'
                 => ['ok' => true, 'data' => ['ok' => true, 'action' => 'undeny', 'ip' => $args[1] ?? '0.0.0.0'], 'error' => ''],
+            str_starts_with($script, 'wp-sys') && $a === 'fpm-safe-restart'
+                => ['ok' => true, 'data' => [
+                    'ok' => true,
+                    'restarted' => ['php-fpm', 'php74-php-fpm', 'php83-php-fpm'],
+                    'skipped' => ['php80-php-fpm', 'php81-php-fpm', 'php82-php-fpm'],
+                    'failed' => [],
+                ], 'error' => ''],
             str_starts_with($script, 'wp-wp')
                 => ['ok' => true, 'data' => ['ok' => true, 'domain' => $args[2] ?? 'demo', 'admin' => $args[6] ?? 'admin', 'url' => 'http://demo/wp-admin/'], 'error' => ''],
             str_starts_with($script, 'wp-pma') && $a === 'status'
