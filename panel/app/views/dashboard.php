@@ -281,7 +281,7 @@ $renderStoreCard = static function (
                 <thead><tr><th>服务</th><th>状态</th><th>操作</th></tr></thead>
                 <tbody id="svcBody">
                 <?php foreach (($info['services'] ?? []) as $s): ?>
-                    <tr data-name="<?= e(str_replace(['php74-php-fpm','php80-php-fpm','php81-php-fpm','php82-php-fpm','php83-php-fpm'], ['php74fpm','php80fpm','php81fpm','php82fpm','php83fpm'], str_replace(['postgresql-16','postgresql','nginx','mysqld','php-fpm'], ['postgres','postgres','nginx','mysql','phpfpm'], $s['unit']))) ?>">
+                    <tr data-name="<?= e(str_replace(['postgresql-16','postgresql','nginx','mysqld','php-fpm','wp-node-'], ['postgres','postgres','nginx','mysql','phpfpm','node-'], str_replace(['php74-php-fpm','php80-php-fpm','php81-php-fpm','php82-php-fpm','php83-php-fpm'], ['php74fpm','php80fpm','php81fpm','php82fpm','php83fpm'], $s['unit']))) ?>">
                         <td><?= e($s['name']) ?></td>
                         <td>
                             <?php if ($s['status'] === 'active'): ?>
@@ -822,6 +822,9 @@ layui.use(['element', 'layer', 'table'], function () {
         [74, 80, 81, 82, 83].forEach(function (v) { map['php' + v + '-php-fpm'] = 'php' + v + 'fpm'; });
         (res.services || []).forEach(function (s) {
             var key = map[s.unit];
+            if (!key && s.unit && /^wp-node-/.test(s.unit)) {
+                key = s.unit.replace(/^wp-node-/, 'node-');
+            }
             var $tr = $('#svcBody tr[data-name="' + key + '"]');
             var badge = s.status === 'active'
                 ? '<span class="layui-badge layui-bg-green">运行中</span>'

@@ -107,7 +107,7 @@ class ServiceController extends Controller
             $name = 'postgres';
             $unit = self::UNITS['postgres'];
         }
-        if ($unit === null && preg_match('/^node-([a-z][a-z0-9_]{2,30})$/', $name, $m)) {
+        if ($unit === null && preg_match('/^(?:wp-)?node-([a-z][a-z0-9_]{2,30})$/', $name, $m)) {
             $unit = 'wp-node-' . $m[1];
         }
         if ($unit === null) {
