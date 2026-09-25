@@ -516,40 +516,38 @@ input[type="radio"] {
     margin-bottom: 0;
 }
 
-/* Draggable dashboard grid */
-.wp-dashboard-grid {
+/* GridStack dashboard: 5 cards can be freely arranged */
+/* Fallback (when JS is off): classic 3-column grid. */
+#dashGrid:not(.grid-stack) {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 15px;
     align-items: start;
 }
-.wp-dash-widget {
-    min-width: 0;
-}
-.wp-dash-widget > .panel-card {
+#dashGrid:not(.grid-stack) > .wp-dash-widget { min-width: 0; }
+#dashGrid:not(.grid-stack) > .wp-dash-widget > .panel-card {
     margin-bottom: 0;
     height: 100%;
     box-sizing: border-box;
 }
-.wp-dash-widget.is-dragging {
-    opacity: 0.35;
+
+/* GridStack active: card fills its cell, dark-themed placeholder. */
+#dashGrid.grid-stack .grid-stack-item-content { padding: 0; }
+#dashGrid.grid-stack .grid-stack-item-content > .panel-card {
+    margin-bottom: 0;
+    box-sizing: border-box;
 }
-.wp-dash-widget.is-drag-over {
-    outline: 2px dashed var(--wp-accent);
-    outline-offset: -2px;
+#dashGrid .grid-stack-placeholder > .placeholder-content {
+    background: rgba(64, 140, 255, 0.08);
+    border: 1px dashed var(--wp-accent);
     border-radius: var(--wp-radius);
 }
-body.wp-dash-editing .wp-dash-widget {
-    cursor: grab;
+body.wp-dash-editing #dashGrid .grid-stack-item { cursor: move; }
+body.wp-dash-editing #dashGrid .grid-stack-item > .grid-stack-item-content {
+    box-shadow: 0 0 0 2px var(--wp-accent-soft), var(--wp-shadow);
 }
-body.wp-dash-editing .wp-dash-widget:active {
-    cursor: grabbing;
-}
-body.wp-dash-editing .wp-dash-widget > .panel-card {
-    transition: box-shadow 0.15s;
-}
-body.wp-dash-editing .wp-dash-widget:hover > .panel-card {
-    box-shadow: 0 0 0 2px var(--wp-accent), var(--wp-shadow);
+#dashGrid .grid-stack-item > .ui-resizable-se {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="%2340a9ff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 20 20"><path d="m7 13 6-6M5 13h8V5"/></svg>');
 }
 .wp-dash-edit-bar {
     display: flex;
@@ -562,11 +560,8 @@ body.wp-dash-editing .wp-dash-widget:hover > .panel-card {
     font-size: 12px;
     color: var(--wp-text-muted);
 }
-@media (max-width: 992px) {
-    .wp-dashboard-grid { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 640px) {
-    .wp-dashboard-grid { grid-template-columns: 1fr; }
+@media (max-width: 768px) {
+    #dashGrid:not(.grid-stack) { grid-template-columns: 1fr; }
 }
 .wp-login-limit-wrap {
     float: right;
