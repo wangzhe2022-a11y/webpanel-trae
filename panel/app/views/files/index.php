@@ -6,8 +6,10 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
 ?>
 <style>
     .fm-card { display: flex; flex-direction: column; min-height: calc(100vh - 92px); padding-bottom: 12px; }
-    .fm-card > h3 { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
-    .fm-card > h3 .fm-title-text { flex: 1 1 auto; min-width: 0; }
+    .fm-card > h3 { margin-bottom: 8px; }
+    .fm-site-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 13px; }
+    .fm-site-row label { font-size: 12px; color: var(--wp-text-secondary); white-space: nowrap; }
+    .fm-site-row select { height: 28px; max-width: 320px; box-sizing: border-box; border: 1px solid var(--wp-border); border-radius: 2px; background: var(--wp-surface); color: var(--wp-text); font-size: 12.5px; }
     .fm-toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
     .fm-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 13px; }
     .fm-nav .layui-btn { margin: 0; }
@@ -17,9 +19,6 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-crumb a { color: var(--wp-accent); }
     .fm-crumb .sep { color: var(--wp-text-muted); margin: 0 2px; }
     .fm-crumb-path { min-width: 0; }
-    .fm-crumb-site { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; margin-left: auto; }
-    .fm-crumb-site label { font-size: 12px; color: var(--wp-text-secondary); white-space: nowrap; }
-    .fm-crumb-site select { height: 28px; max-width: 300px; box-sizing: border-box; border: 1px solid var(--wp-border); border-radius: 2px; background: var(--wp-surface); color: var(--wp-text); font-size: 12.5px; }
     .fm-split { flex: 1; display: flex; min-height: 380px; border: 1px solid var(--wp-border); border-radius: 4px; overflow: hidden; background: var(--wp-surface); }
     .fm-tree { width: 260px; min-width: 200px; flex: 0 0 auto; background: var(--wp-surface-soft); display: flex; flex-direction: column; }
     .fm-splitter {
@@ -88,20 +87,19 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
 </style>
 
 <div class="panel-card fm-card<?= $vdbSelected ? ' fm-vdb' : '' ?>">
-    <h3>
-        <span class="fm-title-text">文件管理</span>
-        <span class="fm-crumb-site">
-            <label for="siteSelect">位置</label>
-            <select id="siteSelect" lay-ignore title="切换浏览位置">
-                <?php foreach ($sites as $s): ?>
-                <option value="<?= (int) $s['id'] ?>" <?= (!$vdbSelected && $siteId === (int) $s['id']) ? 'selected' : '' ?>>
-                    <?= e($s['domain']) ?>（<?= e($s['sysuser']) ?>）
-                </option>
-                <?php endforeach; ?>
-                <option value="vdb" <?= $vdbSelected ? 'selected' : '' ?>>vdb (/mnt/backup)</option>
-            </select>
-        </span>
-    </h3>
+    <h3>文件管理</h3>
+
+    <div class="fm-site-row">
+        <label for="siteSelect">位置</label>
+        <select id="siteSelect" lay-ignore title="切换浏览位置">
+            <?php foreach ($sites as $s): ?>
+            <option value="<?= (int) $s['id'] ?>" <?= (!$vdbSelected && $siteId === (int) $s['id']) ? 'selected' : '' ?>>
+                <?= e($s['domain']) ?>（<?= e($s['sysuser']) ?>）
+            </option>
+            <?php endforeach; ?>
+            <option value="vdb" <?= $vdbSelected ? 'selected' : '' ?>>vdb (/mnt/backup)</option>
+        </select>
+    </div>
 
     <div class="fm-crumb">
         <span class="fm-crumb-path">当前目录：<span id="crumb"></span><span class="fm-root-hint mono" id="rootHint"></span></span>
