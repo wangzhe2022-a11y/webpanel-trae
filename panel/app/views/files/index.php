@@ -131,6 +131,14 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     }
     .fm-search-ico { color: #94a3b8 !important; }
     .fm-name-link, .fm-crumb a { color: #6b8e1a !important; }
+    /* 暗色主题下文件管理器仍为浅色背景，这两处必须强制可见颜色 */
+    .fm-crumb .sep { color: #94a3b8 !important; }
+    .fm-vdb-banner {
+        background: #fff7e6 !important;
+        border: 1px solid #ffe58f !important;
+        color: #8c6d1f !important;
+    }
+    .fm-empty, .fm-empty .layui-icon { color: #94a3b8 !important; }
 
     /* 统一浅灰按钮风格（工具栏 + 导航 + 行内操作） */
     .fm-card .layui-btn {
@@ -255,6 +263,7 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-search-name { color: #1e293b !important; }
     .fm-search-path { color: #94a3b8 !important; }
     .fm-search-meta { color: #64748b !important; border-top-color: #e2e8f0 !important; }
+    .fm-search-empty { color: #64748b !important; }
 
     /* 右键上下文菜单 */
     .fm-ctx {
@@ -624,14 +633,17 @@ layui.use(['layer', 'upload'], function () {
         $('#rootHint').text('站点根目录：/www/wwwroot/' + s.sysuser + '　默认：/' + sub);
     }
     function renderCrumb(path) {
-        var html = '<a href="javascript:;" data-path="/">/</a>';
+        var html = '';
         if (path && path !== '/') {
+            // 每级路径前置一个 "/" 分隔符，即自然形成 /migration/logs 的形式，避免根 "/" 与分隔符叠加成 "//"
             var parts = path.replace(/^\//, '').split('/');
             var acc = '';
             parts.forEach(function (p) {
                 acc += '/' + p;
                 html += '<span class="sep">/</span><a href="javascript:;" data-path="' + esc(acc) + '">' + esc(p) + '</a>';
             });
+        } else {
+            html = '<a href="javascript:;" data-path="/">/</a>';
         }
         $('#crumb').html(html);
         $('#pathInput').val(path || '/');
