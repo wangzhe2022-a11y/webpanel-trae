@@ -6,7 +6,8 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
 ?>
 <style>
     .fm-card { display: flex; flex-direction: column; min-height: calc(100vh - 92px); padding-bottom: 12px; }
-    .fm-card > h3 { overflow: hidden; margin-bottom: 10px; }
+    .fm-card > h3 { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+    .fm-card > h3 .fm-title-text { flex: 1 1 auto; min-width: 0; }
     .fm-toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
     .fm-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 13px; }
     .fm-nav .layui-btn { margin: 0; }
@@ -87,10 +88,8 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
 </style>
 
 <div class="panel-card fm-card<?= $vdbSelected ? ' fm-vdb' : '' ?>">
-    <h3>文件管理</h3>
-
-    <div class="fm-crumb">
-        <span class="fm-crumb-path">当前目录：<span id="crumb"></span><span class="fm-root-hint mono" id="rootHint"></span></span>
+    <h3>
+        <span class="fm-title-text">文件管理</span>
         <span class="fm-crumb-site">
             <label for="siteSelect">位置</label>
             <select id="siteSelect" lay-ignore title="切换浏览位置">
@@ -102,6 +101,10 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
                 <option value="vdb" <?= $vdbSelected ? 'selected' : '' ?>>vdb (/mnt/backup)</option>
             </select>
         </span>
+    </h3>
+
+    <div class="fm-crumb">
+        <span class="fm-crumb-path">当前目录：<span id="crumb"></span><span class="fm-root-hint mono" id="rootHint"></span></span>
     </div>
 
     <div class="fm-vdb-banner" id="vdbBanner"<?= $vdbSelected ? '' : ' hidden' ?>>
