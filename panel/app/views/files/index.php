@@ -119,6 +119,11 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         background: #ffffff !important;
         border: 1px solid #e2e8f0 !important;
         color: #1e293b !important;
+        color-scheme: light;
+    }
+    .fm-site-row select option {
+        background: #ffffff !important;
+        color: #1e293b !important;
     }
     .fm-search-ico { color: #94a3b8 !important; }
     .fm-name-link, .fm-crumb a { color: #6b8e1a !important; }
