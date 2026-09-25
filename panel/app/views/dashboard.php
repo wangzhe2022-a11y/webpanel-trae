@@ -259,34 +259,6 @@ $renderStoreCard = static function (
     </div>
     <div class="layui-col-md4">
         <div class="wp-col-stack">
-        <div class="panel-card wp-disk-card">
-            <h3>磁盘</h3>
-            <div class="wp-storage-grid" id="diskMounts">
-            <?= $renderStoreCard(
-                'swap',
-                '交换',
-                $swapTotal ? format_bytes($swapUsed) : '0 KB',
-                $swapTotal ? format_bytes($swapTotal) : '0 KB',
-                $swapRing,
-                50,
-                80
-            ) ?>
-            <?php foreach ($diskMounts as $i => $d): ?>
-                <?= $renderStoreCard(
-                    'disk-' . (int) $i,
-                    (string) (($d['fs'] ?? '') !== '' ? $d['fs'] : '磁盘'),
-                    (string) ($d['used'] ?? ''),
-                    (string) ($d['size'] ?? ''),
-                    (float) ($d['use_pct'] ?? 0),
-                    80,
-                    90
-                ) ?>
-            <?php endforeach; ?>
-            <?php if (empty($diskMounts) && $swapTotal <= 0): ?>
-                <div class="mon-meta wp-disk-empty">暂无磁盘数据</div>
-            <?php endif; ?>
-            </div>
-        </div>
         <div class="panel-card wp-svc-card">
             <h3>
                 服务状态
@@ -324,7 +296,34 @@ $renderStoreCard = static function (
     </div>
     <div class="layui-col-md4">
         <div class="wp-col-stack">
-        <div class="panel-card wp-dash-slot" id="wpDashSlot" aria-hidden="true"></div>
+        <div class="panel-card wp-disk-card">
+            <h3>磁盘</h3>
+            <div class="wp-storage-grid" id="diskMounts">
+            <?= $renderStoreCard(
+                'swap',
+                '交换',
+                $swapTotal ? format_bytes($swapUsed) : '0 KB',
+                $swapTotal ? format_bytes($swapTotal) : '0 KB',
+                $swapRing,
+                50,
+                80
+            ) ?>
+            <?php foreach ($diskMounts as $i => $d): ?>
+                <?= $renderStoreCard(
+                    'disk-' . (int) $i,
+                    (string) (($d['fs'] ?? '') !== '' ? $d['fs'] : '磁盘'),
+                    (string) ($d['used'] ?? ''),
+                    (string) ($d['size'] ?? ''),
+                    (float) ($d['use_pct'] ?? 0),
+                    80,
+                    90
+                ) ?>
+            <?php endforeach; ?>
+            <?php if (empty($diskMounts) && $swapTotal <= 0): ?>
+                <div class="mon-meta wp-disk-empty">暂无磁盘数据</div>
+            <?php endif; ?>
+            </div>
+        </div>
         <div class="panel-card wp-login-card">
             <div class="wp-host-extra is-open" id="loginExtra">
                 <div class="wp-eq-tabs wp-host-tabs wp-login-tabs" role="tablist">

@@ -504,7 +504,7 @@ input[type="radio"] {
 }
 
 /* Three equal columns:
-   System Status + 主机监控 | 磁盘 2×2 storage + 服务状态 | reserved slot + 最近登录 / SSH tabs. */
+   System Status + 主机监控 | 服务状态 | 磁盘 2×2 storage + 最近登录 / SSH tabs. */
 .wp-col-stack {
     display: flex;
     flex-direction: column;
@@ -972,13 +972,7 @@ html[data-theme="dark"] .wp-dash-clock .wp-clock-time { color: #fff; }
 html[data-theme="dark"] .wp-dash-clock .wp-clock-date { color: rgba(255, 255, 255, 0.72); }
 html[data-theme="dark"] .wp-clock-tz { color: rgba(255, 255, 255, 0.48); }
 
-/* Reserved right-column slot (future widget) + login tabs flush to the card. */
-.wp-dash-slot {
-    min-height: 196px;
-    background: var(--wp-surface);
-    border: 1px solid var(--wp-border);
-    box-shadow: var(--wp-shadow-sm);
-}
+/* Login tabs flush to the card (磁盘 now occupies the former reserved slot). */
 .wp-login-card {
     padding: 0;
     overflow: hidden;
@@ -1259,8 +1253,7 @@ html[data-theme="dark"] .wp-ring.is-crit .wp-ring-value { stroke: #ff7a6b; }
 html[data-theme="dark"] .wp-ring-num { color: #fff; }
 html[data-theme="dark"] .wp-storage,
 html[data-theme="dark"] .wp-host-meta,
-html[data-theme="dark"] .wp-store-card,
-html[data-theme="dark"] .wp-dash-slot {
+html[data-theme="dark"] .wp-store-card {
     background: rgba(255, 255, 255, 0.06);
     border-color: rgba(255, 255, 255, 0.1);
 }
