@@ -1165,7 +1165,7 @@ layui.use(['layer'], function () {
 
     function setEdit(on) {
         document.body.classList.toggle('wp-dash-editing', on);
-        try { grid.staticGrid(!on); } catch (e) {}
+        try { grid.setStatic(!on); } catch (e) {}  // GridStack 11 用 setStatic() 切换静态/可拖拽（旧 staticGrid() 方法已移除）
         document.getElementById('btnDashEdit').style.display = on ? 'none' : '';
         document.getElementById('btnDashDone').style.display = on ? '' : 'none';
         document.getElementById('btnDashReset').style.display = on ? '' : 'none';
