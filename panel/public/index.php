@@ -68,6 +68,7 @@ $router->post('/phpmyadmin/install', [PhpMyAdminController::class, 'install']);
 /* ---- file manager -------------------------------------------------------- */
 $router->get('/files', [FileController::class, 'index']);
 $router->post('/files/list', [FileController::class, 'ls']);
+$router->post('/files/search', [FileController::class, 'search']);
 $router->post('/files/read', [FileController::class, 'read']);
 $router->post('/files/write', [FileController::class, 'write']);
 $router->post('/files/mkdir', [FileController::class, 'mkdir']);

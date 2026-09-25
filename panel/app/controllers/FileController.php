@@ -118,6 +118,63 @@ class FileController extends Controller
         $this->ok(['path' => $r['data']['path'] ?? $rel, 'entries' => $r['data']['entries'] ?? []]);
     }
 
+    public function search(): void
+    {
+        $this->requireLogin();
+        $this->verifyCsrf();
+        $site = $this->siteFromRequest();
+        $q = (string) $this->input('q', '');
+        if ($q === '' || strlen($q) > 128 || $q === '.' || $q === '..'
+            || strpbrk($q, "/\\\0") !== false || preg_match('/[\x00-\x1F\x7F]/', $q)) {
+            $this->fail('请输入 1–128 个字符的文件名（不能含路径分隔符）');
+        }
+        $rel = (string) $this->input('path', '/');
+        @set_time_limit(15);
+        $r = Shell::sudo('wp-fs.sh', ['search', $site['sysuser'], $rel, $q]);
+        if (!$r['ok']) {
+            $this->fail($this->fsErrorZh($r['error'] !== '' ? $r['error'] : '搜索失败'));
+        }
+        $hits = $r['data']['hits'] ?? [];
+        if (!is_array($hits)) {
+            $hits = [];
+        }
+        $clean = [];
+        foreach ($hits as $h) {
+            if (!is_array($h)) {
+                continue;
+            }
+            $path = (string) ($h['path'] ?? '');
+            $name = (string) ($h['name'] ?? '');
+            if ($path === '' || !str_starts_with($path, '/') || preg_match('#(?:^|/)\.\.(?:/|$)#', $path)) {
+                continue;
+            }
+            if ($name === '' || $name === '.' || $name === '..' || strpbrk($name, "/\\") !== false) {
+                continue;
+            }
+            $type = (string) ($h['type'] ?? 'file');
+            if (!in_array($type, ['file', 'dir', 'link'], true)) {
+                $type = 'file';
+            }
+            $dir = (string) ($h['dir'] ?? '');
+            if ($dir === '' || !str_starts_with($dir, '/') || preg_match('#(?:^|/)\.\.(?:/|$)#', $dir)) {
+                $dir = $path === '/' ? '/' : dirname($path);
+            }
+            $clean[] = [
+                'name' => $name,
+                'path' => $path,
+                'dir' => $dir,
+                'type' => $type,
+                'size' => (int) ($h['size'] ?? 0),
+            ];
+        }
+        $this->ok([
+            'path' => $r['data']['path'] ?? $rel,
+            'q' => $r['data']['q'] ?? $q,
+            'hits' => $clean,
+            'truncated' => !empty($r['data']['truncated']),
+        ]);
+    }
+
     public function read(): void
     {
         $this->requireLogin();
@@ -350,6 +407,7 @@ class FileController extends Controller
             'site user does not exist' => '站点系统用户不存在',
             'parent directory does not exist' => '上级目录不存在',
             'invalid file name' => '文件名不合法',
+            'invalid search query' => '搜索词不合法',
             'file not found' => '文件不存在',
             'not a directory' => '不是目录',
             'not a regular file' => '不是普通文件',

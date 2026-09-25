@@ -14,6 +14,7 @@
  *  - only a narrow set of text files is editable in the browser
  *  - setuid/setgid bits are never allowed
  *  - extract (zip / tar.gz / tgz) stays inside the jail; zip-slip / symlinks rejected
+ *  - search walks a jailed subtree (no symlink follow); result/visit/time capped
  */
 
 const VDB_USER = '__vdb';
@@ -112,6 +113,147 @@ function dry_vdb_entries(string $rel): array {
         ],
         default => [],
     };
+}
+
+function dry_site_entries(string $rel): array {
+    $now = date('Y-m-d H:i:s');
+    $file = static function (string $name, int $size = 4096, string $perms = '0644') use ($now): array {
+        return ['name' => $name, 'type' => 'file', 'size' => $size, 'mtime' => $now, 'perms' => $perms];
+    };
+    $dir = static function (string $name, string $perms = '0755') use ($now): array {
+        return ['name' => $name, 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => $perms];
+    };
+    return match ($rel) {
+        '/', '' => [$dir('public'), $dir('app'), $dir('logs')],
+        '/public' => [
+            $dir('wp-content'),
+            $file('index.php', 4521),
+            $file('wp-config.php', 3012, '0640'),
+            $file('theme.zip', 204800),
+        ],
+        '/app' => [
+            $dir('node_modules'),
+            $file('index.js', 1204),
+            $file('package.json', 812),
+        ],
+        default => [],
+    };
+}
+
+function dry_search_dirs(bool $isVdb): array {
+    return $isVdb
+        ? ['/', '/archives', '/snapshots', '/snapshots/2026-09']
+        : ['/', '/public', '/app'];
+}
+
+function name_matches(string $name, string $q): bool {
+    if ($q === '') return false;
+    if (function_exists('mb_stripos')) {
+        return mb_stripos($name, $q, 0, 'UTF-8') !== false;
+    }
+    return stripos($name, $q) !== false;
+}
+
+function valid_search_query(string $q): bool {
+    if ($q === '' || strlen($q) > 128) return false;
+    if ($q === '.' || $q === '..') return false;
+    if (strpbrk($q, "/\\\0") !== false) return false;
+    return !preg_match('/[\x00-\x1F\x7F]/', $q);
+}
+
+function path_under_rel(string $path, string $rel): bool {
+    if ($rel === '/' || $rel === '') return true;
+    return $path === $rel || str_starts_with($path, $rel . '/');
+}
+
+function dry_search(bool $isVdb, string $rel, string $q): array {
+    $rel = '/' . trim(str_replace('\\', '/', $rel), '/');
+    if ($rel === '//' || $rel === '') $rel = '/';
+    $hits = [];
+    foreach (dry_search_dirs($isVdb) as $dir) {
+        $entries = $isVdb ? dry_vdb_entries($dir) : dry_site_entries($dir);
+        foreach ($entries as $e) {
+            $path = $dir === '/' ? '/' . $e['name'] : $dir . '/' . $e['name'];
+            if (!path_under_rel($path, $rel)) continue;
+            if (!name_matches((string) $e['name'], $q)) continue;
+            $hits[] = [
+                'name' => $e['name'],
+                'path' => $path,
+                'dir' => $dir,
+                'type' => $e['type'],
+                'size' => (int) ($e['size'] ?? 0),
+            ];
+        }
+    }
+    return $hits;
+}
+
+const SEARCH_MAX_RESULTS = 80;
+const SEARCH_MAX_VISIT = 25000;
+const SEARCH_TIMEOUT = 4.0;
+const SEARCH_SKIP_DIRS = ['.git' => true, 'node_modules' => true, '.svn' => true];
+
+function search_rank(array $h, string $q): int {
+    $n = (string) $h['name'];
+    if (strcasecmp($n, $q) === 0) return 0;
+    if (stripos($n, $q) === 0) return 1;
+    return 2;
+}
+
+function sort_search_hits(array &$hits, string $q): void {
+    usort($hits, static function (array $a, array $b) use ($q): int {
+        $sa = search_rank($a, $q);
+        $sb = search_rank($b, $q);
+        if ($sa !== $sb) return $sa <=> $sb;
+        if ($a['type'] !== $b['type']) return $a['type'] === 'dir' ? -1 : 1;
+        return strcasecmp((string) $a['path'], (string) $b['path']);
+    });
+}
+
+function search_tree(string $absStart, string $jailBase, string $q): array {
+    $hits = [];
+    $visited = 0;
+    $truncated = false;
+    $deadline = microtime(true) + SEARCH_TIMEOUT;
+    $stack = [$absStart];
+    while ($stack !== []) {
+        if ($truncated) break;
+        if (microtime(true) >= $deadline) { $truncated = true; break; }
+        $dir = array_pop($stack);
+        $names = @scandir($dir);
+        if ($names === false) continue;
+        foreach ($names as $n) {
+            if ($n === '.' || $n === '..') continue;
+            if (microtime(true) >= $deadline || $visited >= SEARCH_MAX_VISIT) {
+                $truncated = true;
+                break;
+            }
+            $visited++;
+            $p = $dir . '/' . $n;
+            if ($p !== $jailBase && !str_starts_with($p, $jailBase . '/')) continue;
+            $isLink = is_link($p);
+            $isDir = !$isLink && is_dir($p);
+            if (name_matches($n, $q)) {
+                $rel = rel_from_base($p, $jailBase);
+                $hits[] = [
+                    'name' => $n,
+                    'path' => $rel,
+                    'dir' => rel_from_base($dir, $jailBase),
+                    'type' => $isDir ? 'dir' : ($isLink ? 'link' : 'file'),
+                    'size' => $isDir || $isLink ? 0 : (int) @filesize($p),
+                ];
+                if (count($hits) >= SEARCH_MAX_RESULTS) {
+                    $truncated = true;
+                    break;
+                }
+            }
+            if ($isDir && !isset(SEARCH_SKIP_DIRS[$n])) {
+                $stack[] = $p;
+            }
+        }
+    }
+    sort_search_hits($hits, $q);
+    return [$hits, $truncated, $visited];
 }
 
 function site_user_id(string $user): array {
@@ -465,28 +607,7 @@ if ($action === 'list') {
     if ($GLOBALS['DRY']) {
         $norm = '/' . trim(str_replace('\\', '/', (string) $rel), '/');
         if ($norm === '//') $norm = '/';
-        $entries = $isVdb ? dry_vdb_entries($norm) : (function () use ($norm) {
-            $now = date('Y-m-d H:i:s');
-            return match ($norm) {
-                '/', '' => [
-                    ['name' => 'public', 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => '0755'],
-                    ['name' => 'app', 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => '0755'],
-                    ['name' => 'logs', 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => '0755'],
-                ],
-                '/public' => [
-                    ['name' => 'wp-content', 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => '0755'],
-                    ['name' => 'index.php', 'type' => 'file', 'size' => 4521, 'mtime' => $now, 'perms' => '0644'],
-                    ['name' => 'wp-config.php', 'type' => 'file', 'size' => 3012, 'mtime' => $now, 'perms' => '0640'],
-                    ['name' => 'theme.zip', 'type' => 'file', 'size' => 204800, 'mtime' => $now, 'perms' => '0644'],
-                ],
-                '/app' => [
-                    ['name' => 'node_modules', 'type' => 'dir', 'size' => 0, 'mtime' => $now, 'perms' => '0755'],
-                    ['name' => 'index.js', 'type' => 'file', 'size' => 1204, 'mtime' => $now, 'perms' => '0644'],
-                    ['name' => 'package.json', 'type' => 'file', 'size' => 812, 'mtime' => $now, 'perms' => '0644'],
-                ],
-                default => [],
-            };
-        })();
+        $entries = $isVdb ? dry_vdb_entries($norm) : dry_site_entries($norm);
         out(['ok' => true, 'path' => $norm === '' ? '/' : $norm, 'entries' => $entries]);
     }
     $dir = abs_path($user, $rel);
@@ -655,7 +776,9 @@ if ($action === 'upload') {
     $dir = jail($user, $dirRel);
     if (!is_dir($dir)) err('target directory missing');
     $dst = $dir . '/' . $name;
-    if (file_exists($dst)) err('file already exists');
+    if (is_link($dst)) err('symlink rejected');
+    if (is_dir($dst)) err('target is a directory');
+    // Same-name regular files are replaced (rename is atomic on the same fs).
     if (!@rename($tmp, $dst) && !@copy($tmp, $dst)) err('move uploaded file failed');
     chown_to($dst, $user);
     chmod($dst, 0644);
@@ -754,6 +877,38 @@ if ($action === 'compress' || $action === 'zip') {
     chown_to($archive, $user);
     chmod($archive, 0644);
     out(['ok' => true, 'name' => $name, 'size' => filesize($archive)]);
+}
+
+/* ------------------------------ search ---------------------------------- */
+if ($action === 'search') {
+    $rel = $argv[3] ?? '/';
+    $q = (string) ($argv[4] ?? '');
+    if (!valid_search_query($q)) err('invalid search query');
+    $norm = '/' . trim(str_replace('\\', '/', (string) $rel), '/');
+    if ($norm === '//' || $norm === '') $norm = '/';
+    if ($GLOBALS['DRY']) {
+        $hits = dry_search($isVdb, $norm, $q);
+        sort_search_hits($hits, $q);
+        out(['ok' => true, 'path' => $norm, 'q' => $q, 'hits' => $hits, 'truncated' => false, 'visited' => count($hits)]);
+    }
+    $start = abs_path($user, $rel);
+    if (!is_dir($start)) err('not a directory');
+    $jailBase = realpath(jail_base($user));
+    if ($jailBase === false) {
+        err($isVdb ? 'backup disk /mnt/backup is not available' : 'path escapes site jail');
+    }
+    if ($start !== $jailBase && strpos($start . '/', $jailBase . '/') !== 0) {
+        err($isVdb ? 'path escapes backup disk jail' : 'path escapes site jail');
+    }
+    [$hits, $truncated, $visited] = search_tree($start, $jailBase, $q);
+    out([
+        'ok' => true,
+        'path' => rel_from_base($start, $jailBase),
+        'q' => $q,
+        'hits' => $hits,
+        'truncated' => $truncated,
+        'visited' => $visited,
+    ]);
 }
 
 err('unknown action: ' . $action, 64);
