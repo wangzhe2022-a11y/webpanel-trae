@@ -215,23 +215,36 @@ if [ "$action" = "logins" ]; then
 JSON
         exit 0
     fi
+    # AlmaLinux / newer OpenSSH log "sshd-session[PID]" (and similar sshd*
+    # tags) instead of classic "sshd[PID]". Also read rotated
+    # /var/log/secure-YYYYMMDD oldest-first so tail still sees chronological
+    # lines when the current log is short.
+    files=()
+    for f in ${SECURE_LOG_ROTATED:-/var/log/secure-[0-9]*}; do
+        [ -f "$f" ] && files+=("$f")
+    done
+    f="${SECURE_LOG:-/var/log/secure}"
+    [ -f "$f" ] && files+=("$f")
+
     printf '{"ok":true,"logins":['
-    grep -hE 'Accepted (publickey|password)' /var/log/secure 2>/dev/null \
-        | tail -n "$n" | tac | awk '
-        /sshd\[[0-9]+\]: Accepted (publickey|password) for / {
-            method=""; user=""; ip="";
-            for (i=1; i<=NF; i++) {
-                if ($i=="Accepted" && method=="") method=$(i+1);
-                if ($i=="for" && user=="") user=$(i+1);
-                if ($i=="from" && ip=="") ip=$(i+1);
-            }
-            if (method!="" && user!="" && ip!="") {
-                gsub(/[\\"]/,"",method); gsub(/[\\"]/,"",user); gsub(/[\\"]/,"",ip);
-                printf "%s{\"time\":\"%s %s %s\",\"user\":\"%s\",\"ip\":\"%s\",\"method\":\"%s\"}",
-                    sep, $1, $2, $3, user, ip, method;
-                sep=",";
-            }
-        }'
+    if [ "${#files[@]}" -gt 0 ]; then
+        grep -hE 'sshd[^[:space:]]*\[[0-9]+\]: Accepted (publickey|password)' "${files[@]}" 2>/dev/null \
+            | tail -n "$n" | tac | awk '
+            /sshd[^[:space:]]*\[[0-9]+\]: Accepted (publickey|password) for / {
+                method=""; user=""; ip="";
+                for (i=1; i<=NF; i++) {
+                    if ($i=="Accepted" && method=="") method=$(i+1);
+                    if ($i=="for" && user=="") user=$(i+1);
+                    if ($i=="from" && ip=="") ip=$(i+1);
+                }
+                if (method!="" && user!="" && ip!="") {
+                    gsub(/[\\"]/,"",method); gsub(/[\\"]/,"",user); gsub(/[\\"]/,"",ip);
+                    printf "%s{\"time\":\"%s %s %s\",\"user\":\"%s\",\"ip\":\"%s\",\"method\":\"%s\"}",
+                        sep, $1, $2, $3, user, ip, method;
+                    sep=",";
+                }
+            }'
+    fi
     printf ']}\n'
     exit 0
 fi
