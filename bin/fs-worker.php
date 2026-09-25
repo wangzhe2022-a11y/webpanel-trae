@@ -782,6 +782,7 @@ if ($action === 'upload') {
     $dirRel  = $argv[3] ?? '/';
     $tmp     = $argv[4] ?? '';
     $name    = $argv[5] ?? '';
+    $overwrite = (($argv[6] ?? '') === '1');
     if (!preg_match('/^[A-Za-z0-9._ -]+$/u', $name) || in_array($name, ['.', '..'], true)) err('invalid file name');
     if ($GLOBALS['DRY']) out(['ok' => true, 'name' => $name]);
     if (!is_file($tmp)) err('upload temp file missing');
@@ -790,7 +791,11 @@ if ($action === 'upload') {
     $dst = $dir . '/' . $name;
     if (is_link($dst)) err('symlink rejected');
     if (is_dir($dst)) err('target is a directory');
-    // Same-name regular files are replaced (rename is atomic on the same fs).
+    if (file_exists($dst)) {
+        if (!$overwrite) err('file already exists');
+        if (!is_file($dst)) err('target is not a regular file');
+    }
+    // Same-name regular files are replaced only when overwrite=1 (rename is atomic on the same fs).
     if (!@rename($tmp, $dst) && !@copy($tmp, $dst)) err('move uploaded file failed');
     chown_to($dst, $user);
     chmod($dst, 0644);

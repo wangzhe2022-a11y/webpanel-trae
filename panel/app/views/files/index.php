@@ -180,6 +180,7 @@ layui.use(['layer', 'upload'], function () {
     var SITE = <?= json_encode($siteId, $jsFlags) ?>;
     var DEFAULT_PATH = <?= json_encode($defaultPath, $jsFlags) ?>;
     var curPath = '/';
+    var lastEntries = [];
     var listGen = 0;
     var hist = [];
     var histIdx = -1;
@@ -449,6 +450,7 @@ layui.use(['layer', 'upload'], function () {
     }
 
     function render(entries) {
+        lastEntries = entries || [];
         var rows = '';
         $('#selAll').prop('checked', false);
         if (curPath !== '/') {
@@ -456,7 +458,7 @@ layui.use(['layer', 'upload'], function () {
                  + '<td class="fm-name-link">..</td>'
                  + '<td></td><td></td><td></td><td></td><td></td></tr>';
         }
-        entries.forEach(function (f) {
+        lastEntries.forEach(function (f) {
             var p = joinPath(curPath, f.name);
             var nameHtml = f.type === 'dir'
                 ? '<span class="go fm-name-link">' + esc(f.name) + '</span>'
@@ -843,25 +845,68 @@ layui.use(['layer', 'upload'], function () {
         });
     });
 
-    /* upload */
+    /* upload — confirm before replacing a same-name regular file */
+    function listingEntry(name) {
+        for (var i = 0; i < lastEntries.length; i++) {
+            if (lastEntries[i] && lastEntries[i].name === name) return lastEntries[i];
+        }
+        return null;
+    }
+    function confirmOverwrite(name, onYes) {
+        layer.confirm(
+            '当前目录已存在 <b>' + esc(name) + '</b>。<br>' +
+            '<span style="color:#ff5722">确定后将覆盖该文件。</span>',
+            { title: '覆盖确认' },
+            function (idx) {
+                layer.close(idx);
+                onYes();
+            }
+        );
+    }
+    function uploadFile(f, overwrite) {
+        var fd = new FormData();
+        fd.append('site_id', SITE);
+        fd.append('path', curPath);
+        fd.append('file', f);
+        if (overwrite) fd.append('overwrite', '1');
+        var loadI = layer.load(2);
+        WP.post('/files/upload', fd).then(function (res) {
+            layer.close(loadI);
+            if (res.ok) {
+                layer.msg('上传完成：' + res.name + '（' + res.size + '）', { icon: 1 });
+                refresh();
+                return;
+            }
+            var err = res.error || '上传失败';
+            if (!overwrite && /already exists|已存在/.test(err)) {
+                confirmOverwrite(f.name, function () { uploadFile(f, true); });
+                return;
+            }
+            layer.alert(err, { icon: 2, title: '上传失败' });
+        });
+    }
     $('#btnUpload').on('click', function () {
         if (refuseIfVdb()) return;
         $('#fileInput').trigger('click');
     });
     $('#fileInput').on('change', function () {
         var f = this.files[0];
-        if (!f) return;
-        var fd = new FormData();
-        fd.append('site_id', SITE);
-        fd.append('path', curPath);
-        fd.append('file', f);
-        var loadI = layer.load(2);
-        WP.post('/files/upload', fd).then(function (res) {
-            layer.close(loadI);
-            if (res.ok) { layer.msg('上传完成：' + res.name + '（' + res.size + '）', { icon: 1 }); refresh(); }
-            else { layer.alert(res.error, { icon: 2, title: '上传失败' }); }
-        });
         this.value = '';
+        if (!f) return;
+        var hit = listingEntry(f.name);
+        if (hit) {
+            if (hit.type === 'dir') {
+                layer.alert('已存在同名文件夹，无法覆盖。', { icon: 2, title: '上传失败' });
+                return;
+            }
+            if (hit.type === 'link') {
+                layer.alert('已存在同名符号链接，无法覆盖。', { icon: 2, title: '上传失败' });
+                return;
+            }
+            confirmOverwrite(f.name, function () { uploadFile(f, true); });
+            return;
+        }
+        uploadFile(f, false);
     });
 
     /* filename search (current directory + descendants) */

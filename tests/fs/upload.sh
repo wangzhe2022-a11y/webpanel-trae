@@ -1,5 +1,5 @@
 #!/bin/bash
-# Site-jail upload: same-name files are overwritten; dirs/symlinks/vdb stay refused.
+# Site-jail upload: same-name files need overwrite=1; dirs/symlinks/vdb stay refused.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -57,9 +57,41 @@ print("ok first upload", d)
 [ "$(cat "$WEB/$USER/public/includes/brand-new.txt")" = "brand new" ] || fail "new file content"
 [ ! -f "$OUTSIDE/new-upload.txt" ] || fail "temp file should be consumed"
 
-echo "== overwrite same-name file =="
+echo "== same-name without overwrite is refused =="
+printf 'should not land\n' > "$OUTSIDE/replace.txt"
+err="$(run_err upload "$USER" /public/includes "$OUTSIDE/replace.txt" class-w2w-auto.php)"
+echo "$err" | python3 -c '
+import json,sys
+d=json.loads(sys.stdin.read().strip().splitlines()[-1])
+assert d.get("ok") is False
+assert "already exists" in d.get("error",""), d
+print("ok no-overwrite refuse:", d.get("error"))
+'
+[ "$(cat "$WEB/$USER/public/includes/class-w2w-auto.php")" = "OLD PLUGIN BODY" ] || fail "file was replaced without overwrite flag"
+[ -f "$OUTSIDE/replace.txt" ] || fail "refused upload should leave temp file"
+
+echo "== overwrite=0 / junk flag still refuses =="
+err="$(run_err upload "$USER" /public/includes "$OUTSIDE/replace.txt" class-w2w-auto.php 0)"
+echo "$err" | python3 -c '
+import json,sys
+d=json.loads(sys.stdin.read().strip().splitlines()[-1])
+assert d.get("ok") is False
+assert "already exists" in d.get("error",""), d
+print("ok overwrite=0 refuse:", d.get("error"))
+'
+err="$(run_err upload "$USER" /public/includes "$OUTSIDE/replace.txt" class-w2w-auto.php yes)"
+echo "$err" | python3 -c '
+import json,sys
+d=json.loads(sys.stdin.read().strip().splitlines()[-1])
+assert d.get("ok") is False
+assert "already exists" in d.get("error",""), d
+print("ok junk-flag refuse:", d.get("error"))
+'
+[ "$(cat "$WEB/$USER/public/includes/class-w2w-auto.php")" = "OLD PLUGIN BODY" ] || fail "junk overwrite flag replaced file"
+
+echo "== overwrite same-name file with flag =="
 printf 'NEW PLUGIN BODY v2\n' > "$OUTSIDE/replace.txt"
-out="$(run upload "$USER" /public/includes "$OUTSIDE/replace.txt" class-w2w-auto.php)"
+out="$(run upload "$USER" /public/includes "$OUTSIDE/replace.txt" class-w2w-auto.php 1)"
 echo "$out" | python3 -c '
 import json,sys
 d=json.load(sys.stdin)
@@ -74,9 +106,21 @@ got="$(cat "$WEB/$USER/public/includes/class-w2w-auto.php")"
 [ -d "$WEB/$USER/public/includes/keepdir" ] || fail "sibling dir missing"
 [ ! -f "$OUTSIDE/replace.txt" ] || fail "overwrite temp should be consumed"
 
+echo "== new name with overwrite=1 still uploads =="
+printf 'extra\n' > "$OUTSIDE/extra.txt"
+out="$(run upload "$USER" /public/includes "$OUTSIDE/extra.txt" extra-new.txt 1)"
+echo "$out" | python3 -c '
+import json,sys
+d=json.load(sys.stdin)
+assert d.get("ok") is True, d
+assert d.get("name")=="extra-new.txt"
+print("ok new+overwrite flag", d)
+'
+[ "$(cat "$WEB/$USER/public/includes/extra-new.txt")" = "extra" ] || fail "new file with overwrite flag missing"
+
 echo "== refuse overwrite of a directory =="
 printf 'nope\n' > "$OUTSIDE/dir-clash.txt"
-err="$(run_err upload "$USER" /public/includes "$OUTSIDE/dir-clash.txt" keepdir)"
+err="$(run_err upload "$USER" /public/includes "$OUTSIDE/dir-clash.txt" keepdir 1)"
 echo "$err" | python3 -c '
 import json,sys
 d=json.loads(sys.stdin.read().strip().splitlines()[-1])
@@ -89,7 +133,7 @@ print("ok dir clash:", d.get("error"))
 
 echo "== refuse overwrite of a symlink =="
 printf 'hijack\n' > "$OUTSIDE/link-clash.txt"
-err="$(run_err upload "$USER" /public/includes "$OUTSIDE/link-clash.txt" escape-link)"
+err="$(run_err upload "$USER" /public/includes "$OUTSIDE/link-clash.txt" escape-link 1)"
 echo "$err" | python3 -c '
 import json,sys
 d=json.loads(sys.stdin.read().strip().splitlines()[-1])

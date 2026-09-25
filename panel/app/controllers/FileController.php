@@ -292,10 +292,15 @@ class FileController extends Controller
         chmod($tmp, 0600);
 
         $dir = (string) $this->input('path', '/');
-        $r = Shell::sudo('wp-fs.sh', ['upload', $site['sysuser'], $dir, $tmp, $name]);
+        $overwrite = ((string) $this->input('overwrite', '')) === '1';
+        $args = ['upload', $site['sysuser'], $dir, $tmp, $name];
+        if ($overwrite) {
+            $args[] = '1';
+        }
+        $r = Shell::sudo('wp-fs.sh', $args);
         if (!$r['ok']) {
             @unlink($tmp);
-            $this->fail($r['error']);
+            $this->fail($this->fsErrorZh($r['error'] !== '' ? $r['error'] : '上传失败'));
         }
         $this->ok(['name' => $name, 'size' => human_size((int) ($r['data']['size'] ?? $f['size']))]);
     }
@@ -409,8 +414,12 @@ class FileController extends Controller
             'invalid file name' => '文件名不合法',
             'invalid search query' => '搜索词不合法',
             'file not found' => '文件不存在',
+            'file already exists' => '同名文件已存在',
             'not a directory' => '不是目录',
             'not a regular file' => '不是普通文件',
+            'target is a directory' => '不能覆盖同名文件夹',
+            'target is not a regular file' => '不能覆盖该类型的目标',
+            'target directory missing' => '目标目录不存在',
         ];
         if (str_starts_with($msg, 'unknown action:')) {
             return '当前服务器组件不支持解压，请更新 fs-worker.php';
