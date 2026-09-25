@@ -126,6 +126,47 @@ class ServiceController extends Controller
     }
 
     /**
+     * Restart panel php-fpm, then try-restart installed Remi site pools.
+     * POST /sys/fpm-safe-restart
+     */
+    public function fpmSafeRestart(): void
+    {
+        $this->requireLogin();
+        $this->verifyCsrf();
+
+        $r = Shell::sudo('wp-sys.sh', ['fpm-safe-restart']);
+        if (!$r['ok']) {
+            $this->fail('PHP-FPM 安全重启失败：' . ($r['error'] !== '' ? $r['error'] : '未知错误'));
+        }
+        panel_sys_info_forget();
+
+        $restarted = $r['data']['restarted'] ?? [];
+        $skipped = $r['data']['skipped'] ?? [];
+        $failed = $r['data']['failed'] ?? [];
+        if (!is_array($restarted)) {
+            $restarted = [];
+        }
+        if (!is_array($skipped)) {
+            $skipped = [];
+        }
+        if (!is_array($failed)) {
+            $failed = [];
+        }
+
+        $detail = 'restarted=' . implode(',', array_map('strval', $restarted));
+        if ($failed !== []) {
+            $detail .= ' failed=' . implode(',', array_map('strval', $failed));
+        }
+        Auth::log('sys.fpm-safe-restart', $detail);
+
+        $this->ok([
+            'restarted' => array_values($restarted),
+            'skipped' => array_values($skipped),
+            'failed' => array_values($failed),
+        ]);
+    }
+
+    /**
      * Panel access log + suspicious-IP detection.
      * GET /sys/access?limit=30
      */

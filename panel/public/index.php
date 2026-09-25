@@ -86,6 +86,7 @@ $router->get('/sys/atop', [ServiceController::class, 'atop']);
 $router->get('/sys/access', [ServiceController::class, 'access']);
 $router->get('/sys/denylist', [ServiceController::class, 'denylist']);
 $router->post('/sys/svc', [ServiceController::class, 'svc']);
+$router->post('/sys/fpm-safe-restart', [ServiceController::class, 'fpmSafeRestart']);
 $router->post('/sys/deny', [ServiceController::class, 'deny']);
 $router->post('/sys/undeny', [ServiceController::class, 'undeny']);
 

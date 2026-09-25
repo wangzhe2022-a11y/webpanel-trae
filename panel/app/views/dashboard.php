@@ -279,9 +279,12 @@ $renderStoreCard = static function (
         <div class="panel-card wp-svc-card">
             <h3>
                 服务状态
-                <button class="layui-btn layui-btn-sm layui-btn-primary" style="float:right" id="btnRefreshSvc">
-                    <span class="layui-icon layui-icon-refresh"></span> 刷新
-                </button>
+                <span class="wp-svc-head-actions">
+                    <button type="button" class="layui-btn layui-btn-sm" id="btnFpmSafeRestart">重启 PHP-FPM</button>
+                    <button type="button" class="layui-btn layui-btn-sm layui-btn-primary" id="btnRefreshSvc">
+                        <span class="layui-icon layui-icon-refresh"></span> 刷新
+                    </button>
+                </span>
             </h3>
             <table class="layui-table" style="margin:0">
                 <thead><tr><th>服务</th><th>状态</th><th>操作</th></tr></thead>
@@ -962,6 +965,40 @@ layui.use(['element', 'layer', 'table'], function () {
                 setTimeout(function () { refreshSys(false); }, 1200);
             });
         });
+    });
+
+    $('#btnFpmSafeRestart').on('click', function () {
+        var $btn = $(this);
+        if ($btn.prop('disabled')) return;
+        layer.confirm(
+            '将重启面板 PHP-FPM，并随后主动重启已安装的 Remi 站点池（php74/php80/php81/php82/php83）。PHP 站点会短暂中断；重启 Remi 池是为了避免站点因套接字丢失而 502。确定继续？',
+            { icon: 3, title: '重启 PHP-FPM', btn: ['确定重启', '取消'] },
+            function (idx) {
+                layer.close(idx);
+                $btn.prop('disabled', true).addClass('layui-btn-disabled');
+                var load = layer.load(2);
+                WP.post('/sys/fpm-safe-restart', {}).then(function (res) {
+                    layer.close(load);
+                    $btn.prop('disabled', false).removeClass('layui-btn-disabled');
+                    if (res.ok) {
+                        var units = (res.restarted || []).join(', ') || 'php-fpm';
+                        var msg = '已重启：' + units;
+                        if (res.failed && res.failed.length) {
+                            msg += '；失败：' + res.failed.join(', ');
+                        }
+                        layer.msg(msg, { icon: (res.failed && res.failed.length) ? 0 : 1, time: 4000 });
+                    } else {
+                        layer.msg(res.error || '重启失败', { icon: 2 });
+                    }
+                    setTimeout(function () { refreshSys(false); }, 1200);
+                }).catch(function () {
+                    layer.close(load);
+                    $btn.prop('disabled', false).removeClass('layui-btn-disabled');
+                    layer.msg('请求中断（面板 PHP-FPM 可能正在重启），请稍后刷新服务状态', { icon: 0, time: 4000 });
+                    setTimeout(function () { refreshSys(false); }, 1500);
+                });
+            }
+        );
     });
 });
 </script>

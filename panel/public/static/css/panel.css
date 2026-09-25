@@ -220,7 +220,8 @@ body.layui-layout-body {
     width: auto;
     background: var(--wp-bg);
     padding: 20px 24px 28px;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     transition: left .2s ease;
 }
 html.wp-side-collapsed .layui-layout-admin .layui-body {
@@ -715,6 +716,12 @@ body.wp-dash-editing #dashGrid .grid-stack-item > .grid-stack-item-content {
 }
 .wp-svc-card {
     overflow-x: auto;
+}
+.wp-svc-card h3 .wp-svc-head-actions {
+    float: right;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
 }
 .wp-svc-card .layui-table td:last-child {
     white-space: normal;
