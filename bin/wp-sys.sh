@@ -388,8 +388,9 @@ JSON
 
     # Parse combined log. Output one record per line for the last $n entries,
     # then aggregate failed-logins and suspicious IPs in awk.
+    # Loopback traffic (local testing / health checks) is excluded from all stats.
     tmp="$(mktemp)"
-    tail -n 2000 "$log" > "$tmp"
+    grep -v -E '^(127\.0\.0\.1|::1) ' "$log" | tail -n 2000 > "$tmp" || true
 
     total=$(wc -l < "$tmp" | tr -d ' ')
     unique_ips=$(awk '{print $1}' "$tmp" | sort -u | wc -l | tr -d ' ')
