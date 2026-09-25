@@ -20,7 +20,7 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-crumb .sep { color: var(--wp-text-muted); margin: 0 2px; }
     .fm-crumb-path { min-width: 0; }
     .fm-split { flex: 1; display: flex; min-height: 380px; border: 1px solid var(--wp-border); border-radius: 4px; overflow: hidden; background: var(--wp-surface); min-width: 0; }
-    .fm-tree { width: 260px; min-width: 200px; flex: 0 0 auto; background: var(--wp-surface-soft); display: flex; flex-direction: column; }
+    .fm-tree { width: 260px; min-width: 0; flex: 0 0 260px; background: var(--wp-surface-soft); display: flex; flex-direction: column; overflow: hidden; }
     .fm-splitter {
         display: block; align-self: stretch; width: 6px; flex: 0 0 6px;
         margin: 0; padding: 0; border: 0; height: auto; min-height: 0;
@@ -34,7 +34,8 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-tree-body { flex: 1; overflow: auto; padding: 6px 0 12px; }
     .fm-tree-ul { list-style: none; margin: 0; padding: 0 0 0 14px; }
     .fm-tree-ul.root { padding-left: 6px; }
-    .fm-tree-row { display: flex; align-items: center; gap: 4px; padding: 3px 8px 3px 4px; border-radius: 3px; cursor: pointer; white-space: nowrap; user-select: none; }
+    .fm-tree-row { display: flex; align-items: center; gap: 4px; padding: 3px 8px 3px 4px; border-radius: 3px; cursor: pointer; white-space: nowrap; user-select: none; overflow: hidden; }
+    .fm-tree-row .fm-tree-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
     .fm-tree-row:hover { background: var(--wp-accent-soft); }
     .fm-tree-row.active { background: var(--wp-accent-soft); color: var(--wp-accent); font-weight: 600; }
     .fm-twist { width: 16px; color: var(--wp-text-muted); font-size: 12px; text-align: center; flex-shrink: 0; }
@@ -44,8 +45,8 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-main-bar .fm-toolbar { margin-bottom: 6px; }
     .fm-main-bar .fm-nav { margin-bottom: 0; }
     .fm-main-scroll { flex: 1; overflow: auto; min-height: 0; min-width: 0; }
-    .fm-table { margin: 0 !important; width: 100% !important; table-layout: fixed; }
-    .fm-table thead th { position: sticky; top: 0; background: var(--wp-surface-soft); z-index: 1; }
+    .fm-table { margin: 0 !important; min-width: 100% !important; width: auto !important; table-layout: auto; }
+    .fm-table thead th { position: sticky; top: 0; background: var(--wp-surface-soft); z-index: 1; white-space: nowrap; }
     .fm-table td, .fm-table th { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .fm-table td:last-child, .fm-table th:last-child { white-space: normal; overflow: visible; }
     .fm-table tbody tr:hover { background: var(--wp-accent-soft); }
@@ -509,7 +510,7 @@ layui.use(['layer', 'upload'], function () {
     var TREE_W_MIN = 200;
     var TREE_W_MAX = 800;
     var TREE_W_DEFAULT = 260;
-    var TREE_MAIN_MIN = 320;
+    var TREE_MAIN_MIN = 640;
     function treeNarrow() {
         return window.matchMedia && window.matchMedia('(max-width: 800px)').matches;
     }
