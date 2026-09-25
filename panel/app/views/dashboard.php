@@ -465,6 +465,11 @@ $renderStoreCard = static function (
                                 <tr class="wp-login-empty"><td colspan="6" style="text-align:center;color:#999">暂无访问记录</td></tr>
                             </tbody>
                         </table>
+                        <div id="accessPager" class="wp-access-pager" style="display:none">
+                            <button type="button" class="layui-btn layui-btn-xs layui-btn-primary" id="accessPrevPage">上一页</button>
+                            <span id="accessPageInfo" class="wp-access-page-info"></span>
+                            <button type="button" class="layui-btn layui-btn-xs layui-btn-primary" id="accessNextPage">下一页</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -515,8 +520,49 @@ layui.use(['element', 'layer', 'table'], function () {
         if (level === 'medium') return '<span class="layui-badge layui-bg-orange">中危</span>';
         return '<span class="layui-badge">低危</span>';
     }
+    var ACCESS_PAGE_SIZE = 6;
+    var accessAllRecords = [];
+    var accessPage = 1;
+
+    function renderAccessPage() {
+        var total = accessAllRecords.length;
+        var totalPages = Math.max(1, Math.ceil(total / ACCESS_PAGE_SIZE));
+        if (accessPage > totalPages) accessPage = totalPages;
+        if (accessPage < 1) accessPage = 1;
+
+        var $body = $('#accessBody').empty();
+        var start = (accessPage - 1) * ACCESS_PAGE_SIZE;
+        var pageRows = accessAllRecords.slice(start, start + ACCESS_PAGE_SIZE);
+
+        if (pageRows.length) {
+            pageRows.forEach(function (r) {
+                $body.append('<tr><td class="mono"></td><td class="mono"></td><td></td><td class="mono"></td><td></td><td></td></tr>');
+                var $td = $body.find('tr:last td');
+                $td.eq(0).text(r.time || '');
+                $td.eq(1).text(r.ip || '');
+                $td.eq(2).text(r.method || '');
+                $td.eq(3).text(r.uri || '');
+                $td.eq(4).html(statusBadge(r.status));
+                $td.eq(5).html('<button class="layui-btn layui-btn-xs layui-btn-danger btn-deny" data-ip="' + (r.ip || '') + '">封禁</button>');
+            });
+        } else {
+            $body.append('<tr class="wp-login-empty"><td colspan="6" style="text-align:center;color:#999">暂无访问记录</td></tr>');
+        }
+
+        // 分页控件：仅当记录数 > 每页条数时显示
+        var $pager = $('#accessPager');
+        if (total > ACCESS_PAGE_SIZE) {
+            $pager.show();
+            $('#accessPageInfo').text('第 ' + accessPage + ' / ' + totalPages + ' 页（共 ' + total + ' 条）');
+            $('#accessPrevPage').prop('disabled', accessPage <= 1);
+            $('#accessNextPage').prop('disabled', accessPage >= totalPages);
+        } else {
+            $pager.hide();
+        }
+    }
+
     function loadAccess(showErr) {
-        fetch('/sys/access?limit=30', { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+        fetch('/sys/access?limit=200', { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
             .then(function (r) {
                 if (r.status === 401) { if (showErr) layer.msg('未登录或会话已过期', { icon: 2 }); return null; }
                 return r.json();
@@ -564,23 +610,10 @@ layui.use(['element', 'layer', 'table'], function () {
                     $susp.append('<tr class="wp-login-empty"><td colspan="5" style="text-align:center;color:#999">暂无可疑 IP</td></tr>');
                 }
 
-                // Recent access table
-                var $body = $('#accessBody').empty();
-                var recent = res.recent || [];
-                if (recent.length) {
-                    recent.forEach(function (r) {
-                        $body.append('<tr><td class="mono"></td><td class="mono"></td><td></td><td class="mono"></td><td></td><td></td></tr>');
-                        var $td = $body.find('tr:last td');
-                        $td.eq(0).text(r.time || '');
-                        $td.eq(1).text(r.ip || '');
-                        $td.eq(2).text(r.method || '');
-                        $td.eq(3).text(r.uri || '');
-                        $td.eq(4).html(statusBadge(r.status));
-                        $td.eq(5).html('<button class="layui-btn layui-btn-xs layui-btn-danger btn-deny" data-ip="' + (r.ip || '') + '">封禁</button>');
-                    });
-                } else {
-                    $body.append('<tr class="wp-login-empty"><td colspan="6" style="text-align:center;color:#999">暂无访问记录</td></tr>');
-                }
+                // Recent access table (client-side pagination, 6 per page)
+                accessAllRecords = res.recent || [];
+                accessPage = 1;
+                renderAccessPage();
 
                 loadDenied();
 
@@ -596,6 +629,13 @@ layui.use(['element', 'layer', 'table'], function () {
             });
     }
     $('#btnAccessRefresh').on('click', function () { loadAccess(true); });
+    $('#accessPrevPage').on('click', function () {
+        if (accessPage > 1) { accessPage--; renderAccessPage(); fitGridItemDeferred(document.getElementById('accessCard')); }
+    });
+    $('#accessNextPage').on('click', function () {
+        var totalPages = Math.ceil(accessAllRecords.length / ACCESS_PAGE_SIZE);
+        if (accessPage < totalPages) { accessPage++; renderAccessPage(); fitGridItemDeferred(document.getElementById('accessCard')); }
+    });
 
     // ---- IP deny / undeny ----------------------------------------------------
     function denyIp(ip) {
