@@ -180,6 +180,47 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         cursor: not-allowed;
     }
 
+    /* 工具栏扁平化按钮（截图 1 样式：无背景无边框，按钮间用 | 分隔） */
+    .fm-card .fm-tb-btn {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        color: #475569 !important;
+        padding: 4px 6px !important;
+        margin: 0 !important;
+        height: auto !important;
+        line-height: 1.6 !important;
+        font-size: 13px !important;
+        font-weight: 500;
+        border-radius: 4px !important;
+    }
+    .fm-card .fm-tb-btn:hover {
+        background: #ecfccb !important;
+        color: #33691e !important;
+    }
+    .fm-card .fm-tb-btn.fm-tb-danger {
+        color: #dc2626 !important;
+    }
+    .fm-card .fm-tb-btn.fm-tb-danger:hover {
+        background: #fef2f2 !important;
+        color: #b91c1c !important;
+    }
+    .fm-card .fm-tb-btn[disabled] {
+        background: transparent !important;
+        color: #cbd5e1 !important;
+        cursor: not-allowed;
+    }
+    .fm-card .fm-tb-btn .layui-icon { font-size: 14px; }
+    .fm-tb-sep {
+        display: inline-flex;
+        align-items: center;
+        color: #cbd5e1;
+        font-size: 14px;
+        line-height: 1;
+        margin: 0 1px;
+        user-select: none;
+    }
+
     /* 文件夹图标改为橙色 */
     .fm-icon-dir { color: #e8a33d !important; }
 
@@ -292,19 +333,25 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         <div class="fm-main">
             <div class="fm-main-bar">
                 <div class="fm-toolbar">
-                    <button class="layui-btn layui-btn-sm fm-write" id="btnUpload"><span class="layui-icon layui-icon-upload"></span> 上传</button>
-                    <button class="layui-btn layui-btn-sm layui-btn-primary fm-write" id="btnNewFile"><span class="layui-icon layui-icon-file"></span> 新建文件</button>
-                    <button class="layui-btn layui-btn-sm layui-btn-primary fm-write" id="btnNewDir"><span class="layui-icon layui-icon-folder"></span> 新建文件夹</button>
-                    <button class="layui-btn layui-btn-sm layui-btn-normal" id="btnExtract" title="解压选中的压缩包">
+                    <button type="button" class="fm-tb-btn fm-write" id="btnUpload"><span class="layui-icon layui-icon-upload"></span> 上传</button>
+                    <span class="fm-tb-sep">|</span>
+                    <button type="button" class="fm-tb-btn fm-write" id="btnNewFile"><span class="layui-icon layui-icon-file"></span> 新建文件</button>
+                    <span class="fm-tb-sep">|</span>
+                    <button type="button" class="fm-tb-btn fm-write" id="btnNewDir"><span class="layui-icon layui-icon-folder"></span> 新建文件夹</button>
+                    <span class="fm-tb-sep">|</span>
+                    <button type="button" class="fm-tb-btn" id="btnExtract" title="解压选中的压缩包">
                         <span class="layui-icon layui-icon-release"></span> 解压
                     </button>
-                    <button class="layui-btn layui-btn-sm layui-btn-normal fm-write" id="btnCompress" title="压缩选中的文件/文件夹">
+                    <span class="fm-tb-sep">|</span>
+                    <button type="button" class="fm-tb-btn fm-write" id="btnCompress" title="压缩选中的文件/文件夹">
                         <span class="layui-icon layui-icon-404"></span> 压缩
                     </button>
-                    <button class="layui-btn layui-btn-sm layui-btn-danger fm-write" id="btnDelSel" title="删除勾选的项目">
+                    <span class="fm-tb-sep">|</span>
+                    <button type="button" class="fm-tb-btn fm-tb-danger fm-write" id="btnDelSel" title="删除勾选的项目">
                         <span class="layui-icon layui-icon-delete"></span> 删除
                     </button>
-                    <button class="layui-btn layui-btn-sm layui-btn-primary" id="btnRefresh"><span class="layui-icon layui-icon-refresh"></span> 刷新</button>
+                    <span class="fm-tb-sep">|</span>
+                    <button type="button" class="fm-tb-btn" id="btnRefresh"><span class="layui-icon layui-icon-refresh"></span> 刷新</button>
                     <div class="fm-search">
                         <input id="fmSearch" type="search" spellcheck="false" autocomplete="off"
                                placeholder="搜索当前目录及子目录…" title="按文件名搜索当前目录及子目录，支持部分匹配">
