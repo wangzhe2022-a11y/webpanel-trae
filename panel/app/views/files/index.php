@@ -5,7 +5,7 @@ $siteId = $vdbSelected ? 'vdb' : (int) ($selected['id'] ?? 0);
 $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
 ?>
 <style>
-    .fm-card { display: flex; flex-direction: column; min-height: calc(100vh - 92px); padding-bottom: 12px; }
+    .fm-card { display: flex; flex-direction: column; min-height: calc(100vh - 92px); padding-bottom: 12px; width: 100%; box-sizing: border-box; min-width: 0; max-width: 100%; overflow: hidden; }
     .fm-card > h3 { margin-bottom: 8px; }
     .fm-site-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 13px; }
     .fm-site-row label { font-size: 12px; color: var(--wp-text-secondary); white-space: nowrap; }
@@ -19,7 +19,7 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-crumb a { color: var(--wp-accent); }
     .fm-crumb .sep { color: var(--wp-text-muted); margin: 0 2px; }
     .fm-crumb-path { min-width: 0; }
-    .fm-split { flex: 1; display: flex; min-height: 380px; border: 1px solid var(--wp-border); border-radius: 4px; overflow: hidden; background: var(--wp-surface); }
+    .fm-split { flex: 1; display: flex; min-height: 380px; border: 1px solid var(--wp-border); border-radius: 4px; overflow: hidden; background: var(--wp-surface); min-width: 0; }
     .fm-tree { width: 260px; min-width: 200px; flex: 0 0 auto; background: var(--wp-surface-soft); display: flex; flex-direction: column; }
     .fm-splitter {
         display: block; align-self: stretch; width: 6px; flex: 0 0 6px;
@@ -43,10 +43,11 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-main-bar { flex: 0 0 auto; padding: 8px 10px 6px; border-bottom: 1px solid var(--wp-border); background: var(--wp-surface-soft); }
     .fm-main-bar .fm-toolbar { margin-bottom: 6px; }
     .fm-main-bar .fm-nav { margin-bottom: 0; }
-    .fm-main-scroll { flex: 1; overflow: auto; min-height: 0; }
-    .fm-table { margin: 0 !important; }
+    .fm-main-scroll { flex: 1; overflow: auto; min-height: 0; min-width: 0; }
+    .fm-table { margin: 0 !important; width: 100% !important; table-layout: fixed; }
     .fm-table thead th { position: sticky; top: 0; background: var(--wp-surface-soft); z-index: 1; }
-    .fm-table td, .fm-table th { font-size: 13px; }
+    .fm-table td, .fm-table th { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fm-table td:last-child, .fm-table th:last-child { white-space: normal; overflow: visible; }
     .fm-table tbody tr:hover { background: var(--wp-accent-soft); }
     .fm-empty { text-align: center; color: var(--wp-text-secondary); padding: 72px 20px; }
     .fm-empty .layui-icon { font-size: 42px; color: var(--wp-text-muted); display: block; margin-bottom: 12px; }
