@@ -7,8 +7,6 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
 <style>
     .fm-card { display: flex; flex-direction: column; min-height: calc(100vh - 92px); padding-bottom: 12px; }
     .fm-card > h3 { overflow: hidden; margin-bottom: 10px; }
-    .fm-site-switch { float: right; display: flex; align-items: center; gap: 8px; font-weight: 400; font-size: 13px; color: var(--wp-text-secondary); }
-    .fm-site-switch select { height: 30px; max-width: 280px; }
     .fm-toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
     .fm-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 13px; }
     .fm-nav .layui-btn { margin: 0; }
@@ -19,6 +17,9 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-crumb .sep { color: var(--wp-text-muted); margin: 0 2px; }
     .fm-split { flex: 1; display: flex; min-height: 380px; border: 1px solid var(--wp-border); border-radius: 4px; overflow: hidden; background: var(--wp-surface); }
     .fm-tree { width: 260px; min-width: 200px; flex: 0 0 auto; background: var(--wp-surface-soft); display: flex; flex-direction: column; }
+    .fm-tree-site { padding: 8px; border-bottom: 1px solid var(--wp-border); background: var(--wp-surface-soft); }
+    .fm-tree-site label { display: block; font-size: 12px; color: var(--wp-text-secondary); margin-bottom: 4px; }
+    .fm-tree-site select { width: 100%; height: 30px; box-sizing: border-box; border: 1px solid var(--wp-border); border-radius: 2px; background: var(--wp-surface); color: var(--wp-text); font-size: 12.5px; }
     .fm-splitter {
         display: block; align-self: stretch; width: 6px; flex: 0 0 6px;
         margin: 0; padding: 0; border: 0; height: auto; min-height: 0;
@@ -81,20 +82,7 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
 </style>
 
 <div class="panel-card fm-card<?= $vdbSelected ? ' fm-vdb' : '' ?>">
-    <h3>
-        文件管理
-        <div class="fm-site-switch">
-            <span>位置</span>
-            <select id="siteSelect" lay-ignore title="切换浏览位置">
-                <?php foreach ($sites as $s): ?>
-                <option value="<?= (int) $s['id'] ?>" <?= (!$vdbSelected && $siteId === (int) $s['id']) ? 'selected' : '' ?>>
-                    <?= e($s['domain']) ?>（<?= e($s['sysuser']) ?>）
-                </option>
-                <?php endforeach; ?>
-                <option value="vdb" <?= $vdbSelected ? 'selected' : '' ?>>vdb (/mnt/backup)</option>
-            </select>
-        </div>
-    </h3>
+    <h3>文件管理</h3>
 
     <div class="fm-vdb-banner" id="vdbBanner"<?= $vdbSelected ? '' : ' hidden' ?>>
         只读浏览 CVM 备份盘 <span class="mono">/mnt/backup</span>：可列表、搜索、下载、解压；不可上传、编辑、新建、重命名、改权限、删除或压缩。
@@ -140,6 +128,17 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
 
     <div class="fm-split">
         <aside class="fm-tree">
+            <div class="fm-tree-site">
+                <label for="siteSelect">位置</label>
+                <select id="siteSelect" lay-ignore title="切换浏览位置">
+                    <?php foreach ($sites as $s): ?>
+                    <option value="<?= (int) $s['id'] ?>" <?= (!$vdbSelected && $siteId === (int) $s['id']) ? 'selected' : '' ?>>
+                        <?= e($s['domain']) ?>（<?= e($s['sysuser']) ?>）
+                    </option>
+                    <?php endforeach; ?>
+                    <option value="vdb" <?= $vdbSelected ? 'selected' : '' ?>>vdb (/mnt/backup)</option>
+                </select>
+            </div>
             <div class="fm-tree-head">
                 <span>目录</span>
                 <button class="layui-btn layui-btn-xs layui-btn-primary" id="btnCollapseAll">折叠全部</button>
