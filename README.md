@@ -66,6 +66,8 @@ sudo bash install-al10.sh
 > - PHP 8.1 已 EOL，多版本为 7.4 / 8.0 / 8.2 / 8.3
 > - 面板自身用系统 PHP 8.4
 > - CRB 仓库自动启用
+>
+> 面板 CLI（`/usr/bin/php`，跑 `bin/fs-worker.php`）需要 `posix` 扩展。AlmaLinux 对应包是 **`php-process`**（AppStream `php-cli` 默认不一定带上）。安装器会装上；若文件管理上传报 `Call to undefined function posix_getpwnam()`，执行 `dnf install -y php-process`。`fs-worker` 在缺扩展时会回退到 `getent passwd`。
 
 安装器会完成：Nginx、MySQL 8（root 随机密码写入 `/root/.my.cnf`）、PostgreSQL 16（仅监听
 127.0.0.1，peer + scram-sha-256）、Node.js 22 LTS、5 个版本 PHP-FPM、
