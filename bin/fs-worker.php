@@ -655,7 +655,9 @@ if ($action === 'upload') {
     $dir = jail($user, $dirRel);
     if (!is_dir($dir)) err('target directory missing');
     $dst = $dir . '/' . $name;
-    if (file_exists($dst)) err('file already exists');
+    if (is_link($dst)) err('symlink rejected');
+    if (is_dir($dst)) err('target is a directory');
+    // Same-name regular files are replaced (rename is atomic on the same fs).
     if (!@rename($tmp, $dst) && !@copy($tmp, $dst)) err('move uploaded file failed');
     chown_to($dst, $user);
     chmod($dst, 0644);
