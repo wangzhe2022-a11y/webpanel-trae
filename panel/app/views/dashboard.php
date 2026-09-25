@@ -492,9 +492,11 @@ layui.use(['element', 'layer', 'table'], function () {
     }
     $('#recentLoginLimit').on('change', function () {
         applyLoginLimit('recentLoginBody', this.value, 'recentLoginHint', '最近 %n 条登录记录');
+        fitGridItemDeferred(this);
     });
     $('#sshLoginLimit').on('change', function () {
         applyLoginLimit('sshLoginBody', this.value, 'sshLoginHint', 'SSH 认证成功 · 最近 %n 条');
+        fitGridItemDeferred(this);
     });
 
     // ---- Panel access / security monitoring --------------------------------
@@ -587,6 +589,7 @@ layui.use(['element', 'layer', 'table'], function () {
                 var mm = ('0' + now.getMinutes()).slice(-2);
                 var ss = ('0' + now.getSeconds()).slice(-2);
                 $('#accessHint').text('更新于 ' + hh + ':' + mm + ':' + ss);
+                fitGridItemDeferred(document.getElementById('accessCard'));
             })
             .catch(function () {
                 if (showErr) layer.msg('网络错误', { icon: 2 });
@@ -658,6 +661,29 @@ layui.use(['element', 'layer', 'table'], function () {
     $('#accessCard').on('click', '.btn-deny', function () { denyIp(this.getAttribute('data-ip')); });
     $('#accessCard').on('click', '.btn-undeny', function () { undenyIp(this.getAttribute('data-ip')); });
 
+    // GridStack 的 size-to-content 仅在初始化时计算；标签页切换或数据加载后内容高度变化，需手动重算网格项行数
+    function fitGridItem(el) {
+        var item = el.closest('.grid-stack-item');
+        if (!item || !item.gridstackNode) return;
+        var grid = item.gridstackNode.grid;
+        if (!grid) return;
+        var content = item.querySelector('.grid-stack-item-content');
+        if (!content) return;
+        var cellH = grid.getCellHeight(true);
+        if (!cellH) return;
+        // item 与 content 之间的间距需要计入，否则底部会被裁掉几像素
+        var pad = item.clientHeight - content.clientHeight;
+        var needH = Math.ceil((content.scrollHeight + pad + 2) / cellH);
+        if (needH && needH !== item.gridstackNode.h) {
+            grid.moveNode(item.gridstackNode, { h: needH });
+        }
+    }
+    function fitGridItemDeferred(el) {
+        setTimeout(function () { fitGridItem(el); }, 60);
+    }
+    window.fitGridItem = fitGridItem;
+    window.fitGridItemDeferred = fitGridItemDeferred;
+
     $('.wp-host-extra').on('click', '.wp-host-tab', function () {
         var $extra = $(this).closest('.wp-host-extra');
         var tab = this.getAttribute('data-tab');
@@ -667,6 +693,7 @@ layui.use(['element', 'layer', 'table'], function () {
         $extra.find('.wp-host-tab-panel').attr('hidden', true);
         if (wasActive) {
             $extra.removeClass('is-open');
+            fitGridItemDeferred(this);
             return;
         }
         $(this).addClass('is-active').attr({ 'aria-selected': 'true', 'aria-expanded': 'true' });
@@ -678,6 +705,7 @@ layui.use(['element', 'layer', 'table'], function () {
         if (tab === 'access') {
             loadAccess(false);
         }
+        fitGridItemDeferred(this);
     });
 
     function fmtKb(kb) {
@@ -1044,6 +1072,7 @@ layui.use(['element', 'layer'], function () {
             fillProc($('#atopTopCpu tbody'), [], res.proc_error);
             fillProc($('#atopTopMem tbody'), [], res.proc_error);
             if ($('#atopProcUpdated').length) $('#atopProcUpdated').text('所选采样的进程快照');
+            if (window.fitGridItemDeferred) window.fitGridItemDeferred(document.getElementById('hostExtra'));
             return;
         }
 
@@ -1074,6 +1103,7 @@ layui.use(['element', 'layer'], function () {
         setBar('atopMemBar', Number(s.mem_used_pct) || 0, 85, 95);
         if (Number(s.swap_total_kb) > 0) setBar('atopSwapBar', Number(s.swap_used_pct) || 0, 50, 80);
         setBar('atopDiskBar', db.max, 80, 90);
+        if (window.fitGridItemDeferred) window.fitGridItemDeferred(document.getElementById('hostExtra'));
     }
 
     function loadAtop(showErr) {
