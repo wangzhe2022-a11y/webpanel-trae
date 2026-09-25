@@ -903,22 +903,28 @@ input[type="radio"] {
 .wp-disk-state { font-weight: 650; color: var(--wp-text); }
 .wp-disk-meta { margin-left: auto; color: var(--wp-text-secondary); font-size: 13px; }
 
-/* System Status: clock | CPU+RAM, first card in the left md4 column. */
+/* System Status: clock 30% | CPU+RAM 70%, first card in the left md4 column. */
 .wp-sys-status-body {
-    display: flex;
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: 30% 70%;
     align-items: center;
-    gap: 12px;
     min-width: 0;
 }
 .wp-sys-gauges {
     display: flex;
-    flex: 1 1 58%;
+    width: 100%;
+    max-width: none;
     min-width: 0;
+    box-sizing: border-box;
+    padding-left: 12px;
     justify-content: space-evenly;
     flex-wrap: nowrap;
     gap: 8px;
     margin: 0;
+}
+.wp-sys-gauges .wp-ring-wrap {
+    flex: 1 1 0;
+    max-width: 50%;
 }
 .wp-sys-gauges .wp-ring {
     width: 72px;
@@ -928,7 +934,7 @@ input[type="radio"] {
 .wp-sys-gauges .wp-ring-label { margin-top: 4px; font-size: 12px; }
 .wp-sys-gauges .wp-ring-sub {
     font-size: 11px;
-    max-width: 86px;
+    max-width: 100%;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -937,18 +943,20 @@ input[type="radio"] {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    flex: 0 1 38%;
-    min-width: 0;
+    width: 100%;
     max-width: none;
+    min-width: 0;
+    container-type: inline-size;
     padding: 0;
     margin-bottom: 0;
     line-height: 1.05;
 }
 .wp-dash-clock .wp-clock-time {
-    font-size: 28px;
+    font-size: clamp(12px, 18cqi, 28px);
     font-weight: 700;
     letter-spacing: 0.04em;
     line-height: 1;
+    white-space: nowrap;
 }
 .wp-dash-clock .wp-clock-date {
     font-size: 13px;
@@ -1413,9 +1421,7 @@ html[data-theme="dark"] .fm-vdb-banner {
 @media (max-width: 1100px) {
     .header-right > .wp-clock { max-width: 108px; }
     .header-right > .wp-clock .wp-clock-date { display: none; }
-    .wp-dash-clock .wp-clock-time { font-size: 24px; }
-    .wp-sys-status-body { gap: 10px; flex-wrap: nowrap; }
-    .wp-sys-gauges { gap: 6px; flex-wrap: nowrap; }
+    .wp-sys-gauges { gap: 6px; padding-left: 10px; flex-wrap: nowrap; }
     .wp-sys-gauges .wp-ring { width: 64px; height: 64px; }
 }
 @media (max-width: 720px) {
@@ -1430,7 +1436,5 @@ html[data-theme="dark"] .fm-vdb-banner {
     .layui-layout-admin .layui-body,
     html.wp-side-collapsed .layui-layout-admin .layui-body { left: 64px; }
     .header-right > .wp-clock { display: none; }
-    .wp-dash-clock .wp-clock-time { font-size: 22px; }
-    .wp-sys-status-body { flex-wrap: wrap; }
     .wp-storage-grid { grid-template-columns: 1fr; }
 }
