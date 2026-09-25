@@ -71,6 +71,7 @@ $renderStoreCard = static function (
         . '</article>';
 };
 ?>
+<link rel="stylesheet" href="/static/vendor/gridstack/gridstack.min.css">
 <div class="wp-dash-edit-bar">
     <span class="wp-dash-edit-hint" id="dashEditHint">拖拽卡片可自由排列布局</span>
     <button class="layui-btn layui-btn-sm layui-btn-primary" id="btnDashEdit">
@@ -84,7 +85,8 @@ $renderStoreCard = static function (
     </button>
 </div>
 <div class="wp-dashboard-grid" id="dashGrid">
-    <div class="wp-dash-widget" data-widget="sys-status">
+    <div class="wp-dash-widget grid-stack-item" data-widget="sys-status" gs-x="0" gs-w="4" gs-min-w="3" gs-size-to-content="true">
+        <div class="grid-stack-item-content">
         <div class="panel-card wp-sys-status" id="wpSysStatus">
             <h3>System Status</h3>
             <div class="wp-sys-status-body">
@@ -125,8 +127,10 @@ $renderStoreCard = static function (
                 </div>
             </div>
         </div>
+        </div>
     </div>
-    <div class="wp-dash-widget" data-widget="host-monitor">
+    <div class="wp-dash-widget grid-stack-item" data-widget="host-monitor" gs-x="4" gs-w="4" gs-min-w="3" gs-size-to-content="true">
+        <div class="grid-stack-item-content">
         <div class="panel-card">
             <h3>
                 主机监控
@@ -268,8 +272,10 @@ $renderStoreCard = static function (
                 </div>
             </div>
         </div>
+        </div>
     </div>
-    <div class="wp-dash-widget" data-widget="svc-status">
+    <div class="wp-dash-widget grid-stack-item" data-widget="svc-status" gs-x="8" gs-w="4" gs-min-w="4" gs-size-to-content="true">
+        <div class="grid-stack-item-content">
         <div class="panel-card wp-svc-card">
             <h3>
                 服务状态
@@ -303,8 +309,10 @@ $renderStoreCard = static function (
                 </tbody>
             </table>
         </div>
+        </div>
     </div>
-    <div class="wp-dash-widget" data-widget="disk">
+    <div class="wp-dash-widget grid-stack-item" data-widget="disk" gs-x="0" gs-w="4" gs-min-w="3" gs-size-to-content="true">
+        <div class="grid-stack-item-content">
         <div class="panel-card wp-disk-card">
             <h3>磁盘</h3>
             <div class="wp-storage-grid" id="diskMounts">
@@ -333,8 +341,10 @@ $renderStoreCard = static function (
             <?php endif; ?>
             </div>
         </div>
+        </div>
     </div>
-    <div class="wp-dash-widget" data-widget="login">
+    <div class="wp-dash-widget grid-stack-item" data-widget="login" gs-x="4" gs-w="8" gs-min-w="4" gs-size-to-content="true">
+        <div class="grid-stack-item-content">
         <div class="panel-card wp-login-card">
             <div class="wp-host-extra is-open" id="loginExtra">
                 <div class="wp-eq-tabs wp-host-tabs wp-login-tabs" role="tablist">
@@ -458,6 +468,7 @@ $renderStoreCard = static function (
                     </div>
                 </div>
             </div>
+        </div>
         </div>
     </div>
 </div>
@@ -1110,106 +1121,89 @@ layui.use(['element', 'layer'], function () {
 });
 </script>
 
+<script src="/static/vendor/gridstack/gridstack-all.min.js"></script>
 <script>
+/* 仪表盘卡片自由排列：基于 GridStack（磁吸补位 + 宽度可调），布局存 localStorage */
 layui.use(['layer'], function () {
-    var $ = layui.$, layer = layui.layer;
-    var STORAGE_KEY = 'wp.dash.layout';
-    var $grid = $('#dashGrid');
-    var $body = $(document.body);
-    var editing = false;
-    var dragSrc = null;
+    var layer = layui.layer;
+    var STORAGE_KEY = 'wp.dash.grid';
+    var grid = null;
 
-    function widgetOrder() {
-        return $grid.children('.wp-dash-widget').map(function () {
-            return this.getAttribute('data-widget');
-        }).get();
+    // GridStack 构造函数依赖 ResizeObserver，旧浏览器缺失时用空实现兜底（仅失去自动高度监听）
+    if (typeof window.ResizeObserver === 'undefined') {
+        window.ResizeObserver = function () {
+            this.observe = function () {};
+            this.unobserve = function () {};
+            this.disconnect = function () {};
+        };
     }
 
-    function saveOrder() {
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(widgetOrder())); } catch (e) {}
-    }
-
-    function applyOrder(order) {
-        if (!Array.isArray(order) || !order.length) return;
-        var map = {};
-        $grid.children('.wp-dash-widget').each(function () {
-            map[this.getAttribute('data-widget')] = this;
-        });
-        order.forEach(function (id) {
-            if (map[id]) $grid.append(map[id]);
-        });
-    }
-
-    function loadOrder() {
+    function saveLayout() {
+        if (!grid || window.innerWidth < 768) return; // 单列响应式下不覆盖已存布局
         try {
-            var raw = localStorage.getItem(STORAGE_KEY);
-            if (raw) applyOrder(JSON.parse(raw));
+            var nodes = (grid.engine && grid.engine.nodes) ? grid.engine.nodes : [];
+            var data = nodes.map(function (n) {
+                return { id: n.el ? n.el.getAttribute('data-widget') : '', x: n.x, y: n.y, w: n.w };
+            });
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         } catch (e) {}
     }
 
-    function setEdit(on) {
-        editing = on;
-        $body.toggleClass('wp-dash-editing', on);
-        $grid.children('.wp-dash-widget').attr('draggable', on ? 'true' : 'false');
-        $('#btnDashEdit').toggle(!on);
-        $('#btnDashReset, #btnDashDone').toggle(on);
-        $('#dashEditHint').text(on ? '拖拽卡片调整位置，完成后点击「完成」' : '拖拽卡片可自由排列布局');
+    function loadLayout() {
+        var raw = null, data;
+        try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { return; }
+        if (!raw) return;
+        try { data = JSON.parse(raw); } catch (e) { return; }
+        if (!Array.isArray(data)) return;
+        data.forEach(function (it) {
+            if (!it || !it.id) return;
+            var el = document.querySelector('#dashGrid > [data-widget="' + it.id + '"]');
+            if (!el) return;
+            try { grid.update(el, { x: it.x, y: it.y, w: it.w }); } catch (e) {}
+        });
     }
 
-    $grid.on('dragstart', '.wp-dash-widget', function (e) {
-        if (!editing) { e.preventDefault(); return; }
-        dragSrc = this;
-        this.classList.add('is-dragging');
-        try { e.originalEvent.dataTransfer.effectAllowed = 'move'; } catch (err) {}
-    });
+    function setEdit(on) {
+        document.body.classList.toggle('wp-dash-editing', on);
+        try { grid.staticGrid(!on); } catch (e) {}
+        document.getElementById('btnDashEdit').style.display = on ? 'none' : '';
+        document.getElementById('btnDashDone').style.display = on ? '' : 'none';
+        document.getElementById('btnDashReset').style.display = on ? '' : 'none';
+        document.getElementById('dashEditHint').textContent = on
+            ? '拖动卡片到任意位置（松手后其他卡片自动磁吸补位），拖右下角可调整宽度'
+            : '点击「编辑布局」可自由排列卡片';
+    }
 
-    $grid.on('dragend', '.wp-dash-widget', function () {
-        this.classList.remove('is-dragging');
-        $grid.children('.wp-dash-widget').removeClass('is-drag-over');
-        dragSrc = null;
-    });
+    if (window.GridStack) {
+        try {
+            grid = GridStack.init({
+                column: 12,
+                cellHeight: 24,
+                margin: 10,
+                float: false,      // 磁吸模式：卡片移动后其余卡片自动上浮补位
+                staticGrid: true,  // 默认锁定，编辑布局时才放开
+                animate: true
+            }, document.getElementById('dashGrid'));
+            loadLayout();
+            grid.on('change', saveLayout);
+            grid.on('resizestop', saveLayout);
+            grid.on('dropped', saveLayout);
+        } catch (e) { /* GridStack 初始化失败时回退为静态 3 列布局 */ }
 
-    $grid.on('dragover', '.wp-dash-widget', function (e) {
-        if (!editing || !dragSrc || dragSrc === this) return;
-        e.preventDefault();
-        try { e.originalEvent.dataTransfer.dropEffect = 'move'; } catch (err) {}
-        $grid.children('.wp-dash-widget').removeClass('is-drag-over');
-        this.classList.add('is-drag-over');
-    });
-
-    $grid.on('dragleave', '.wp-dash-widget', function () {
-        this.classList.remove('is-drag-over');
-    });
-
-    $grid.on('drop', '.wp-dash-widget', function (e) {
-        if (!editing || !dragSrc || dragSrc === this) return;
-        e.preventDefault();
-        this.classList.remove('is-drag-over');
-        var $target = $(this);
-        var rect = this.getBoundingClientRect();
-        var after = (e.originalEvent.clientY - rect.top) > rect.height / 2;
-        if (after) {
-            $target.after(dragSrc);
-        } else {
-            $target.before(dragSrc);
-        }
-        saveOrder();
-    });
-
-    $('#btnDashEdit').on('click', function () { setEdit(true); });
-    $('#btnDashDone').on('click', function () {
-        setEdit(false);
-        layer.msg('布局已保存', { icon: 1 });
-    });
-    $('#btnDashReset').on('click', function () {
-        layer.confirm('恢复为默认布局？', { icon: 3, title: '重置布局' }, function (idx) {
-            layer.close(idx);
-            try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
-            location.reload();
+        document.getElementById('btnDashEdit').addEventListener('click', function () { setEdit(true); });
+        document.getElementById('btnDashDone').addEventListener('click', function () {
+            saveLayout();
+            setEdit(false);
+            layer.msg('布局已保存', { icon: 1 });
         });
-    });
-
-    loadOrder();
+        document.getElementById('btnDashReset').addEventListener('click', function () {
+            layer.confirm('恢复为默认布局？', { icon: 3, title: '重置布局' }, function (idx) {
+                layer.close(idx);
+                try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+                location.reload();
+            });
+        });
+    }
 });
 </script>
 
