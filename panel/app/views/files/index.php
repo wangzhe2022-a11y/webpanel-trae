@@ -17,9 +17,10 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-crumb .sep { color: var(--wp-text-muted); margin: 0 2px; }
     .fm-split { flex: 1; display: flex; min-height: 380px; border: 1px solid var(--wp-border); border-radius: 4px; overflow: hidden; background: var(--wp-surface); }
     .fm-tree { width: 260px; min-width: 200px; flex: 0 0 auto; background: var(--wp-surface-soft); display: flex; flex-direction: column; }
-    .fm-tree-site { padding: 8px; border-bottom: 1px solid var(--wp-border); background: var(--wp-surface-soft); }
-    .fm-tree-site label { display: block; font-size: 12px; color: var(--wp-text-secondary); margin-bottom: 4px; }
-    .fm-tree-site select { width: 100%; height: 30px; box-sizing: border-box; border: 1px solid var(--wp-border); border-radius: 2px; background: var(--wp-surface); color: var(--wp-text); font-size: 12.5px; }
+    .fm-main-head { padding: 10px 12px; border-bottom: 1px solid var(--wp-border); background: var(--wp-surface-soft); display: flex; align-items: center; gap: 12px; }
+    .fm-main-site { display: flex; align-items: center; gap: 8px; }
+    .fm-main-site label { font-size: 12px; color: var(--wp-text-secondary); white-space: nowrap; }
+    .fm-main-site select { height: 30px; min-width: 220px; box-sizing: border-box; border: 1px solid var(--wp-border); border-radius: 2px; background: var(--wp-surface); color: var(--wp-text); font-size: 12.5px; }
     .fm-splitter {
         display: block; align-self: stretch; width: 6px; flex: 0 0 6px;
         margin: 0; padding: 0; border: 0; height: auto; min-height: 0;
@@ -128,17 +129,6 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
 
     <div class="fm-split">
         <aside class="fm-tree">
-            <div class="fm-tree-site">
-                <label for="siteSelect">位置</label>
-                <select id="siteSelect" lay-ignore title="切换浏览位置">
-                    <?php foreach ($sites as $s): ?>
-                    <option value="<?= (int) $s['id'] ?>" <?= (!$vdbSelected && $siteId === (int) $s['id']) ? 'selected' : '' ?>>
-                        <?= e($s['domain']) ?>（<?= e($s['sysuser']) ?>）
-                    </option>
-                    <?php endforeach; ?>
-                    <option value="vdb" <?= $vdbSelected ? 'selected' : '' ?>>vdb (/mnt/backup)</option>
-                </select>
-            </div>
             <div class="fm-tree-head">
                 <span>目录</span>
                 <button class="layui-btn layui-btn-xs layui-btn-primary" id="btnCollapseAll">折叠全部</button>
@@ -151,6 +141,19 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
                 aria-orientation="vertical" aria-valuemin="200" aria-valuemax="800"
                 aria-label="拖动调整目录栏宽度" title="拖动调整目录栏宽度"></button>
         <div class="fm-main">
+            <div class="fm-main-head">
+                <div class="fm-main-site">
+                    <label for="siteSelect">位置</label>
+                    <select id="siteSelect" lay-ignore title="切换浏览位置">
+                        <?php foreach ($sites as $s): ?>
+                        <option value="<?= (int) $s['id'] ?>" <?= (!$vdbSelected && $siteId === (int) $s['id']) ? 'selected' : '' ?>>
+                            <?= e($s['domain']) ?>（<?= e($s['sysuser']) ?>）
+                        </option>
+                        <?php endforeach; ?>
+                        <option value="vdb" <?= $vdbSelected ? 'selected' : '' ?>>vdb (/mnt/backup)</option>
+                    </select>
+                </div>
+            </div>
             <table class="layui-table fm-table">
                 <thead>
                 <tr>
