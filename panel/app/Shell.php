@@ -123,6 +123,8 @@ final class Shell
                 => ['ok' => true, 'data' => ['ok' => true, 'extracted' => 3, 'dest' => dirname((string) ($args[2] ?? '/')) ?: '/'], 'error' => ''],
             str_starts_with($script, 'wp-fs') && ($a === 'compress' || $a === 'zip')
                 => ['ok' => true, 'data' => ['ok' => true, 'name' => $args[3] ?? 'archive.zip', 'size' => 4096], 'error' => ''],
+            str_starts_with($script, 'wp-fs') && $a === 'read'
+                => ['ok' => true, 'data' => ['ok' => true, 'content' => self::dryFsRead((string) ($args[2] ?? ''))], 'error' => ''],
             str_starts_with($script, 'wp-fs')
                 => ['ok' => true, 'data' => ['ok' => true], 'error' => ''],
             str_starts_with($script, 'wp-sys') && $a === 'info'
@@ -251,6 +253,31 @@ final class Shell
             default => [],
         };
         return ['ok' => true, 'data' => ['ok' => true, 'path' => $rel === '' ? '/' : $rel, 'entries' => $entries], 'error' => ''];
+    }
+
+    /** Demo file content for the editor (path-aware, extension-matched samples). */
+    private static function dryFsRead(string $rel): string
+    {
+        $rel = '/' . trim(str_replace('\\', '/', $rel), '/');
+        $name = basename($rel);
+        $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+        $samples = [
+            'php' => "<?php\n/**\n * Demo index.php — dry-run sample content.\n */\ndeclare(strict_types=1);\n\nrequire __DIR__ . '/../vendor/autoload.php';\n\n$app = new \\App\\Application();\n$app->boot();\n$app->run();\n",
+            'js' => "// Demo JavaScript — dry-run sample content.\nconst express = require('express');\nconst app = express();\nconst PORT = process.env.PORT || 3000;\n\napp.get('/', (req, res) => {\n  res.json({ ok: true, message: 'Hello from dry-run demo' });\n});\n\napp.listen(PORT, () => {\n  console.log(`Server listening on port ${PORT}`);\n});\n",
+            'json' => "{\n  \"name\": \"demo-app\",\n  \"version\": \"1.0.0\",\n  \"description\": \"Dry-run sample package.json\",\n  \"main\": \"index.js\",\n  \"scripts\": {\n    \"start\": \"node index.js\",\n    \"test\": \"jest\"\n  },\n  \"dependencies\": {\n    \"express\": \"^4.18.0\"\n  }\n}\n",
+            'html' => "<!DOCTYPE html>\n<html lang=\"zh-CN\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>Demo Page</title>\n</head>\n<body>\n  <h1>Hello, dry-run demo!</h1>\n  <p>This is sample HTML content.</p>\n</body>\n</html>\n",
+            'css' => "/* Demo stylesheet — dry-run sample content. */\n:root {\n  --primary: #90BA1E;\n  --bg: #f0f2f5;\n}\n\nbody {\n  margin: 0;\n  font-family: system-ui, sans-serif;\n  background: var(--bg);\n}\n\n.btn {\n  padding: 8px 16px;\n  border-radius: 6px;\n  background: var(--primary);\n  color: #fff;\n}\n",
+            'htaccess' => "# Demo .htaccess — dry-run sample content.\n<IfModule mod_rewrite.c>\n  RewriteEngine On\n  RewriteBase /\n  RewriteRule ^index\\.php$ - [L]\n  RewriteCond %{REQUEST_FILENAME} !-f\n  RewriteCond %{REQUEST_FILENAME} !-d\n  RewriteRule . /index.php [L]\n</IfModule>\n",
+            'log' => "[2026-09-24 03:30:01] INFO  Server started on port 80\n[2026-09-24 03:30:05] INFO  GET / 200 12ms\n[2026-09-24 03:31:12] WARN  Slow query: 1280ms\n[2026-09-24 03:32:00] ERROR Connection refused: db\n",
+            'md' => "# Demo README\n\nThis is **dry-run** sample markdown content.\n\n## Features\n\n- Syntax highlighting\n- Find & Replace (Ctrl+F / Ctrl+H)\n- Line numbers\n- Minimap\n",
+            'sql' => "-- Demo SQL — dry-run sample content.\nCREATE TABLE IF NOT EXISTS users (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  username VARCHAR(64) NOT NULL UNIQUE,\n  email VARCHAR(255) NOT NULL,\n  created_at DATETIME DEFAULT CURRENT_TIMESTAMP\n);\n\nINSERT INTO users (username, email) VALUES\n  ('admin', 'admin@example.com'),\n  ('demo', 'demo@example.com');\n",
+            'sh' => "#!/bin/bash\n# Demo shell script — dry-run sample content.\nset -euo pipefail\n\necho \"Starting backup...\"\nDATE=$(date +%Y%m%d)\ntar -czf \"/tmp/backup-${DATE}.tar.gz\" /www/wwwroot\necho \"Backup complete.\"\n",
+            'txt' => "Demo text file — dry-run sample content.\n\nLine 2\nLine 3\nLine 4\n",
+        ];
+        if ($name === '.htaccess') {
+            return $samples['htaccess'];
+        }
+        return $samples[$ext] ?? "// {$name} — dry-run sample content.\n// Edit me and press Ctrl+S to save.\n";
     }
 
     /** Filename search over the demo tree (current dir + descendants). */

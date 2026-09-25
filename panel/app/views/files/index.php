@@ -249,6 +249,7 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
 
     /* Monaco 编辑器容器 */
     .fm-monaco-wrap { width: 100%; height: 520px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; }
+    .fm-editor-status { display: flex; justify-content: space-between; align-items: center; padding: 4px 12px; font-size: 12px; color: #64748b; background: #f8fafc; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 6px 6px; font-family: ui-monospace, Menlo, Consolas, monospace; }
 </style>
 
 <div class="panel-card fm-card<?= $vdbSelected ? ' fm-vdb' : '' ?>">
@@ -371,9 +372,21 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     </button>
 </div>
 
-<!-- ACE Editor：行号 / 语法高亮 / 查找替换（Ctrl+F 查找 / Ctrl+H 替换） -->
-<script src="/static/vendor/ace/ace.js"></script>
-<script src="/static/vendor/ace/ext-language_tools.js"></script>
+<!-- Monaco Editor（VS Code 同款）：行号 / 语法高亮 / 查找替换（Ctrl+F 查找 / Ctrl+H 替换） / 多光标 -->
+<script src="/static/vendor/monaco/vs/loader.js"></script>
+<script>
+    require.config({ paths: { 'vs': '/static/vendor/monaco/vs' } });
+    // 使用静态 worker bootstrap 文件，避免 data URL worker 的跨域/同源限制
+    window.MonacoEnvironment = {
+        getWorkerUrl: function (workerId, label) {
+            return '/static/vendor/monaco/vs/worker-bootstrap.js';
+        }
+    };
+    // 预加载 Monaco 主模块，避免首次打开编辑器时延迟
+    require(['vs/editor/editor.main'], function () {
+        window.__monacoReady = true;
+    });
+</script>
 
 <script>
 layui.use(['layer', 'upload'], function () {
@@ -878,64 +891,110 @@ layui.use(['layer', 'upload'], function () {
         $('#selAll').prop('checked', false);
     });
 
-    /* ACE 语言检测 */
-    function aceLang(name) {
+    /* Monaco 语言检测（monaco-editor 支持的 language id） */
+    function monacoLang(name) {
         var ext = String(name || '').split('.').pop().toLowerCase();
         var map = {
             php: 'php', html: 'html', htm: 'html', js: 'javascript', mjs: 'javascript',
-            cjs: 'javascript', ts: 'typescript', jsx: 'javascript',
+            cjs: 'javascript', ts: 'typescript', tsx: 'typescript', jsx: 'javascript',
             css: 'css', scss: 'scss', less: 'less', json: 'json', xml: 'xml',
-            yml: 'yaml', yaml: 'yaml', md: 'markdown', sql: 'sql', svg: 'xml',
-            sh: 'sh', bash: 'sh', py: 'python', rb: 'ruby', go: 'golang',
-            java: 'java', c: 'c_cpp', cpp: 'c_cpp', h: 'c_cpp', hpp: 'c_cpp',
-            cs: 'csharp', rs: 'rust', swift: 'swift', vue: 'html', txt: 'text'
+            yml: 'yaml', yaml: 'yaml', md: 'markdown', markdown: 'markdown',
+            sql: 'sql', svg: 'xml', sh: 'shell', bash: 'shell', zsh: 'shell',
+            py: 'python', rb: 'ruby', go: 'go', java: 'java',
+            c: 'cpp', cpp: 'cpp', h: 'cpp', hpp: 'cpp', cc: 'cpp',
+            cs: 'csharp', rs: 'rust', swift: 'swift', vue: 'html',
+            ini: 'ini', conf: 'ini', env: 'ini', cfg: 'ini',
+            dockerfile: 'dockerfile', tf: 'ini', toml: 'ini',
+            lua: 'lua', pl: 'perl', r: 'r', kt: 'kotlin', scala: 'scala'
         };
-        if (name === '.htaccess') return 'apache';
-        return map[ext] || 'text';
+        if (name === '.htaccess') return 'ini';
+        return map[ext] || 'plaintext';
     }
 
-    var fmAceEditor = null;
+    var fmMonacoEditor = null;
     function openEditor(p, content) {
-        var lang = aceLang(p.split('/').pop());
+        var lang = monacoLang(p.split('/').pop());
+        // 先打开 dialog，再在 success 中等待 Monaco 就绪后创建编辑器
         layer.open({
             type: 1,
             title: '编辑：' + p + '　<small style="color:#999;font-weight:400">Ctrl+S 保存 · Ctrl+F 查找 · Ctrl+H 替换</small>',
             area: ['920px', '680px'],
-            content: '<div style="padding:12px"><div id="fmAce" class="fm-monaco-wrap"></div></div>',
+            content: '<div style="padding:12px">'
+                   +   '<div id="fmMonaco" class="fm-monaco-wrap">加载编辑器中…</div>'
+                   +   '<div class="fm-editor-status">'
+                   +     '<span id="fmEditStatus">就绪</span>'
+                   +     '<span><span id="fmEditLang">' + esc(lang) + '</span> · UTF-8 · LF</span>'
+                   +   '</div>'
+                   + '</div>',
             btn: ['保存 (Ctrl+S)', '取消'],
             success: function (layero, idx) {
-                var el = document.getElementById('fmAce');
-                fmAceEditor = ace.edit(el, {
-                    value: content || '',
-                    mode: 'ace/mode/' + lang,
-                    theme: 'ace/theme/chrome',
-                    fontSize: 13,
-                    showPrintMargin: false,
-                    useWorker: false,
-                    tabSize: 4,
-                    wrap: true,
-                    enableBasicAutocompletion: true,
-                    enableLiveAutocompletion: true
-                });
-                // Ctrl+S 保存
-                fmAceEditor.commands.addCommand({
-                    name: 'saveFile',
-                    bindKey: { win: 'Ctrl-S', mac: 'Command-S' },
-                    exec: function () { doSave(idx); }
-                });
-                fmAceEditor.focus();
+                var el = document.getElementById('fmMonaco');
+                function createEditor() {
+                    if (!window.monaco || !el) {
+                        // Monaco 尚未就绪，稍后重试
+                        setTimeout(createEditor, 100);
+                        return;
+                    }
+                    el.innerHTML = '';
+                    fmMonacoEditor = monaco.editor.create(el, {
+                        value: content || '',
+                        language: lang,
+                        theme: 'vs',
+                        fontSize: 13,
+                        lineNumbers: 'on',
+                        minimap: { enabled: true },
+                        scrollBeyondLastLine: false,
+                        automaticLayout: true,
+                        tabSize: 4,
+                        wordWrap: 'on',
+                        renderLineHighlight: 'all',
+                        smoothScrolling: true,
+                        cursorSmoothCaretAnimation: 'on',
+                        formatOnPaste: true,
+                        bracketPairColorization: { enabled: true },
+                        guides: { bracketPairs: true, indentation: true },
+                        suggest: { showWords: true }
+                    });
+                    // 状态栏：行列、选中字符数
+                    var statusEl = document.getElementById('fmEditStatus');
+                    function updateStatus() {
+                        if (!fmMonacoEditor || !statusEl) return;
+                        var pos = fmMonacoEditor.getPosition();
+                        var sel = fmMonacoEditor.getSelection();
+                        var selLen = 0;
+                        if (sel && !sel.isEmpty()) {
+                            var model = fmMonacoEditor.getModel();
+                            if (model) selLen = model.getValueInRange(sel).length;
+                        }
+                        var txt = '行 ' + pos.lineNumber + '，列 ' + pos.column;
+                        if (selLen > 0) txt += '　|　选中 ' + selLen + ' 字符';
+                        statusEl.textContent = txt;
+                    }
+                    fmMonacoEditor.onDidChangeCursorPosition(updateStatus);
+                    fmMonacoEditor.onDidChangeCursorSelection(updateStatus);
+                    updateStatus();
+                    // Ctrl+S 保存（拦截浏览器默认行为）
+                    fmMonacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, function () {
+                        doSave(idx);
+                    });
+                    fmMonacoEditor.focus();
+                }
+                createEditor();
             },
             yes: function (idx) { doSave(idx); },
             cancel: function () {
-                if (fmAceEditor) { fmAceEditor.destroy(); fmAceEditor = null; }
+                if (fmMonacoEditor) {
+                    fmMonacoEditor.dispose();
+                    fmMonacoEditor = null;
+                }
             }
         });
         function doSave(idx) {
-            var val = fmAceEditor ? fmAceEditor.getValue() : '';
+            var val = fmMonacoEditor ? fmMonacoEditor.getValue() : '';
             WP.post('/files/write', { site_id: SITE, path: p, content: val })
                 .then(function (r) {
                     if (r.ok) {
-                        if (fmAceEditor) { fmAceEditor.destroy(); fmAceEditor = null; }
+                        if (fmMonacoEditor) { fmMonacoEditor.dispose(); fmMonacoEditor = null; }
                         layer.close(idx);
                         layer.msg('已保存', { icon: 1 });
                     } else {
