@@ -71,9 +71,20 @@ $renderStoreCard = static function (
         . '</article>';
 };
 ?>
-<div class="layui-row layui-col-space15 wp-mon-band">
-    <div class="layui-col-md4">
-        <div class="wp-col-stack">
+<div class="wp-dash-edit-bar">
+    <span class="wp-dash-edit-hint" id="dashEditHint">拖拽卡片可自由排列布局</span>
+    <button class="layui-btn layui-btn-sm layui-btn-primary" id="btnDashEdit">
+        <span class="layui-icon layui-icon-edit"></span> 编辑布局
+    </button>
+    <button class="layui-btn layui-btn-sm layui-btn-normal" id="btnDashReset" style="display:none">
+        <span class="layui-icon layui-icon-refresh"></span> 重置
+    </button>
+    <button class="layui-btn layui-btn-sm" id="btnDashDone" style="display:none">
+        <span class="layui-icon layui-icon-ok"></span> 完成
+    </button>
+</div>
+<div class="wp-dashboard-grid" id="dashGrid">
+    <div class="wp-dash-widget" data-widget="sys-status">
         <div class="panel-card wp-sys-status" id="wpSysStatus">
             <h3>System Status</h3>
             <div class="wp-sys-status-body">
@@ -114,6 +125,8 @@ $renderStoreCard = static function (
                 </div>
             </div>
         </div>
+    </div>
+    <div class="wp-dash-widget" data-widget="host-monitor">
         <div class="panel-card">
             <h3>
                 主机监控
@@ -255,10 +268,8 @@ $renderStoreCard = static function (
                 </div>
             </div>
         </div>
-        </div>
     </div>
-    <div class="layui-col-md4">
-        <div class="wp-col-stack">
+    <div class="wp-dash-widget" data-widget="svc-status">
         <div class="panel-card wp-svc-card">
             <h3>
                 服务状态
@@ -292,10 +303,8 @@ $renderStoreCard = static function (
                 </tbody>
             </table>
         </div>
-        </div>
     </div>
-    <div class="layui-col-md4">
-        <div class="wp-col-stack">
+    <div class="wp-dash-widget" data-widget="disk">
         <div class="panel-card wp-disk-card">
             <h3>磁盘</h3>
             <div class="wp-storage-grid" id="diskMounts">
@@ -324,6 +333,8 @@ $renderStoreCard = static function (
             <?php endif; ?>
             </div>
         </div>
+    </div>
+    <div class="wp-dash-widget" data-widget="login">
         <div class="panel-card wp-login-card">
             <div class="wp-host-extra is-open" id="loginExtra">
                 <div class="wp-eq-tabs wp-host-tabs wp-login-tabs" role="tablist">
@@ -447,7 +458,6 @@ $renderStoreCard = static function (
                     </div>
                 </div>
             </div>
-        </div>
         </div>
     </div>
 </div>
@@ -1094,6 +1104,109 @@ layui.use(['element', 'layer'], function () {
         loadAtop(false);
     });
     loadAtop(false);
+});
+</script>
+
+<script>
+layui.use(['layer'], function () {
+    var $ = layui.$, layer = layui.layer;
+    var STORAGE_KEY = 'wp.dash.layout';
+    var $grid = $('#dashGrid');
+    var $body = $(document.body);
+    var editing = false;
+    var dragSrc = null;
+
+    function widgetOrder() {
+        return $grid.children('.wp-dash-widget').map(function () {
+            return this.getAttribute('data-widget');
+        }).get();
+    }
+
+    function saveOrder() {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(widgetOrder())); } catch (e) {}
+    }
+
+    function applyOrder(order) {
+        if (!Array.isArray(order) || !order.length) return;
+        var map = {};
+        $grid.children('.wp-dash-widget').each(function () {
+            map[this.getAttribute('data-widget')] = this;
+        });
+        order.forEach(function (id) {
+            if (map[id]) $grid.append(map[id]);
+        });
+    }
+
+    function loadOrder() {
+        try {
+            var raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) applyOrder(JSON.parse(raw));
+        } catch (e) {}
+    }
+
+    function setEdit(on) {
+        editing = on;
+        $body.toggleClass('wp-dash-editing', on);
+        $grid.children('.wp-dash-widget').attr('draggable', on ? 'true' : 'false');
+        $('#btnDashEdit').toggle(!on);
+        $('#btnDashReset, #btnDashDone').toggle(on);
+        $('#dashEditHint').text(on ? '拖拽卡片调整位置，完成后点击「完成」' : '拖拽卡片可自由排列布局');
+    }
+
+    $grid.on('dragstart', '.wp-dash-widget', function (e) {
+        if (!editing) { e.preventDefault(); return; }
+        dragSrc = this;
+        this.classList.add('is-dragging');
+        try { e.originalEvent.dataTransfer.effectAllowed = 'move'; } catch (err) {}
+    });
+
+    $grid.on('dragend', '.wp-dash-widget', function () {
+        this.classList.remove('is-dragging');
+        $grid.children('.wp-dash-widget').removeClass('is-drag-over');
+        dragSrc = null;
+    });
+
+    $grid.on('dragover', '.wp-dash-widget', function (e) {
+        if (!editing || !dragSrc || dragSrc === this) return;
+        e.preventDefault();
+        try { e.originalEvent.dataTransfer.dropEffect = 'move'; } catch (err) {}
+        $grid.children('.wp-dash-widget').removeClass('is-drag-over');
+        this.classList.add('is-drag-over');
+    });
+
+    $grid.on('dragleave', '.wp-dash-widget', function () {
+        this.classList.remove('is-drag-over');
+    });
+
+    $grid.on('drop', '.wp-dash-widget', function (e) {
+        if (!editing || !dragSrc || dragSrc === this) return;
+        e.preventDefault();
+        this.classList.remove('is-drag-over');
+        var $target = $(this);
+        var rect = this.getBoundingClientRect();
+        var after = (e.originalEvent.clientY - rect.top) > rect.height / 2;
+        if (after) {
+            $target.after(dragSrc);
+        } else {
+            $target.before(dragSrc);
+        }
+        saveOrder();
+    });
+
+    $('#btnDashEdit').on('click', function () { setEdit(true); });
+    $('#btnDashDone').on('click', function () {
+        setEdit(false);
+        layer.msg('布局已保存', { icon: 1 });
+    });
+    $('#btnDashReset').on('click', function () {
+        layer.confirm('恢复为默认布局？', { icon: 3, title: '重置布局' }, function (idx) {
+            layer.close(idx);
+            try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+            location.reload();
+        });
+    });
+
+    loadOrder();
 });
 </script>
 
