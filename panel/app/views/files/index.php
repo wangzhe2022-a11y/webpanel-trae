@@ -194,7 +194,7 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         color: #1e293b !important;
         background: #ffffff !important;
     }
-    .fm-table tbody tr:hover { background: #f8fafc !important; }
+    .fm-table tbody tr:hover { background: #eef2f7 !important; }
     .fm-table tbody tr.fm-hit {
         background: #f0fdf4 !important;
         box-shadow: inset 3px 0 0 #90BA1E !important;
@@ -210,6 +210,45 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-search-name { color: #1e293b !important; }
     .fm-search-path { color: #94a3b8 !important; }
     .fm-search-meta { color: #64748b !important; border-top-color: #e2e8f0 !important; }
+
+    /* 右键上下文菜单 */
+    .fm-ctx {
+        position: fixed;
+        z-index: 9999;
+        min-width: 150px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0,0,0,.15);
+        padding: 4px;
+        display: flex;
+        flex-direction: column;
+    }
+    .fm-ctx[hidden] { display: none; }
+    .fm-ctx-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 7px 12px;
+        border: none;
+        background: transparent;
+        color: #334155;
+        font-size: 13px;
+        text-align: left;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+    .fm-ctx-item:hover {
+        background: #f0f2f5;
+        color: #1e293b;
+    }
+    .fm-ctx-item.fm-ctx-danger { color: #dc2626; }
+    .fm-ctx-item.fm-ctx-danger:hover { background: #fef2f2; color: #b91c1c; }
+    .fm-ctx-item .layui-icon { font-size: 14px; }
+
+    /* Monaco 编辑器容器 */
+    .fm-monaco-wrap { width: 100%; height: 520px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; }
 </style>
 
 <div class="panel-card fm-card<?= $vdbSelected ? ' fm-vdb' : '' ?>">
@@ -309,6 +348,32 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         </div>
     </div>
 </div>
+
+<!-- 右键上下文菜单 -->
+<div class="fm-ctx" id="fmCtx" hidden>
+    <button type="button" class="fm-ctx-item" data-act="edit">
+        <span class="layui-icon layui-icon-edit"></span> 编辑
+    </button>
+    <button type="button" class="fm-ctx-item" data-act="download">
+        <span class="layui-icon layui-icon-download-circle"></span> 下载
+    </button>
+    <button type="button" class="fm-ctx-item" data-act="extract">
+        <span class="layui-icon layui-icon-release"></span> 解压
+    </button>
+    <button type="button" class="fm-ctx-item" data-act="rename">
+        <span class="layui-icon layui-icon-rmb"></span> 重命名
+    </button>
+    <button type="button" class="fm-ctx-item" data-act="chmod">
+        <span class="layui-icon layui-icon-key"></span> 权限
+    </button>
+    <button type="button" class="fm-ctx-item fm-ctx-danger" data-act="delete">
+        <span class="layui-icon layui-icon-delete"></span> 删除
+    </button>
+</div>
+
+<!-- ACE Editor：行号 / 语法高亮 / 查找替换（Ctrl+F 查找 / Ctrl+H 替换） -->
+<script src="/static/vendor/ace/ace.js"></script>
+<script src="/static/vendor/ace/ext-language_tools.js"></script>
 
 <script>
 layui.use(['layer', 'upload'], function () {
@@ -813,28 +878,85 @@ layui.use(['layer', 'upload'], function () {
         $('#selAll').prop('checked', false);
     });
 
+    /* ACE 语言检测 */
+    function aceLang(name) {
+        var ext = String(name || '').split('.').pop().toLowerCase();
+        var map = {
+            php: 'php', html: 'html', htm: 'html', js: 'javascript', mjs: 'javascript',
+            cjs: 'javascript', ts: 'typescript', jsx: 'javascript',
+            css: 'css', scss: 'scss', less: 'less', json: 'json', xml: 'xml',
+            yml: 'yaml', yaml: 'yaml', md: 'markdown', sql: 'sql', svg: 'xml',
+            sh: 'sh', bash: 'sh', py: 'python', rb: 'ruby', go: 'golang',
+            java: 'java', c: 'c_cpp', cpp: 'c_cpp', h: 'c_cpp', hpp: 'c_cpp',
+            cs: 'csharp', rs: 'rust', swift: 'swift', vue: 'html', txt: 'text'
+        };
+        if (name === '.htaccess') return 'apache';
+        return map[ext] || 'text';
+    }
+
+    var fmAceEditor = null;
+    function openEditor(p, content) {
+        var lang = aceLang(p.split('/').pop());
+        layer.open({
+            type: 1,
+            title: '编辑：' + p + '　<small style="color:#999;font-weight:400">Ctrl+S 保存 · Ctrl+F 查找 · Ctrl+H 替换</small>',
+            area: ['920px', '680px'],
+            content: '<div style="padding:12px"><div id="fmAce" class="fm-monaco-wrap"></div></div>',
+            btn: ['保存 (Ctrl+S)', '取消'],
+            success: function (layero, idx) {
+                var el = document.getElementById('fmAce');
+                fmAceEditor = ace.edit(el, {
+                    value: content || '',
+                    mode: 'ace/mode/' + lang,
+                    theme: 'ace/theme/chrome',
+                    fontSize: 13,
+                    showPrintMargin: false,
+                    useWorker: false,
+                    tabSize: 4,
+                    wrap: true,
+                    enableBasicAutocompletion: true,
+                    enableLiveAutocompletion: true
+                });
+                // Ctrl+S 保存
+                fmAceEditor.commands.addCommand({
+                    name: 'saveFile',
+                    bindKey: { win: 'Ctrl-S', mac: 'Command-S' },
+                    exec: function () { doSave(idx); }
+                });
+                fmAceEditor.focus();
+            },
+            yes: function (idx) { doSave(idx); },
+            cancel: function () {
+                if (fmAceEditor) { fmAceEditor.destroy(); fmAceEditor = null; }
+            }
+        });
+        function doSave(idx) {
+            var val = fmAceEditor ? fmAceEditor.getValue() : '';
+            WP.post('/files/write', { site_id: SITE, path: p, content: val })
+                .then(function (r) {
+                    if (r.ok) {
+                        if (fmAceEditor) { fmAceEditor.destroy(); fmAceEditor = null; }
+                        layer.close(idx);
+                        layer.msg('已保存', { icon: 1 });
+                    } else {
+                        layer.alert(r.error, { icon: 2 });
+                    }
+                });
+        }
+    }
+
     /* edit */
-    $('#fileBody').on('click', '.act-edit', function () {
+    function editFile(p) {
         if (refuseIfVdb()) return;
-        var p = $(this).closest('tr').attr('data-path');
         var loadI = layer.load(2);
         WP.post('/files/read', { site_id: SITE, path: p }).then(function (res) {
             layer.close(loadI);
             if (!res.ok) { layer.alert(res.error, { icon: 2 }); return; }
-            layer.open({
-                type: 1, title: '编辑：' + p, area: ['820px', '600px'],
-                content: '<div style="padding:14px"><textarea id="editorArea" class="layui-textarea mono" style="height:460px">'
-                    + esc(res.content) + '</textarea></div>',
-                btn: ['保存', '取消'],
-                yes: function (idx) {
-                    WP.post('/files/write', { site_id: SITE, path: p, content: $('#editorArea').val() })
-                        .then(function (r) {
-                            if (r.ok) { layer.close(idx); layer.msg('已保存', { icon: 1 }); }
-                            else { layer.alert(r.error, { icon: 2 }); }
-                        });
-                }
-            });
+            openEditor(p, res.content || '');
         });
+    }
+    $('#fileBody').on('click', '.act-edit', function () {
+        editFile($(this).closest('tr').attr('data-path'));
     });
 
     $('#fileBody').on('click', 'input.sel', function (e) { e.stopPropagation(); });
@@ -1204,6 +1326,95 @@ layui.use(['layer', 'upload'], function () {
         load(start, { fallback: true });
         ensureTreePath(start === '/' ? '/' : dirOf(start));
     }
+
+    /* 右键上下文菜单 */
+    var ctxTarget = null;
+    var $ctx = $('#fmCtx');
+    function hideCtx() { $ctx.attr('hidden', ''); ctxTarget = null; }
+    function showCtx(x, y) {
+        $ctx.removeAttr('hidden');
+        var w = $ctx.outerWidth(), h = $ctx.outerHeight();
+        var vw = window.innerWidth, vh = window.innerHeight;
+        if (x + w > vw) x = vw - w - 4;
+        if (y + h > vh) y = vh - h - 4;
+        $ctx.css({ left: x + 'px', top: y + 'px' });
+    }
+    $('#fileBody').on('contextmenu', 'tr[data-name]', function (e) {
+        e.preventDefault();
+        ctxTarget = $(this);
+        var name = ctxTarget.attr('data-name') || '';
+        var type = ctxTarget.attr('data-type') || '';
+        var isDir = type === 'dir';
+        var isArchive = !isDir && ARCHIVE.test(name);
+        var isEditable = !isDir && EDITABLE.test(name);
+        var vdb = isVdb();
+        // 根据文件类型显示/隐藏菜单项
+        $ctx.find('.fm-ctx-item').each(function () {
+            var act = $(this).attr('data-act');
+            var show = true;
+            if (act === 'edit') show = !vdb && isEditable;
+            else if (act === 'extract') show = isArchive;
+            else if (act === 'download') show = !isDir;
+            else if (act === 'chmod' || act === 'rename' || act === 'delete') show = !vdb;
+            $(this).toggle(show);
+        });
+        showCtx(e.clientX, e.clientY);
+    });
+    $ctx.on('click', '.fm-ctx-item', function () {
+        var act = $(this).attr('data-act');
+        if (!ctxTarget) { hideCtx(); return; }
+        var $tr = ctxTarget;
+        var p = $tr.attr('data-path');
+        var name = $tr.attr('data-name');
+        hideCtx();
+        switch (act) {
+            case 'edit': editFile(p); break;
+            case 'download':
+                if ($tr.attr('data-type') !== 'dir') {
+                    var url = '/files/download?site_id=' + encodeURIComponent(String(SITE)) + '&path=' + encodeURIComponent(p) + '&_csrf=' + WP.csrf;
+                    var a = document.createElement('a');
+                    a.href = url; a.download = ''; document.body.appendChild(a); a.click(); a.remove();
+                }
+                break;
+            case 'extract': extractPath(p, name); break;
+            case 'rename':
+                layer.prompt({ title: '重命名', value: name, formType: 0 }, function (val, idx) {
+                    if (!/^[A-Za-z0-9._ -]+$/.test(val)) { layer.msg('名称含非法字符', { icon: 2 }); return; }
+                    WP.post('/files/rename', { site_id: SITE, path: p, to: joinPath(dirOf(p), val) }).then(function (r) {
+                        if (r.ok) { layer.close(idx); layer.msg('已重命名', { icon: 1 }); refresh(); }
+                        else { layer.alert(r.error, { icon: 2 }); }
+                    });
+                });
+                break;
+            case 'chmod':
+                var cur = $tr.find('.fm-perms').text().trim().replace(/^0?/, '');
+                layer.prompt({ title: '权限（三位八进制，如 644 / 755）', value: cur.slice(-3), formType: 0 }, function (val, idx) {
+                    if (!/^[0-7]{3}$/.test(val)) { layer.msg('格式不正确', { icon: 2 }); return; }
+                    WP.post('/files/chmod', { site_id: SITE, path: p, mode: val }).then(function (r) {
+                        if (r.ok) { layer.close(idx); layer.msg('已修改', { icon: 1 }); refresh(); }
+                        else { layer.alert(r.error, { icon: 2 }); }
+                    });
+                });
+                break;
+            case 'delete':
+                layer.confirm('删除 <b>' + esc(name) + '</b>？' +
+                    ($tr.attr('data-type') === 'dir' ? '<br><span style="color:#ff5722">目录内所有内容将被递归删除。</span>' : ''), {
+                    title: '删除确认'
+                }, function (idx) {
+                    WP.post('/files/delete', { site_id: SITE, path: p }).then(function (r) {
+                        if (r.ok) { layer.close(idx); layer.msg('已删除', { icon: 1 }); refresh(); }
+                        else { layer.alert(r.error, { icon: 2 }); }
+                    });
+                });
+                break;
+        }
+    });
+    $(document).on('mousedown', function (e) {
+        if (!$(e.target).closest('.fm-ctx').length && !$(e.target).closest('#fileBody tr').length) {
+            hideCtx();
+        }
+    });
+    $(document).on('keydown', function (e) { if (e.key === 'Escape') hideCtx(); });
 
     bindTreeResize();
     boot();
