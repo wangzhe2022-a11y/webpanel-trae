@@ -212,10 +212,15 @@ body.layui-layout-body {
 .layui-layout-admin .layui-table th,
 .layui-layout-admin .layui-table td { font-size: 15px; }
 .layui-layout-admin .layui-body {
+    position: absolute;
     top: var(--wp-header-h);
     left: var(--wp-side-w);
+    right: 0;
+    bottom: 0;
+    width: auto;
     background: var(--wp-bg);
     padding: 20px 24px 28px;
+    overflow: hidden;
     transition: left .2s ease;
 }
 html.wp-side-collapsed .layui-layout-admin .layui-body {

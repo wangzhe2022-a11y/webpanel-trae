@@ -5,7 +5,7 @@ $siteId = $vdbSelected ? 'vdb' : (int) ($selected['id'] ?? 0);
 $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
 ?>
 <style>
-    .fm-card { display: flex; flex-direction: column; min-height: calc(100vh - 92px); padding-bottom: 12px; }
+    .fm-card { display: flex; flex-direction: column; min-height: calc(100vh - 92px); padding-bottom: 12px; width: 100%; box-sizing: border-box; min-width: 0; max-width: 100%; overflow: hidden; }
     .fm-card > h3 { margin-bottom: 8px; }
     .fm-site-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 13px; }
     .fm-site-row label { font-size: 12px; color: var(--wp-text-secondary); white-space: nowrap; }
@@ -19,8 +19,8 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-crumb a { color: var(--wp-accent); }
     .fm-crumb .sep { color: var(--wp-text-muted); margin: 0 2px; }
     .fm-crumb-path { min-width: 0; }
-    .fm-split { flex: 1; display: flex; min-height: 380px; border: 1px solid var(--wp-border); border-radius: 4px; overflow: hidden; background: var(--wp-surface); }
-    .fm-tree { width: 260px; min-width: 200px; flex: 0 0 auto; background: var(--wp-surface-soft); display: flex; flex-direction: column; }
+    .fm-split { flex: 1; display: flex; min-height: 380px; border: 1px solid var(--wp-border); border-radius: 4px; overflow: hidden; background: var(--wp-surface); min-width: 0; }
+    .fm-tree { width: 260px; min-width: 0; flex: 0 0 260px; background: var(--wp-surface-soft); display: flex; flex-direction: column; overflow: hidden; }
     .fm-splitter {
         display: block; align-self: stretch; width: 6px; flex: 0 0 6px;
         margin: 0; padding: 0; border: 0; height: auto; min-height: 0;
@@ -34,7 +34,8 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-tree-body { flex: 1; overflow: auto; padding: 6px 0 12px; }
     .fm-tree-ul { list-style: none; margin: 0; padding: 0 0 0 14px; }
     .fm-tree-ul.root { padding-left: 6px; }
-    .fm-tree-row { display: flex; align-items: center; gap: 4px; padding: 3px 8px 3px 4px; border-radius: 3px; cursor: pointer; white-space: nowrap; user-select: none; }
+    .fm-tree-row { display: flex; align-items: center; gap: 4px; padding: 3px 8px 3px 4px; border-radius: 3px; cursor: pointer; white-space: nowrap; user-select: none; overflow: hidden; }
+    .fm-tree-row .fm-tree-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
     .fm-tree-row:hover { background: var(--wp-accent-soft); }
     .fm-tree-row.active { background: var(--wp-accent-soft); color: var(--wp-accent); font-weight: 600; }
     .fm-twist { width: 16px; color: var(--wp-text-muted); font-size: 12px; text-align: center; flex-shrink: 0; }
@@ -43,11 +44,13 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-main-bar { flex: 0 0 auto; padding: 8px 10px 6px; border-bottom: 1px solid var(--wp-border); background: var(--wp-surface-soft); }
     .fm-main-bar .fm-toolbar { margin-bottom: 6px; }
     .fm-main-bar .fm-nav { margin-bottom: 0; }
-    .fm-main-scroll { flex: 1; overflow: auto; min-height: 0; }
-    .fm-table { margin: 0 !important; }
-    .fm-table thead th { position: sticky; top: 0; background: var(--wp-surface-soft); z-index: 1; }
-    .fm-table td, .fm-table th { font-size: 13px; }
-    .fm-table tbody tr:hover { background: var(--wp-accent-soft); }
+    .fm-main-scroll { flex: 1; overflow: auto; min-height: 0; min-width: 0; }
+    .fm-table { margin: 0 !important; min-width: 100% !important; width: auto !important; table-layout: auto; }
+    .fm-table thead th { position: sticky; top: 0; background: var(--wp-surface-soft); z-index: 1; white-space: nowrap; }
+    .fm-table td, .fm-table th { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fm-table td:last-child, .fm-table th:last-child { white-space: normal; overflow: visible; }
+    .fm-table tbody tr:hover { background: #ecfccb !important; box-shadow: inset 3px 0 0 #90BA1E !important; }
+    .fm-table tbody tr:hover td { background: transparent !important; }
     .fm-empty { text-align: center; color: var(--wp-text-secondary); padding: 72px 20px; }
     .fm-empty .layui-icon { font-size: 42px; color: var(--wp-text-muted); display: block; margin-bottom: 12px; }
     .fm-root-hint { color: var(--wp-text-muted); font-size: 12px; margin-left: 4px; }
@@ -101,10 +104,11 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         border-color: #e2e8f0 !important;
         color: #475569 !important;
     }
-    .fm-tree-row:hover { background: #eef2f7 !important; }
+    .fm-tree-row:hover { background: #dcedc8 !important; color: #33691e !important; }
     .fm-tree-row.active {
-        background: #e6f4d0 !important;
-        color: #6b8e1a !important;
+        background: #c5e1a5 !important;
+        color: #33691e !important;
+        font-weight: 600;
     }
     .fm-twist { color: #94a3b8 !important; }
     .fm-splitter { background: #e2e8f0 !important; }
@@ -118,6 +122,11 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-site-row select, .fm-pathbox input, .fm-search input {
         background: #ffffff !important;
         border: 1px solid #e2e8f0 !important;
+        color: #1e293b !important;
+        color-scheme: light;
+    }
+    .fm-site-row select option {
+        background: #ffffff !important;
         color: #1e293b !important;
     }
     .fm-search-ico { color: #94a3b8 !important; }
@@ -174,6 +183,47 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         cursor: not-allowed;
     }
 
+    /* 工具栏扁平化按钮（截图 1 样式：无背景无边框，按钮间用 | 分隔） */
+    .fm-card .fm-tb-btn {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        color: #475569 !important;
+        padding: 4px 6px !important;
+        margin: 0 !important;
+        height: auto !important;
+        line-height: 1.6 !important;
+        font-size: 13px !important;
+        font-weight: 500;
+        border-radius: 4px !important;
+    }
+    .fm-card .fm-tb-btn:hover {
+        background: #ecfccb !important;
+        color: #33691e !important;
+    }
+    .fm-card .fm-tb-btn.fm-tb-danger {
+        color: #dc2626 !important;
+    }
+    .fm-card .fm-tb-btn.fm-tb-danger:hover {
+        background: #fef2f2 !important;
+        color: #b91c1c !important;
+    }
+    .fm-card .fm-tb-btn[disabled] {
+        background: transparent !important;
+        color: #cbd5e1 !important;
+        cursor: not-allowed;
+    }
+    .fm-card .fm-tb-btn .layui-icon { font-size: 14px; }
+    .fm-tb-sep {
+        display: inline-flex;
+        align-items: center;
+        color: #cbd5e1;
+        font-size: 14px;
+        line-height: 1;
+        margin: 0 1px;
+        user-select: none;
+    }
+
     /* 文件夹图标改为橙色 */
     .fm-icon-dir { color: #e8a33d !important; }
 
@@ -189,9 +239,9 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         color: #1e293b !important;
         background: #ffffff !important;
     }
-    .fm-table tbody tr:hover { background: #f8fafc !important; }
+    .fm-table tbody tr:hover { background: #ecfccb !important; box-shadow: inset 3px 0 0 #90BA1E !important; }
     .fm-table tbody tr.fm-hit {
-        background: #f0fdf4 !important;
+        background: #d9f99d !important;
         box-shadow: inset 3px 0 0 #90BA1E !important;
     }
 
@@ -201,10 +251,50 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         border: 1px solid #e2e8f0 !important;
         box-shadow: 0 8px 24px rgba(0,0,0,.10) !important;
     }
-    .fm-search-item:hover, .fm-search-item.active { background: #f5f7fb !important; }
+    .fm-search-item:hover, .fm-search-item.active { background: #dcedc8 !important; color: #33691e !important; }
     .fm-search-name { color: #1e293b !important; }
     .fm-search-path { color: #94a3b8 !important; }
     .fm-search-meta { color: #64748b !important; border-top-color: #e2e8f0 !important; }
+
+    /* 右键上下文菜单 */
+    .fm-ctx {
+        position: fixed;
+        z-index: 9999;
+        min-width: 150px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0,0,0,.15);
+        padding: 4px;
+        display: flex;
+        flex-direction: column;
+    }
+    .fm-ctx[hidden] { display: none; }
+    .fm-ctx-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 7px 12px;
+        border: none;
+        background: transparent;
+        color: #334155;
+        font-size: 13px;
+        text-align: left;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+    .fm-ctx-item:hover {
+        background: #ecfccb;
+        color: #33691e;
+    }
+    .fm-ctx-item.fm-ctx-danger { color: #dc2626; }
+    .fm-ctx-item.fm-ctx-danger:hover { background: #fef2f2; color: #b91c1c; }
+    .fm-ctx-item .layui-icon { font-size: 14px; }
+
+    /* Monaco 编辑器容器 */
+    .fm-monaco-wrap { width: 100%; height: 520px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; }
+    .fm-editor-status { display: flex; justify-content: space-between; align-items: center; padding: 4px 12px; font-size: 12px; color: #64748b; background: #f8fafc; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 6px 6px; font-family: ui-monospace, Menlo, Consolas, monospace; }
 </style>
 
 <div class="panel-card fm-card<?= $vdbSelected ? ' fm-vdb' : '' ?>">
@@ -246,19 +336,25 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         <div class="fm-main">
             <div class="fm-main-bar">
                 <div class="fm-toolbar">
-                    <button class="layui-btn layui-btn-sm fm-write" id="btnUpload"><span class="layui-icon layui-icon-upload"></span> 上传</button>
-                    <button class="layui-btn layui-btn-sm layui-btn-primary fm-write" id="btnNewFile"><span class="layui-icon layui-icon-file"></span> 新建文件</button>
-                    <button class="layui-btn layui-btn-sm layui-btn-primary fm-write" id="btnNewDir"><span class="layui-icon layui-icon-folder"></span> 新建文件夹</button>
-                    <button class="layui-btn layui-btn-sm layui-btn-normal" id="btnExtract" title="解压选中的压缩包">
+                    <button type="button" class="fm-tb-btn fm-write" id="btnUpload"><span class="layui-icon layui-icon-upload"></span> 上传</button>
+                    <span class="fm-tb-sep">|</span>
+                    <button type="button" class="fm-tb-btn fm-write" id="btnNewFile"><span class="layui-icon layui-icon-file"></span> 新建文件</button>
+                    <span class="fm-tb-sep">|</span>
+                    <button type="button" class="fm-tb-btn fm-write" id="btnNewDir"><span class="layui-icon layui-icon-folder"></span> 新建文件夹</button>
+                    <span class="fm-tb-sep">|</span>
+                    <button type="button" class="fm-tb-btn" id="btnExtract" title="解压选中的压缩包">
                         <span class="layui-icon layui-icon-release"></span> 解压
                     </button>
-                    <button class="layui-btn layui-btn-sm layui-btn-normal fm-write" id="btnCompress" title="压缩选中的文件/文件夹">
+                    <span class="fm-tb-sep">|</span>
+                    <button type="button" class="fm-tb-btn fm-write" id="btnCompress" title="压缩选中的文件/文件夹">
                         <span class="layui-icon layui-icon-404"></span> 压缩
                     </button>
-                    <button class="layui-btn layui-btn-sm layui-btn-danger fm-write" id="btnDelSel" title="删除勾选的项目">
+                    <span class="fm-tb-sep">|</span>
+                    <button type="button" class="fm-tb-btn fm-tb-danger fm-write" id="btnDelSel" title="删除勾选的项目">
                         <span class="layui-icon layui-icon-delete"></span> 删除
                     </button>
-                    <button class="layui-btn layui-btn-sm layui-btn-primary" id="btnRefresh"><span class="layui-icon layui-icon-refresh"></span> 刷新</button>
+                    <span class="fm-tb-sep">|</span>
+                    <button type="button" class="fm-tb-btn" id="btnRefresh"><span class="layui-icon layui-icon-refresh"></span> 刷新</button>
                     <div class="fm-search">
                         <input id="fmSearch" type="search" spellcheck="false" autocomplete="off"
                                placeholder="搜索当前目录及子目录…" title="按文件名搜索当前目录及子目录，支持部分匹配">
@@ -304,6 +400,44 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         </div>
     </div>
 </div>
+
+<!-- 右键上下文菜单 -->
+<div class="fm-ctx" id="fmCtx" hidden>
+    <button type="button" class="fm-ctx-item" data-act="edit">
+        <span class="layui-icon layui-icon-edit"></span> 编辑
+    </button>
+    <button type="button" class="fm-ctx-item" data-act="download">
+        <span class="layui-icon layui-icon-download-circle"></span> 下载
+    </button>
+    <button type="button" class="fm-ctx-item" data-act="extract">
+        <span class="layui-icon layui-icon-release"></span> 解压
+    </button>
+    <button type="button" class="fm-ctx-item" data-act="rename">
+        <span class="layui-icon layui-icon-rmb"></span> 重命名
+    </button>
+    <button type="button" class="fm-ctx-item" data-act="chmod">
+        <span class="layui-icon layui-icon-key"></span> 权限
+    </button>
+    <button type="button" class="fm-ctx-item fm-ctx-danger" data-act="delete">
+        <span class="layui-icon layui-icon-delete"></span> 删除
+    </button>
+</div>
+
+<!-- Monaco Editor（VS Code 同款）：行号 / 语法高亮 / 查找替换（Ctrl+F 查找 / Ctrl+H 替换） / 多光标 -->
+<script src="/static/vendor/monaco/vs/loader.js"></script>
+<script>
+    require.config({ paths: { 'vs': '/static/vendor/monaco/vs' } });
+    // 使用静态 worker bootstrap 文件，避免 data URL worker 的跨域/同源限制
+    window.MonacoEnvironment = {
+        getWorkerUrl: function (workerId, label) {
+            return '/static/vendor/monaco/vs/worker-bootstrap.js';
+        }
+    };
+    // 预加载 Monaco 主模块，避免首次打开编辑器时延迟
+    require(['vs/editor/editor.main'], function () {
+        window.__monacoReady = true;
+    });
+</script>
 
 <script>
 layui.use(['layer', 'upload'], function () {
@@ -377,7 +511,7 @@ layui.use(['layer', 'upload'], function () {
     var TREE_W_MIN = 200;
     var TREE_W_MAX = 800;
     var TREE_W_DEFAULT = 260;
-    var TREE_MAIN_MIN = 320;
+    var TREE_MAIN_MIN = 640;
     function treeNarrow() {
         return window.matchMedia && window.matchMedia('(max-width: 800px)').matches;
     }
@@ -808,28 +942,131 @@ layui.use(['layer', 'upload'], function () {
         $('#selAll').prop('checked', false);
     });
 
+    /* Monaco 语言检测（monaco-editor 支持的 language id） */
+    function monacoLang(name) {
+        var ext = String(name || '').split('.').pop().toLowerCase();
+        var map = {
+            php: 'php', html: 'html', htm: 'html', js: 'javascript', mjs: 'javascript',
+            cjs: 'javascript', ts: 'typescript', tsx: 'typescript', jsx: 'javascript',
+            css: 'css', scss: 'scss', less: 'less', json: 'json', xml: 'xml',
+            yml: 'yaml', yaml: 'yaml', md: 'markdown', markdown: 'markdown',
+            sql: 'sql', svg: 'xml', sh: 'shell', bash: 'shell', zsh: 'shell',
+            py: 'python', rb: 'ruby', go: 'go', java: 'java',
+            c: 'cpp', cpp: 'cpp', h: 'cpp', hpp: 'cpp', cc: 'cpp',
+            cs: 'csharp', rs: 'rust', swift: 'swift', vue: 'html',
+            ini: 'ini', conf: 'ini', env: 'ini', cfg: 'ini',
+            dockerfile: 'dockerfile', tf: 'ini', toml: 'ini',
+            lua: 'lua', pl: 'perl', r: 'r', kt: 'kotlin', scala: 'scala'
+        };
+        if (name === '.htaccess') return 'ini';
+        return map[ext] || 'plaintext';
+    }
+
+    var fmMonacoEditor = null;
+    function openEditor(p, content) {
+        var lang = monacoLang(p.split('/').pop());
+        // 先打开 dialog，再在 success 中等待 Monaco 就绪后创建编辑器
+        layer.open({
+            type: 1,
+            title: '编辑：' + p + '　<small style="color:#999;font-weight:400">Ctrl+S 保存 · Ctrl+F 查找 · Ctrl+H 替换</small>',
+            area: ['920px', '680px'],
+            content: '<div style="padding:12px">'
+                   +   '<div id="fmMonaco" class="fm-monaco-wrap">加载编辑器中…</div>'
+                   +   '<div class="fm-editor-status">'
+                   +     '<span id="fmEditStatus">就绪</span>'
+                   +     '<span><span id="fmEditLang">' + esc(lang) + '</span> · UTF-8 · LF</span>'
+                   +   '</div>'
+                   + '</div>',
+            btn: ['保存 (Ctrl+S)', '取消'],
+            success: function (layero, idx) {
+                var el = document.getElementById('fmMonaco');
+                function createEditor() {
+                    if (!window.monaco || !el) {
+                        // Monaco 尚未就绪，稍后重试
+                        setTimeout(createEditor, 100);
+                        return;
+                    }
+                    el.innerHTML = '';
+                    fmMonacoEditor = monaco.editor.create(el, {
+                        value: content || '',
+                        language: lang,
+                        theme: 'vs',
+                        fontSize: 13,
+                        lineNumbers: 'on',
+                        minimap: { enabled: true },
+                        scrollBeyondLastLine: false,
+                        automaticLayout: true,
+                        tabSize: 4,
+                        wordWrap: 'on',
+                        renderLineHighlight: 'all',
+                        smoothScrolling: true,
+                        cursorSmoothCaretAnimation: 'on',
+                        formatOnPaste: true,
+                        bracketPairColorization: { enabled: true },
+                        guides: { bracketPairs: true, indentation: true },
+                        suggest: { showWords: true }
+                    });
+                    // 状态栏：行列、选中字符数
+                    var statusEl = document.getElementById('fmEditStatus');
+                    function updateStatus() {
+                        if (!fmMonacoEditor || !statusEl) return;
+                        var pos = fmMonacoEditor.getPosition();
+                        var sel = fmMonacoEditor.getSelection();
+                        var selLen = 0;
+                        if (sel && !sel.isEmpty()) {
+                            var model = fmMonacoEditor.getModel();
+                            if (model) selLen = model.getValueInRange(sel).length;
+                        }
+                        var txt = '行 ' + pos.lineNumber + '，列 ' + pos.column;
+                        if (selLen > 0) txt += '　|　选中 ' + selLen + ' 字符';
+                        statusEl.textContent = txt;
+                    }
+                    fmMonacoEditor.onDidChangeCursorPosition(updateStatus);
+                    fmMonacoEditor.onDidChangeCursorSelection(updateStatus);
+                    updateStatus();
+                    // Ctrl+S 保存（拦截浏览器默认行为）
+                    fmMonacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, function () {
+                        doSave(idx);
+                    });
+                    fmMonacoEditor.focus();
+                }
+                createEditor();
+            },
+            yes: function (idx) { doSave(idx); },
+            cancel: function () {
+                if (fmMonacoEditor) {
+                    fmMonacoEditor.dispose();
+                    fmMonacoEditor = null;
+                }
+            }
+        });
+        function doSave(idx) {
+            var val = fmMonacoEditor ? fmMonacoEditor.getValue() : '';
+            WP.post('/files/write', { site_id: SITE, path: p, content: val })
+                .then(function (r) {
+                    if (r.ok) {
+                        if (fmMonacoEditor) { fmMonacoEditor.dispose(); fmMonacoEditor = null; }
+                        layer.close(idx);
+                        layer.msg('已保存', { icon: 1 });
+                    } else {
+                        layer.alert(r.error, { icon: 2 });
+                    }
+                });
+        }
+    }
+
     /* edit */
-    $('#fileBody').on('click', '.act-edit', function () {
+    function editFile(p) {
         if (refuseIfVdb()) return;
-        var p = $(this).closest('tr').attr('data-path');
         var loadI = layer.load(2);
         WP.post('/files/read', { site_id: SITE, path: p }).then(function (res) {
             layer.close(loadI);
             if (!res.ok) { layer.alert(res.error, { icon: 2 }); return; }
-            layer.open({
-                type: 1, title: '编辑：' + p, area: ['820px', '600px'],
-                content: '<div style="padding:14px"><textarea id="editorArea" class="layui-textarea mono" style="height:460px">'
-                    + esc(res.content) + '</textarea></div>',
-                btn: ['保存', '取消'],
-                yes: function (idx) {
-                    WP.post('/files/write', { site_id: SITE, path: p, content: $('#editorArea').val() })
-                        .then(function (r) {
-                            if (r.ok) { layer.close(idx); layer.msg('已保存', { icon: 1 }); }
-                            else { layer.alert(r.error, { icon: 2 }); }
-                        });
-                }
-            });
+            openEditor(p, res.content || '');
         });
+    }
+    $('#fileBody').on('click', '.act-edit', function () {
+        editFile($(this).closest('tr').attr('data-path'));
     });
 
     $('#fileBody').on('click', 'input.sel', function (e) { e.stopPropagation(); });
@@ -1199,6 +1436,95 @@ layui.use(['layer', 'upload'], function () {
         load(start, { fallback: true });
         ensureTreePath(start === '/' ? '/' : dirOf(start));
     }
+
+    /* 右键上下文菜单 */
+    var ctxTarget = null;
+    var $ctx = $('#fmCtx');
+    function hideCtx() { $ctx.attr('hidden', ''); ctxTarget = null; }
+    function showCtx(x, y) {
+        $ctx.removeAttr('hidden');
+        var w = $ctx.outerWidth(), h = $ctx.outerHeight();
+        var vw = window.innerWidth, vh = window.innerHeight;
+        if (x + w > vw) x = vw - w - 4;
+        if (y + h > vh) y = vh - h - 4;
+        $ctx.css({ left: x + 'px', top: y + 'px' });
+    }
+    $('#fileBody').on('contextmenu', 'tr[data-name]', function (e) {
+        e.preventDefault();
+        ctxTarget = $(this);
+        var name = ctxTarget.attr('data-name') || '';
+        var type = ctxTarget.attr('data-type') || '';
+        var isDir = type === 'dir';
+        var isArchive = !isDir && ARCHIVE.test(name);
+        var isEditable = !isDir && EDITABLE.test(name);
+        var vdb = isVdb();
+        // 根据文件类型显示/隐藏菜单项
+        $ctx.find('.fm-ctx-item').each(function () {
+            var act = $(this).attr('data-act');
+            var show = true;
+            if (act === 'edit') show = !vdb && isEditable;
+            else if (act === 'extract') show = isArchive;
+            else if (act === 'download') show = !isDir;
+            else if (act === 'chmod' || act === 'rename' || act === 'delete') show = !vdb;
+            $(this).toggle(show);
+        });
+        showCtx(e.clientX, e.clientY);
+    });
+    $ctx.on('click', '.fm-ctx-item', function () {
+        var act = $(this).attr('data-act');
+        if (!ctxTarget) { hideCtx(); return; }
+        var $tr = ctxTarget;
+        var p = $tr.attr('data-path');
+        var name = $tr.attr('data-name');
+        hideCtx();
+        switch (act) {
+            case 'edit': editFile(p); break;
+            case 'download':
+                if ($tr.attr('data-type') !== 'dir') {
+                    var url = '/files/download?site_id=' + encodeURIComponent(String(SITE)) + '&path=' + encodeURIComponent(p) + '&_csrf=' + WP.csrf;
+                    var a = document.createElement('a');
+                    a.href = url; a.download = ''; document.body.appendChild(a); a.click(); a.remove();
+                }
+                break;
+            case 'extract': extractPath(p, name); break;
+            case 'rename':
+                layer.prompt({ title: '重命名', value: name, formType: 0 }, function (val, idx) {
+                    if (!/^[A-Za-z0-9._ -]+$/.test(val)) { layer.msg('名称含非法字符', { icon: 2 }); return; }
+                    WP.post('/files/rename', { site_id: SITE, path: p, to: joinPath(dirOf(p), val) }).then(function (r) {
+                        if (r.ok) { layer.close(idx); layer.msg('已重命名', { icon: 1 }); refresh(); }
+                        else { layer.alert(r.error, { icon: 2 }); }
+                    });
+                });
+                break;
+            case 'chmod':
+                var cur = $tr.find('.fm-perms').text().trim().replace(/^0?/, '');
+                layer.prompt({ title: '权限（三位八进制，如 644 / 755）', value: cur.slice(-3), formType: 0 }, function (val, idx) {
+                    if (!/^[0-7]{3}$/.test(val)) { layer.msg('格式不正确', { icon: 2 }); return; }
+                    WP.post('/files/chmod', { site_id: SITE, path: p, mode: val }).then(function (r) {
+                        if (r.ok) { layer.close(idx); layer.msg('已修改', { icon: 1 }); refresh(); }
+                        else { layer.alert(r.error, { icon: 2 }); }
+                    });
+                });
+                break;
+            case 'delete':
+                layer.confirm('删除 <b>' + esc(name) + '</b>？' +
+                    ($tr.attr('data-type') === 'dir' ? '<br><span style="color:#ff5722">目录内所有内容将被递归删除。</span>' : ''), {
+                    title: '删除确认'
+                }, function (idx) {
+                    WP.post('/files/delete', { site_id: SITE, path: p }).then(function (r) {
+                        if (r.ok) { layer.close(idx); layer.msg('已删除', { icon: 1 }); refresh(); }
+                        else { layer.alert(r.error, { icon: 2 }); }
+                    });
+                });
+                break;
+        }
+    });
+    $(document).on('mousedown', function (e) {
+        if (!$(e.target).closest('.fm-ctx').length && !$(e.target).closest('#fileBody tr').length) {
+            hideCtx();
+        }
+    });
+    $(document).on('keydown', function (e) { if (e.key === 'Escape') hideCtx(); });
 
     bindTreeResize();
     boot();
