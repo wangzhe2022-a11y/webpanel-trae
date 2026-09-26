@@ -89,8 +89,9 @@
             <span class="layui-icon layui-icon-link"></span> 新窗口打开
         </a>
     </div>
-    <iframe id="pmaFrame" class="pma-frame" title="phpMyAdmin" src="<?= e($pmaUrl) ?>"
-        style="width:100%;border:1px solid #e6e6e6;border-radius:6px;background:#fff"></iframe>
+    <div class="pma-frame-wrap">
+        <iframe id="pmaFrame" class="pma-frame" title="phpMyAdmin" src="<?= e($pmaUrl) ?>"></iframe>
+    </div>
     <p style="color:#999;font-size:12px;margin:10px 0 0">
         已通过面板会话进入，使用专用账号连接本机 MySQL（无需再输入数据库密码）。
         导入大 SQL 文件建议新窗口打开。

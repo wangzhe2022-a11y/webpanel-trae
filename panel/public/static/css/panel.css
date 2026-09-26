@@ -228,25 +228,39 @@ html.wp-side-collapsed .layui-layout-admin .layui-body {
     left: var(--wp-side-w-collapsed);
 }
 
-/* phpMyAdmin page: fill the available layui-body (viewport-relative, not a fixed px). */
+/* phpMyAdmin page: fill remaining layui-body height on any viewport.
+   Height chain: viewport-sized body/admin → flex column body → flex:1 card
+   → flex:1 wrap → absolutely positioned iframe. Do not use height:0 on the
+   iframe itself (replaced elements + a more-specific flex:0 on .panel-card
+   collapsed the SQL browser after #75). */
 body.wp-page-pma,
 body.wp-page-pma .layui-layout-admin {
     height: 100vh;
+    height: 100dvh;
     overflow: hidden;
 }
-.wp-page-pma .layui-layout-admin .layui-body {
+body.wp-page-pma .layui-layout-admin {
+    position: relative;
+}
+body.wp-page-pma .layui-layout-admin .layui-body {
     display: flex;
     flex-direction: column;
     gap: 10px;
     box-sizing: border-box;
-    height: calc(100vh - var(--wp-header-h));
+    top: var(--wp-header-h);
+    bottom: 0;
+    height: auto; /* top + bottom compute the used height */
     min-height: 0;
     overflow: hidden;
     padding: 10px 12px;
 }
-.wp-page-pma .layui-body > .panel-card { flex: 0 0 auto; margin-bottom: 0; }
-.wp-page-pma .pma-browser-card {
-    flex: 1 1 auto;
+body.wp-page-pma .layui-body > .panel-card {
+    flex: 0 0 auto;
+    margin-bottom: 0;
+}
+/* Must beat `.layui-body > .panel-card` (same element also has .panel-card). */
+body.wp-page-pma .layui-body > .panel-card.pma-browser-card {
+    flex: 1 1 0;
     display: flex;
     flex-direction: column;
     min-height: 0;
@@ -255,15 +269,21 @@ body.wp-page-pma .layui-layout-admin {
     overflow: hidden;
     padding: 12px 14px;
 }
-.wp-page-pma .pma-browser-card > div:first-child,
-.wp-page-pma .pma-browser-card > p { flex: 0 0 auto; }
-.wp-page-pma .pma-frame {
-    flex: 1 1 auto;
-    align-self: stretch;
+body.wp-page-pma .pma-browser-card > div:first-child,
+body.wp-page-pma .pma-browser-card > p { flex: 0 0 auto; }
+body.wp-page-pma .pma-frame-wrap {
+    flex: 1 1 0;
+    position: relative;
+    min-height: 0;
+    min-width: 0;
+    width: 100%;
+}
+body.wp-page-pma .pma-frame {
+    position: absolute;
+    inset: 0;
     display: block;
     width: 100%;
-    min-height: 0;
-    height: 0; /* replaced iframe: let flex-grow set the used height */
+    height: 100%;
     border: 1px solid var(--wp-border);
     border-radius: 6px;
     background: #fff;
