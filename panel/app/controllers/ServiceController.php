@@ -277,10 +277,34 @@ class ServiceController extends Controller
             return;
         }
         $d = $r['data'];
+        $categories = [];
+        foreach ($d['categories'] ?? [] as $c) {
+            if (!is_array($c)) {
+                continue;
+            }
+            $row = [
+                'name' => (string) ($c['name'] ?? ''),
+                'size' => (string) ($c['size'] ?? ''),
+            ];
+            if (isset($c['icon']) && is_string($c['icon']) && $c['icon'] !== '') {
+                $row['icon'] = $c['icon'];
+            }
+            $categories[] = $row;
+        }
+        $dirs = [];
+        foreach ($d['largest_dirs'] ?? [] as $dir) {
+            if (!is_array($dir)) {
+                continue;
+            }
+            $dirs[] = [
+                'name' => (string) ($dir['name'] ?? ''),
+                'size' => (string) ($dir['size'] ?? ''),
+            ];
+        }
         $this->ok([
-            'categories' => $d['categories'] ?? [],
-            'largest_dirs' => $d['largest_dirs'] ?? [],
-            'total' => $d['total'] ?? '0 B',
+            'categories' => $categories,
+            'largest_dirs' => $dirs,
+            'total' => (string) ($d['total'] ?? '0 B'),
         ]);
     }
 }
