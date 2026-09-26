@@ -378,6 +378,51 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     /* Monaco 编辑器容器 */
     .fm-monaco-wrap { width: 100%; height: 520px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; }
     .fm-editor-status { display: flex; justify-content: space-between; align-items: center; padding: 4px 12px; font-size: 12px; color: #64748b; background: #f8fafc; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 6px 6px; font-family: ui-monospace, Menlo, Consolas, monospace; }
+
+    /* cPanel-style upload dialog */
+    .wp-upload-dialog { padding: 22px 24px; }
+    .wp-upload-dropzone {
+        border: 2px dashed var(--wp-border);
+        border-radius: 12px;
+        padding: 40px 20px 32px;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color .2s, background .2s;
+        background: var(--wp-surface-soft);
+    }
+    .wp-upload-dropzone:hover,
+    .wp-upload-dropzone.is-dragover {
+        border-color: var(--wp-accent);
+        background: var(--wp-accent-soft);
+    }
+    .wp-upload-icon { margin-bottom: 12px; color: var(--wp-text-muted); line-height: 0; }
+    .wp-upload-icon svg { width: 44px; height: 44px; }
+    .wp-upload-text { font-size: 15px; font-weight: 600; color: var(--wp-text); margin-bottom: 6px; }
+    .wp-upload-path { font-size: 12px; color: var(--wp-text-muted); }
+    .wp-upload-path .wp-up-path-val { color: var(--wp-text-secondary); font-family: ui-monospace, Menlo, Consolas, monospace; }
+    .wp-upload-fileinfo {
+        margin-top: 14px; padding: 10px 12px; border-radius: 8px;
+        background: var(--wp-surface-soft); border: 1px solid var(--wp-border);
+        font-size: 13px; color: var(--wp-text); display: none; align-items: center; gap: 8px;
+    }
+    .wp-upload-fileinfo.show { display: flex; }
+    .wp-upload-fileinfo .layui-icon { color: var(--wp-accent); flex-shrink: 0; }
+    .wp-upload-overwrite {
+        display: flex; align-items: center; gap: 8px;
+        margin-top: 16px; font-size: 13px; color: var(--wp-text-secondary);
+        cursor: pointer; user-select: none;
+    }
+    .wp-upload-overwrite input[type="checkbox"] { width: 16px; height: 16px; flex-shrink: 0; }
+
+    /* Upload dialog buttons — cPanel warm-brown primary */
+    .wp-upload-layer .layui-layer-btn { padding: 12px 24px; border-top: 1px solid var(--wp-border); background: transparent; }
+    .wp-upload-layer .layui-layer-btn a { height: 34px; line-height: 32px; padding: 0 20px; border-radius: 8px; font-size: 13px; font-weight: 600; }
+    .wp-upload-layer .layui-layer-btn .layui-layer-btn0 { background: #c2703e; border-color: #c2703e; color: #fff; }
+    .wp-upload-layer .layui-layer-btn .layui-layer-btn0:hover { background: #a85e30; border-color: #a85e30; }
+    .wp-upload-layer .layui-layer-btn .layui-layer-btn1 { background: var(--wp-surface-soft); border-color: var(--wp-border); color: var(--wp-text); }
+    .wp-upload-layer .layui-layer-btn .layui-layer-btn1:hover { background: var(--wp-accent-soft); border-color: var(--wp-accent); color: var(--wp-accent); }
+    html[data-theme="dark"] .wp-upload-layer .layui-layer-btn .layui-layer-btn1 { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.14); color: var(--wp-text); }
+    html[data-theme="dark"] .wp-upload-layer .layui-layer-btn .layui-layer-btn1:hover { background: rgba(144,186,30,0.16); border-color: var(--wp-accent); color: var(--wp-accent); }
 </style>
 
 <div class="panel-card fm-card<?= $vdbSelected ? ' fm-vdb' : '' ?>">
@@ -470,7 +515,6 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
                         <span class="layui-icon layui-icon-search fm-search-ico"></span>
                         <div class="fm-search-drop" id="fmSearchDrop"></div>
                     </div>
-                    <input type="file" id="fileInput" style="display:none">
                 </div>
 
                 <div class="fm-nav">
@@ -1391,28 +1435,90 @@ layui.use(['layer', 'upload'], function () {
             layer.alert(err, { icon: 2, title: '上传失败' });
         });
     }
+    function fmtUpSize(n) {
+        n = Number(n) || 0;
+        if (n >= 1073741824) return (n / 1073741824).toFixed(1) + ' GB';
+        if (n >= 1048576) return (n / 1048576).toFixed(1) + ' MB';
+        if (n >= 1024) return (n / 1024).toFixed(1) + ' KB';
+        return n + ' B';
+    }
+    var upCloudSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M12 13v8"/><path d="m8 17 4-4 4 4"/><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/></svg>';
     $('#btnUpload').on('click', function () {
         if (refuseIfVdb()) return;
-        $('#fileInput').trigger('click');
-    });
-    $('#fileInput').on('change', function () {
-        var f = this.files[0];
-        this.value = '';
-        if (!f) return;
-        var hit = listingEntry(f.name);
-        if (hit) {
-            if (hit.type === 'dir') {
-                layer.alert('已存在同名文件夹，无法覆盖。', { icon: 2, title: '上传失败' });
-                return;
+        var selFile = null;
+        var upHtml = '<div class="wp-upload-dialog">' +
+            '<div class="wp-upload-dropzone" id="upDropzone">' +
+                '<div class="wp-upload-icon">' + upCloudSvg + '</div>' +
+                '<div class="wp-upload-text">Drop files here or click to browse</div>' +
+                '<div class="wp-upload-path">Files will be uploaded to <span class="wp-up-path-val">' + esc(curPath) + '</span>.</div>' +
+            '</div>' +
+            '<input type="file" id="upFileInput" style="display:none">' +
+            '<div class="wp-upload-fileinfo" id="upFileInfo"><span class="layui-icon layui-icon-file"></span><span class="up-name"></span></div>' +
+            '<label class="wp-upload-overwrite"><input type="checkbox" id="upOverwrite"> Overwrite existing files</label>' +
+        '</div>';
+        layer.open({
+            type: 1,
+            title: 'Upload Files',
+            skin: 'wp-upload-layer',
+            area: ['520px', 'auto'],
+            shadeClose: false,
+            content: upHtml,
+            btn: ['Upload', 'Cancel'],
+            btnAlign: 'r',
+            success: function (layero, index) {
+                var $box = layero;
+                var $drop = $box.find('#upDropzone');
+                var $fileInput = $box.find('#upFileInput');
+                var $fileInfo = $box.find('#upFileInfo');
+                var $overwrite = $box.find('#upOverwrite');
+                function pickFile(f) {
+                    if (!f) return;
+                    selFile = f;
+                    $fileInfo.find('.up-name').text(f.name + ' (' + fmtUpSize(f.size) + ')');
+                    $fileInfo.addClass('show');
+                }
+                $drop.on('click', function () { $fileInput.trigger('click'); });
+                $fileInput.on('change', function () {
+                    var f = this.files[0];
+                    this.value = '';
+                    pickFile(f);
+                });
+                $drop.on('dragover', function (e) {
+                    e.preventDefault();
+                    $drop.addClass('is-dragover');
+                });
+                $drop.on('dragleave', function () { $drop.removeClass('is-dragover'); });
+                $drop.on('drop', function (e) {
+                    e.preventDefault();
+                    $drop.removeClass('is-dragover');
+                    var f = e.originalEvent.dataTransfer.files[0];
+                    pickFile(f);
+                });
+            },
+            yes: function (index, layero) {
+                if (!selFile) {
+                    layer.msg('Please select a file to upload', { icon: 0 });
+                    return false;
+                }
+                var overwrite = layero.find('#upOverwrite').prop('checked');
+                layer.close(index);
+                var hit = listingEntry(selFile.name);
+                if (hit && !overwrite) {
+                    if (hit.type === 'dir') {
+                        layer.alert('A folder with the same name already exists and cannot be overwritten.', { icon: 2, title: 'Upload failed' });
+                        return;
+                    }
+                    if (hit.type === 'link') {
+                        layer.alert('A symlink with the same name already exists and cannot be overwritten.', { icon: 2, title: 'Upload failed' });
+                        return;
+                    }
+                    confirmOverwrite(selFile.name, function () { uploadFile(selFile, true); });
+                    return;
+                }
+                uploadFile(selFile, overwrite);
             }
-            if (hit.type === 'link') {
-                layer.alert('已存在同名符号链接，无法覆盖。', { icon: 2, title: '上传失败' });
-                return;
-            }
-            confirmOverwrite(f.name, function () { uploadFile(f, true); });
-            return;
-        }
-        uploadFile(f, false);
+        });
     });
 
     /* filename search (current directory + descendants) */
