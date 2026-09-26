@@ -302,11 +302,16 @@ if (!$vdbSelected) {
     }
 
     /* 工具栏扁平化按钮（截图 1 样式：无背景无边框，按钮间用 | 分隔） */
+    .fm-card .fm-toolbar {
+        background: #0f172a !important;
+        padding: 6px 8px !important;
+        border-radius: 6px;
+    }
     .fm-card .fm-tb-btn {
         background: transparent !important;
         border: none !important;
         box-shadow: none !important;
-        color: #475569 !important;
+        color: #e2e8f0 !important;
         padding: 4px 6px !important;
         margin: 0 !important;
         height: auto !important;
@@ -316,19 +321,19 @@ if (!$vdbSelected) {
         border-radius: 4px !important;
     }
     .fm-card .fm-tb-btn:hover {
-        background: #ecfccb !important;
-        color: #33691e !important;
+        background: rgba(255, 255, 255, 0.12) !important;
+        color: #ffffff !important;
     }
     .fm-card .fm-tb-btn.fm-tb-danger {
-        color: #dc2626 !important;
+        color: #f87171 !important;
     }
     .fm-card .fm-tb-btn.fm-tb-danger:hover {
-        background: #fef2f2 !important;
-        color: #b91c1c !important;
+        background: rgba(248, 113, 113, 0.18) !important;
+        color: #fca5a5 !important;
     }
     .fm-card .fm-tb-btn[disabled] {
         background: transparent !important;
-        color: #cbd5e1 !important;
+        color: #64748b !important;
         cursor: not-allowed;
     }
     .fm-card .fm-tb-btn .layui-icon { font-size: 14px; }
@@ -340,11 +345,11 @@ if (!$vdbSelected) {
         margin-right: 1px;
     }
     /* cPanel-like blue for Home / Up / Back / Forward / Refresh (+ select-all icons). */
-    .fm-card .fm-tb-btn.fm-tb-nav .layui-icon { color: #1a73e8 !important; }
+    .fm-card .fm-tb-btn.fm-tb-nav .layui-icon { color: #60a5fa !important; }
     .fm-tb-sep {
         display: inline-flex;
         align-items: center;
-        color: #cbd5e1;
+        color: rgba(255, 255, 255, 0.25);
         font-size: 14px;
         line-height: 1;
         margin: 0 1px;
