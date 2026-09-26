@@ -252,7 +252,7 @@ body.wp-page-pma .layui-layout-admin .layui-body {
     height: auto; /* top + bottom compute the used height */
     min-height: 0;
     overflow: hidden;
-    padding: 10px 12px;
+    padding: 10px 20px 10px 12px; /* 20px right gutter; left stays 12px */
 }
 body.wp-page-pma .layui-body > .panel-card {
     flex: 0 0 auto;
@@ -266,6 +266,7 @@ body.wp-page-pma .layui-body > .panel-card.pma-browser-card {
     min-height: 0;
     min-width: 0;
     width: 100%;
+    box-sizing: border-box;
     overflow: hidden;
     padding: 12px 14px;
 }
