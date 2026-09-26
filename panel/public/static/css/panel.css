@@ -597,6 +597,9 @@ input[type="checkbox"],
 input[type="radio"] {
     accent-color: var(--wp-accent);
 }
+.wp-page-files .fm-table input[type="checkbox"] {
+    accent-color: #1a73e8;
+}
 .fm-icon-dir { color: var(--wp-accent) !important; }
 .fm-name-link { color: var(--wp-accent); }
 .layui-layer-btn .layui-layer-btn0 {

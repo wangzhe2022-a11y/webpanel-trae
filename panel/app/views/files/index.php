@@ -7,10 +7,11 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
 <style>
     .fm-card { display: flex; flex-direction: column; min-height: calc(100vh - 92px); padding-bottom: 12px; width: 100%; box-sizing: border-box; min-width: 0; max-width: 100%; overflow: hidden; }
     .fm-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; }
-    .fm-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 13px; }
+    .fm-nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 6px; margin-bottom: 8px; font-size: 13px; }
     .fm-nav .layui-btn { margin: 0; }
-    .fm-pathbox { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 220px; }
-    .fm-pathbox input { flex: 1; height: 30px; line-height: 30px; border: 1px solid var(--wp-border); border-radius: 2px; padding: 0 8px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+    /* ~1/3 of the former full-bleed path row; left-aligned under the toolbar. */
+    .fm-pathbox { display: flex; align-items: center; gap: 6px; flex: 0 1 33%; width: 33%; max-width: 33%; min-width: 180px; box-sizing: border-box; }
+    .fm-pathbox input { flex: 1 1 auto; min-width: 0; height: 30px; line-height: 30px; border: 1px solid var(--wp-border); border-radius: 2px; padding: 0 8px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
     .fm-site-switch { flex: 0 0 auto; min-width: 0; padding: 8px 10px; border-bottom: 1px solid var(--wp-border); background: #ffffff; }
     .fm-site-switch label {
         display: block; margin: 0 0 5px; font-size: 11px; line-height: 1; color: var(--wp-text-secondary);
@@ -250,6 +251,15 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         cursor: not-allowed;
     }
     .fm-card .fm-tb-btn .layui-icon { font-size: 14px; }
+    .fm-card .fm-tb-btn .fm-tb-ico {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        vertical-align: -2px;
+        margin-right: 1px;
+    }
+    /* cPanel-like blue for Home / Up / Back / Forward / Refresh (+ select-all icons). */
+    .fm-card .fm-tb-btn.fm-tb-nav .layui-icon { color: #1a73e8 !important; }
     .fm-tb-sep {
         display: inline-flex;
         align-items: center;
@@ -279,6 +289,37 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-table tbody tr:hover { box-shadow: inset 3px 0 0 #3b82f6 !important; }
     .fm-table tbody tr.fm-hit td { background: #bfdbfe !important; }
     .fm-table tbody tr.fm-hit { box-shadow: inset 3px 0 0 #3b82f6 !important; }
+
+    /* File-list checkboxes: white + slate when off, cPanel blue when on (never black). */
+    .fm-table input[type="checkbox"] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 15px;
+        height: 15px;
+        margin: 0;
+        box-sizing: border-box;
+        border: 1.5px solid #94a3b8;
+        border-radius: 3px;
+        background-color: #ffffff;
+        background-image: none;
+        cursor: pointer;
+        vertical-align: middle;
+        color-scheme: light;
+        accent-color: #1a73e8;
+    }
+    .fm-table input[type="checkbox"]:hover { border-color: #1a73e8; }
+    .fm-table input[type="checkbox"]:focus-visible {
+        outline: 2px solid rgba(26, 115, 232, 0.35);
+        outline-offset: 1px;
+    }
+    .fm-table input[type="checkbox"]:checked {
+        background-color: #1a73e8;
+        border-color: #1a73e8;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' d='M3.5 8.2l3 3 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 11px 11px;
+    }
 
     /* 搜索下拉 */
     .fm-search-drop {
@@ -371,32 +412,39 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         <div class="fm-main">
             <div class="fm-main-bar">
                 <div class="fm-toolbar">
-                    <button type="button" class="fm-tb-btn" id="btnHome" title="<?= $vdbSelected ? '备份盘根目录' : '站点根目录' ?>">
+                    <button type="button" class="fm-tb-btn fm-tb-nav" id="btnHome" title="<?= $vdbSelected ? '备份盘根目录' : '站点根目录' ?>">
                         <span class="layui-icon layui-icon-home"></span> <span class="fm-tb-label"><?= $vdbSelected ? '备份盘根目录' : '站点根目录' ?></span>
                     </button>
                     <span class="fm-tb-sep">|</span>
-                    <button type="button" class="fm-tb-btn" id="btnUp" title="上一级">
+                    <button type="button" class="fm-tb-btn fm-tb-nav" id="btnUp" title="上一级">
                         <span class="layui-icon layui-icon-up"></span> 上一级
                     </button>
                     <span class="fm-tb-sep">|</span>
-                    <button type="button" class="fm-tb-btn" id="btnBack" title="后退">
+                    <button type="button" class="fm-tb-btn fm-tb-nav" id="btnBack" title="后退">
                         <span class="layui-icon layui-icon-left"></span> 后退
                     </button>
                     <span class="fm-tb-sep">|</span>
-                    <button type="button" class="fm-tb-btn" id="btnFwd" title="前进">
+                    <button type="button" class="fm-tb-btn fm-tb-nav" id="btnFwd" title="前进">
                         <span class="layui-icon layui-icon-right"></span> 前进
                     </button>
                     <span class="fm-tb-sep">|</span>
-                    <button type="button" class="fm-tb-btn" id="btnRefresh" title="刷新当前目录">
+                    <button type="button" class="fm-tb-btn fm-tb-nav" id="btnRefresh" title="刷新当前目录">
                         <span class="layui-icon layui-icon-refresh"></span> 刷新
                     </button>
                     <span class="fm-tb-sep">|</span>
-                    <button type="button" class="fm-tb-btn" id="btnSelAllNav" title="全选">
-                        <span class="layui-icon layui-icon-ok"></span> 全选
+                    <button type="button" class="fm-tb-btn fm-tb-nav" id="btnSelAllNav" title="全选">
+                        <svg class="fm-tb-ico" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                            <rect x="1.5" y="1.5" width="13" height="13" rx="2" fill="#1a73e8"/>
+                            <path d="M4.2 8.2l2.4 2.4 5.2-5.2" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        全选
                     </button>
                     <span class="fm-tb-sep">|</span>
-                    <button type="button" class="fm-tb-btn" id="btnUnselAll" title="取消全选">
-                        <span class="layui-icon layui-icon-close"></span> 取消全选
+                    <button type="button" class="fm-tb-btn fm-tb-nav" id="btnUnselAll" title="取消全选">
+                        <svg class="fm-tb-ico" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                            <rect x="1.5" y="1.5" width="13" height="13" rx="2" fill="#fff" stroke="#1a73e8" stroke-width="1.6"/>
+                        </svg>
+                        取消全选
                     </button>
                     <span class="fm-tb-sep">|</span>
                     <button type="button" class="fm-tb-btn fm-write" id="btnUpload"><span class="layui-icon layui-icon-upload"></span> 上传</button>
@@ -428,7 +476,7 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
                 <div class="fm-nav">
                     <div class="fm-pathbox">
                         <input id="pathInput" spellcheck="false" autocomplete="off" title="当前路径">
-                        <button class="layui-btn layui-btn-xs" id="btnGo">转到</button>
+                        <button class="layui-btn layui-btn-xs" id="btnGo" title="转到" aria-label="转到">转到</button>
                     </div>
                 </div>
             </div>
