@@ -60,7 +60,11 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         margin: 0 0 8px; padding: 8px 12px; border-radius: 4px;
         background: #fff7e6; border: 1px solid #ffe58f; color: #8c6d1f; font-size: 12.5px;
     }
-    .fm-card.fm-vdb .fm-write { display: none !important; }
+    /* vdb 只读模式下保留写入按钮但置灰禁用（不再 display:none） */
+    .fm-card.fm-vdb .fm-write {
+        opacity: .5 !important;
+        cursor: not-allowed !important;
+    }
     .fm-search { position: relative; margin-left: auto; flex: 1 1 240px; min-width: 200px; max-width: 420px; }
     .fm-search input {
         width: 100%; height: 30px; line-height: 30px; box-sizing: border-box;
@@ -299,6 +303,12 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     }
     .fm-ctx-item.fm-ctx-danger { color: #dc2626; }
     .fm-ctx-item.fm-ctx-danger:hover { background: #fef2f2; color: #b91c1c; }
+    .fm-ctx-item.fm-ctx-disabled {
+        color: #cbd5e1 !important;
+        cursor: not-allowed;
+        background: transparent !important;
+    }
+    .fm-ctx-item.fm-ctx-disabled:hover { background: transparent !important; color: #cbd5e1 !important; }
     .fm-ctx-item .layui-icon { font-size: 14px; }
 
     /* Monaco 编辑器容器 */
@@ -482,6 +492,8 @@ layui.use(['layer', 'upload'], function () {
     function applyRootMode() {
         var vdb = isVdb();
         $('.fm-card').toggleClass('fm-vdb', vdb);
+        // 只读模式保留写入按钮但禁用（置灰、不可点击）
+        $('.fm-write').prop('disabled', vdb);
         if (vdb) $('#vdbBanner').removeAttr('hidden');
         else $('#vdbBanner').attr('hidden', 'hidden');
         $('#btnHome').text(vdb ? '备份盘根目录' : '站点根目录')
@@ -745,8 +757,10 @@ layui.use(['layer', 'upload'], function () {
                 : f.size > 1024 ? (f.size / 1024).toFixed(1) + ' KB' : f.size + ' B');
             var acts = '';
             var vdb = isVdb();
-            if (!vdb && f.type !== 'dir' && EDITABLE.test(f.name)) {
-                acts += '<button class="layui-btn layui-btn-xs layui-btn-primary act-edit">编辑</button> ';
+            // 只读模式下保留所有操作按钮，但写入相关按钮置灰禁用
+            var dis = vdb ? ' disabled' : '';
+            if (f.type !== 'dir' && EDITABLE.test(f.name)) {
+                acts += '<button class="layui-btn layui-btn-xs layui-btn-primary act-edit"' + dis + '>编辑</button> ';
             }
             if (f.type !== 'dir' && ARCHIVE.test(f.name)) {
                 acts += '<button class="layui-btn layui-btn-xs layui-btn-normal act-extract">解压</button> ';
@@ -754,11 +768,9 @@ layui.use(['layer', 'upload'], function () {
             if (f.type !== 'dir') {
                 acts += '<button class="layui-btn layui-btn-xs layui-btn-primary act-dl">下载</button> ';
             }
-            if (!vdb) {
-                acts += '<button class="layui-btn layui-btn-xs act-rename">重命名</button> '
-                     +  '<button class="layui-btn layui-btn-xs act-chmod">权限</button> '
-                     +  '<button class="layui-btn layui-btn-xs layui-btn-danger act-del">删除</button>';
-            }
+            acts += '<button class="layui-btn layui-btn-xs act-rename"' + dis + '>重命名</button> '
+                 +  '<button class="layui-btn layui-btn-xs act-chmod"' + dis + '>权限</button> '
+                 +  '<button class="layui-btn layui-btn-xs layui-btn-danger act-del"' + dis + '>删除</button>';
             rows += '<tr data-path="' + esc(p) + '" data-name="' + esc(f.name) + '" data-type="' + f.type + '">'
                  +  '<td><input type="checkbox" class="sel"></td>'
                  +  '<td>' + iconOf(f.type, f.name) + '</td>'
@@ -1470,19 +1482,21 @@ layui.use(['layer', 'upload'], function () {
         var isArchive = !isDir && ARCHIVE.test(name);
         var isEditable = !isDir && EDITABLE.test(name);
         var vdb = isVdb();
-        // 根据文件类型显示/隐藏菜单项
+        // 根据文件类型显示菜单项；只读模式下写入项保留但置灰禁用
         $ctx.find('.fm-ctx-item').each(function () {
             var act = $(this).attr('data-act');
             var show = true;
-            if (act === 'edit') show = !vdb && isEditable;
+            var dis = false;
+            if (act === 'edit') { show = isEditable; dis = vdb; }
             else if (act === 'extract') show = isArchive;
             else if (act === 'download') show = !isDir;
-            else if (act === 'chmod' || act === 'rename' || act === 'delete') show = !vdb;
-            $(this).toggle(show);
+            else if (act === 'chmod' || act === 'rename' || act === 'delete') { dis = vdb; }
+            $(this).toggle(show).toggleClass('fm-ctx-disabled', dis).prop('disabled', dis);
         });
         showCtx(e.clientX, e.clientY);
     });
     $ctx.on('click', '.fm-ctx-item', function () {
+        if ($(this).is(':disabled')) return;
         var act = $(this).attr('data-act');
         if (!ctxTarget) { hideCtx(); return; }
         var $tr = ctxTarget;
