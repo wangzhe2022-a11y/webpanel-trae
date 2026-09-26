@@ -235,13 +235,13 @@ html.wp-side-collapsed .layui-layout-admin .layui-body {
     gap: 20px;
 }
 .wp-page-pma .layui-body > .panel-card { flex: 0 0 auto; margin-bottom: 0; }
-.wp-page-pma .pma-browser-card {
+.wp-page-pma .layui-body > .pma-browser-card {
     flex: 1 1 auto;
     display: flex;
     flex-direction: column;
     min-height: 0;
 }
-.wp-page-pma .pma-browser-card > div:first-child { flex: 0 0 auto; }
+.wp-page-pma .layui-body > .pma-browser-card > div:first-child { flex: 0 0 auto; }
 .wp-page-pma .pma-frame {
     flex: 1 1 auto;
     height: auto;
