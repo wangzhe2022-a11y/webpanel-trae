@@ -1590,6 +1590,14 @@ html[data-theme="dark"] .fm-table thead th { background: var(--wp-surface-soft);
 html[data-theme="dark"] .fm-site-switch,
 html[data-theme="dark"] .fm-crumb,
 html[data-theme="dark"] .fm-empty { color: var(--wp-text-secondary); }
+/* files page custom site picker stays on the light files UI */
+html[data-theme="dark"] .wp-page-files .fm-site-switch .fm-site-dd-btn,
+html[data-theme="dark"] .wp-page-files .fm-site-switch .fm-site-dd-menu {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    color: #1e293b;
+}
+html[data-theme="dark"] .wp-page-files .fm-site-switch .fm-site-dd-option { color: #1e293b; }
 html[data-theme="dark"] .fm-crumb a,
 html[data-theme="dark"] .fm-name-link { color: var(--wp-accent); }
 html[data-theme="dark"] .fm-empty .layui-icon { color: var(--wp-text-muted); }
