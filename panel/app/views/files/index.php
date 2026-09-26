@@ -80,7 +80,7 @@ if (!$vdbSelected) {
         display: block; width: 100%; box-sizing: border-box;
         padding: 9px 14px; border: 0; background: transparent;
         color: #1e293b; font-size: 13px; line-height: 1.35; text-align: left;
-        cursor: pointer; font-family: inherit; white-space: normal; overflow-wrap: anywhere;
+        cursor: pointer; font-family: inherit; white-space: nowrap;
     }
     .fm-site-dd-option:hover,
     .fm-site-dd-option.is-active { background: #f1f5f9; color: #0f172a; }
