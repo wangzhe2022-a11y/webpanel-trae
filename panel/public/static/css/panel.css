@@ -228,6 +228,26 @@ html.wp-side-collapsed .layui-layout-admin .layui-body {
     left: var(--wp-side-w-collapsed);
 }
 
+/* phpMyAdmin page: make the embedded SQL browser fill the available height */
+.wp-page-pma .layui-layout-admin .layui-body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.wp-page-pma .layui-body > .panel-card { flex: 0 0 auto; margin-bottom: 0; }
+.wp-page-pma .pma-browser-card {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+.wp-page-pma .pma-browser-card > div:first-child { flex: 0 0 auto; }
+.wp-page-pma .pma-frame {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 480px;
+}
+
 /* ---- header user area ---------------------------------------------------- */
 .header-right {
     float: none;
