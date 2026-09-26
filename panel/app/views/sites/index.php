@@ -253,6 +253,47 @@ html[data-theme="dark"] #nodeFields {
     background: rgba(144, 186, 30, 0.06);
     border-color: rgba(144, 186, 30, 0.2);
 }
+
+/* PHP version select — modern dark-theme dropdown */
+.phpsel {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    height: 28px;
+    font-size: 12px;
+    padding: 0 26px 0 10px;
+    border-radius: 6px;
+    border: 1px solid var(--wp-border);
+    background-color: var(--wp-surface-soft);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 12px;
+    color: var(--wp-text);
+    cursor: pointer;
+    color-scheme: dark;
+    transition: border-color .2s, background-color .2s;
+    outline: none;
+}
+.phpsel:hover { border-color: var(--wp-accent); }
+.phpsel:focus {
+    border-color: var(--wp-accent);
+    box-shadow: 0 0 0 2px rgba(144, 186, 30, 0.2);
+}
+.phpsel option {
+    background-color: var(--wp-surface);
+    color: var(--wp-text);
+}
+
+/* Popup selects also use dark color-scheme for the option panel */
+.layui-layer-content select {
+    color-scheme: dark;
+}
+html[data-theme="dark"] .layui-layer-content select {
+    background-color: rgba(0, 0, 0, 0.35);
+    border-color: rgba(255, 255, 255, 0.16);
+    color: #fff;
+}
 </style>
 <div class="panel-card wp-sites-wrap">
     <div class="wp-sites-toolbar">
