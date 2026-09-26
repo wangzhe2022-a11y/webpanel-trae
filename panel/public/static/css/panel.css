@@ -228,11 +228,21 @@ html.wp-side-collapsed .layui-layout-admin .layui-body {
     left: var(--wp-side-w-collapsed);
 }
 
-/* phpMyAdmin page: make the embedded SQL browser fill the available height */
+/* phpMyAdmin page: fill the available layui-body (viewport-relative, not a fixed px). */
+body.wp-page-pma,
+body.wp-page-pma .layui-layout-admin {
+    height: 100vh;
+    overflow: hidden;
+}
 .wp-page-pma .layui-layout-admin .layui-body {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 10px;
+    box-sizing: border-box;
+    height: calc(100vh - var(--wp-header-h));
+    min-height: 0;
+    overflow: hidden;
+    padding: 10px 12px;
 }
 .wp-page-pma .layui-body > .panel-card { flex: 0 0 auto; margin-bottom: 0; }
 .wp-page-pma .pma-browser-card {
@@ -240,12 +250,23 @@ html.wp-side-collapsed .layui-layout-admin .layui-body {
     display: flex;
     flex-direction: column;
     min-height: 0;
+    min-width: 0;
+    width: 100%;
+    overflow: hidden;
+    padding: 12px 14px;
 }
-.wp-page-pma .pma-browser-card > div:first-child { flex: 0 0 auto; }
+.wp-page-pma .pma-browser-card > div:first-child,
+.wp-page-pma .pma-browser-card > p { flex: 0 0 auto; }
 .wp-page-pma .pma-frame {
     flex: 1 1 auto;
-    height: auto;
-    min-height: 480px;
+    align-self: stretch;
+    display: block;
+    width: 100%;
+    min-height: 0;
+    height: 0; /* replaced iframe: let flex-grow set the used height */
+    border: 1px solid var(--wp-border);
+    border-radius: 6px;
+    background: #fff;
 }
 
 /* 文件管理页：固定高度，左侧目录树与右侧内容区各自独立滚动 */
@@ -269,6 +290,22 @@ html.wp-side-collapsed .layui-layout-admin .layui-body {
 .wp-page-files .fm-card > .fm-split {
     flex: 1 1 auto;
     min-height: 0;
+}
+
+/* files page only: 1px smaller left tree + main table/list */
+.wp-page-files .fm-tree,
+.wp-page-files .fm-tree-body,
+.wp-page-files .fm-tree-row {
+    font-size: 14px;
+}
+.wp-page-files .fm-tree-head { font-size: 11px; }
+.wp-page-files .fm-twist { font-size: 14px; }
+.wp-page-files .fm-table td,
+.wp-page-files .fm-table th {
+    font-size: 12px;
+}
+.wp-page-files .fm-table td.mono {
+    font-size: 11px;
 }
 
 /* ---- header user area ---------------------------------------------------- */

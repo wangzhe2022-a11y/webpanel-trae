@@ -30,15 +30,15 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     }
     .fm-splitter:hover, .fm-splitter:focus-visible, body.fm-resizing .fm-splitter { background: var(--wp-accent); }
     body.fm-resizing, body.fm-resizing * { cursor: col-resize !important; user-select: none !important; }
-    .fm-tree-head { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-bottom: 1px solid var(--wp-border); font-size: 12px; color: var(--wp-text-secondary); background: #ffffff; }
+    .fm-tree-head { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-bottom: 1px solid var(--wp-border); font-size: 11px; color: var(--wp-text-secondary); background: #ffffff; }
     .fm-tree-body { flex: 1; overflow: auto; padding: 6px 0 12px; }
     .fm-tree-ul { list-style: none; margin: 0; padding: 0 0 0 14px; }
     .fm-tree-ul.root { padding-left: 6px; }
-    .fm-tree-row { display: flex; align-items: center; gap: 4px; padding: 3px 8px 3px 4px; border-radius: 3px; cursor: pointer; white-space: nowrap; user-select: none; overflow: hidden; }
+    .fm-tree-row { display: flex; align-items: center; gap: 4px; padding: 3px 8px 3px 4px; border-radius: 3px; cursor: pointer; white-space: nowrap; user-select: none; overflow: hidden; font-size: 14px; }
     .fm-tree-row .fm-tree-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
     .fm-tree-row:hover { background: var(--wp-accent-soft); }
     .fm-tree-row.active { background: var(--wp-accent-soft); color: var(--wp-accent); font-weight: 600; }
-    .fm-twist { width: 16px; color: var(--wp-text-muted); font-size: 15px; font-weight: 700; line-height: 1; text-align: center; flex-shrink: 0; }
+    .fm-twist { width: 16px; color: var(--wp-text-muted); font-size: 14px; font-weight: 700; line-height: 1; text-align: center; flex-shrink: 0; }
     .fm-twist.empty { visibility: hidden; }
     .fm-main { flex: 1; overflow: hidden; min-width: 0; display: flex; flex-direction: column; }
     .fm-main-bar { flex: 0 0 auto; padding: 8px 10px 6px; border-bottom: 1px solid var(--wp-border); background: var(--wp-surface-soft); }
@@ -47,7 +47,7 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-main-scroll { flex: 1; overflow: auto; min-height: 0; min-width: 0; }
     .fm-table { margin: 0 !important; min-width: 100% !important; width: auto !important; table-layout: auto; }
     .fm-table thead th { position: sticky; top: 0; background: var(--wp-surface-soft); z-index: 1; white-space: nowrap; }
-    .fm-table td, .fm-table th { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fm-table td, .fm-table th { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .fm-table td:last-child, .fm-table th:last-child { white-space: normal; overflow: visible; }
     .fm-table tbody tr:hover { background: #dbeafe !important; box-shadow: inset 3px 0 0 #3b82f6 !important; }
     .fm-table tbody tr:hover td { background: transparent !important; }
@@ -792,9 +792,9 @@ layui.use(['layer', 'upload'], function () {
                  +  '<td>' + iconOf(f.type, f.name) + '</td>'
                  +  '<td>' + nameHtml + '</td>'
                  +  '<td>' + typeLabel(f.type) + '</td>'
-                 +  '<td class="mono" style="font-size:12px">' + size + '</td>'
-                 +  '<td class="mono fm-perms" style="font-size:12px">' + esc(f.perms) + '</td>'
-                 +  '<td class="mono" style="font-size:12px">' + esc(f.mtime) + '</td>'
+                 +  '<td class="mono" style="font-size:11px">' + size + '</td>'
+                 +  '<td class="mono fm-perms" style="font-size:11px">' + esc(f.perms) + '</td>'
+                 +  '<td class="mono" style="font-size:11px">' + esc(f.mtime) + '</td>'
                  +  '<td>' + acts + '</td></tr>';
         });
         if (!rows) rows = '<tr><td colspan="8" style="text-align:center;color:#999;padding:30px">空目录</td></tr>';
