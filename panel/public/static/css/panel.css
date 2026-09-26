@@ -1614,6 +1614,30 @@ html[data-theme="dark"] .layui-layer-input {
 html[data-theme="dark"] .layui-layer-input:focus { border-color: var(--wp-accent); }
 html[data-theme="dark"] .layui-layer-content .layui-form-label { color: rgba(244, 247, 251, 0.9); }
 
+/* Layer popup close button — visible in dark theme (all variants) */
+html[data-theme="dark"] .layui-layer-setwin .layui-layer-close,
+html[data-theme="dark"] .layui-layer-setwin .layui-icon-close,
+html[data-theme="dark"] .layui-layer-setwin a {
+    color: rgba(255, 255, 255, 0.65) !important;
+}
+html[data-theme="dark"] .layui-layer-setwin .layui-layer-close:hover,
+html[data-theme="dark"] .layui-layer-setwin .layui-icon-close:hover {
+    color: #fff !important;
+    background-color: rgba(255, 255, 255, 0.12) !important;
+}
+html[data-theme="dark"] .layui-layer-setwin span:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+html[data-theme="dark"] .layui-layer-setwin .layui-layer-close2 {
+    color: #fff !important;
+    background-color: rgba(255, 255, 255, 0.18) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+}
+html[data-theme="dark"] .layui-layer-setwin .layui-layer-close2:hover {
+    background-color: #e81123 !important;
+    border-color: #e81123 !important;
+}
+
 /* File manager: keep usable on glass without rewriting its layout. */
 html[data-theme="dark"] .fm-split {
     background: rgba(0, 0, 0, 0.28);
