@@ -47,7 +47,7 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-main-scroll { flex: 1; overflow: auto; min-height: 0; min-width: 0; }
     .fm-table { margin: 0 !important; min-width: 100% !important; width: auto !important; table-layout: auto; }
     .fm-table thead th { position: sticky; top: 0; background: var(--wp-surface-soft); z-index: 1; white-space: nowrap; }
-    .fm-table td, .fm-table th { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fm-table td, .fm-table th { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .fm-table td:last-child, .fm-table th:last-child { white-space: normal; overflow: visible; }
     .fm-table tbody tr:hover { background: #dbeafe !important; box-shadow: inset 3px 0 0 #3b82f6 !important; }
     .fm-table tbody tr:hover td { background: transparent !important; }
