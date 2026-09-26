@@ -38,7 +38,7 @@ $logoSrc = panel_logo_src();
 <link rel="stylesheet" href="/static/layui/css/layui.css">
 <link rel="stylesheet" href="/static/css/panel.css">
 </head>
-<body class="layui-layout-body<?= $uri === '/' ? ' wp-page-dashboard' : '' ?><?= $uri === '/phpmyadmin' ? ' wp-page-pma' : '' ?><?= $uri === '/files' ? ' wp-page-files' : '' ?>">
+<body class="layui-layout-body<?= $uri === '/' ? ' wp-page-dashboard' : '' ?><?= ($uri === '/phpmyadmin' || $uri === '/phpmyadmin/') ? ' wp-page-pma' : '' ?><?= $uri === '/files' ? ' wp-page-files' : '' ?>">
 <script src="/static/layui/layui.js"></script>
 <script>
 /* Shared helpers for every panel page - loaded BEFORE view scripts so inline
