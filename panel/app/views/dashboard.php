@@ -1327,6 +1327,75 @@ layui.use(['layer'], function () {
         } catch (e) { /* GridStack 初始化失败时回退为静态 3 列布局 */ }
 
         // ---- Disk usage detail widget -----------------------------------------
+        function diskUsageSvg(kind) {
+            var paths = {
+                home: '<path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1z"/>',
+                hidden: '<path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.4"/><path d="M4 20 20 4"/>',
+                database: '<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/>',
+                mailing: '<rect x="5" y="4" width="14" height="16" rx="1.5"/><path d="M8 9h8M8 12.5h8M8 16h5"/>',
+                email: '<rect x="3.5" y="6" width="17" height="12" rx="1.6"/><path d="m4.5 8 7.5 5 7.5-5"/>',
+                globe: '<circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c2.4 2.4 3.6 5.2 3.6 8s-1.2 5.6-3.6 8c-2.4-2.4-3.6-5.2-3.6-8S9.6 6.4 12 4z"/>',
+                doc: '<path d="M7 3.5h7l5 5V20a1.5 1.5 0 0 1-1.5 1.5h-10A1.5 1.5 0 0 1 6 20V5a1.5 1.5 0 0 1 1-1.5z"/><path d="M14 3.5V9h5.5M8.5 13h7M8.5 16.5h5"/>',
+                clock: '<circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/>',
+                dots: '<circle cx="6" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18" cy="12" r="1.4"/>',
+                folder: '<path d="M3.5 8.5V18A1.5 1.5 0 0 0 5 19.5h14a1.5 1.5 0 0 0 1.5-1.5V10A1.5 1.5 0 0 0 19 8.5h-7.2L9.5 6H5A1.5 1.5 0 0 0 3.5 7.5z"/>'
+            };
+            var d = paths[kind] || paths.dots;
+            var extra = (kind === 'dots')
+                ? ' fill="currentColor"'
+                : ' fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"';
+            return '<svg viewBox="0 0 24 24" aria-hidden="true"' + extra + '>' + d + '</svg>';
+        }
+        function diskUsageIconKind(item, fallback) {
+            var aliases = {
+                home: 'home',
+                hidden: 'hidden',
+                'eye-slash': 'hidden',
+                eyeslash: 'hidden',
+                database: 'database',
+                db: 'database',
+                mailing: 'mailing',
+                list: 'mailing',
+                mail: 'email',
+                email: 'email',
+                envelope: 'email',
+                globe: 'globe',
+                website: 'globe',
+                web: 'globe',
+                doc: 'doc',
+                file: 'doc',
+                log: 'doc',
+                logs: 'doc',
+                clock: 'clock',
+                temp: 'clock',
+                temporary: 'clock',
+                time: 'clock',
+                dots: 'dots',
+                other: 'dots',
+                more: 'dots',
+                folder: 'folder'
+            };
+            var icon = String((item && item.icon) || '').toLowerCase();
+            if (aliases[icon]) return aliases[icon];
+            var n = String((item && item.name) || '').toLowerCase();
+            if (n.indexOf('hidden') !== -1) return 'hidden';
+            if (n.indexOf('database') !== -1) return 'database';
+            if (n.indexOf('mailing') !== -1) return 'mailing';
+            if (n.indexOf('email') !== -1 || n.indexOf('mail') !== -1) return 'email';
+            if (n.indexOf('website') !== -1) return 'globe';
+            if (n.indexOf('log') !== -1) return 'doc';
+            if (n.indexOf('temp') !== -1) return 'clock';
+            if (n.indexOf('home') !== -1) return 'home';
+            if (n.indexOf('other') !== -1) return 'dots';
+            return fallback || 'dots';
+        }
+        function appendDiskUsageRow($list, item, kind) {
+            $list.append('<li><span class="wp-du-left"><span class="wp-du-icon"></span><span class="wp-du-name"></span></span><span class="wp-du-size mono"></span></li>');
+            var $li = $list.find('li:last');
+            $li.find('.wp-du-icon').html(diskUsageSvg(kind));
+            $li.find('.wp-du-name').text(item.name || '');
+            $li.find('.wp-du-size').text(item.size || '');
+        }
         function loadDiskUsage() {
             var $cats = $('#diskUsageCats');
             var $dirs = $('#diskUsageDirs');
@@ -1345,10 +1414,7 @@ layui.use(['layer'], function () {
                     if (cats.length) {
                         $cats.empty();
                         cats.forEach(function (c) {
-                            $cats.append('<li><span class="wp-du-name"></span><span class="wp-du-size mono"></span></li>');
-                            var $li = $cats.find('li:last');
-                            $li.find('.wp-du-name').text(c.name);
-                            $li.find('.wp-du-size').text(c.size);
+                            appendDiskUsageRow($cats, c, diskUsageIconKind(c, 'dots'));
                         });
                     } else {
                         $cats.html('<li class="wp-diskusage-empty">暂无数据</li>');
@@ -1357,10 +1423,7 @@ layui.use(['layer'], function () {
                     if (dirs.length) {
                         $dirs.empty();
                         dirs.forEach(function (d) {
-                            $dirs.append('<li><span class="wp-du-name mono"></span><span class="wp-du-size mono"></span></li>');
-                            var $li = $dirs.find('li:last');
-                            $li.find('.wp-du-name').text(d.name);
-                            $li.find('.wp-du-size').text(d.size);
+                            appendDiskUsageRow($dirs, d, 'folder');
                         });
                     } else {
                         $dirs.html('<li class="wp-diskusage-empty">暂无数据</li>');

@@ -4,16 +4,24 @@
 #   info
 #   svc <nginx|mysql|phpfpm|php74fpm|...> <start|stop|restart|reload>
 #   fpm-safe-restart
+#   logins [limit]
+#   access [limit]
+#   deny|undeny <ipv4>
+#   denylist
+#   disk-usage
 # ============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=wp-lib.sh
 . "$SCRIPT_DIR/wp-lib.sh"
 
-usage() { fail "usage: wp-sys.sh {info|svc|fpm-safe-restart|logins|access|deny|undeny|denylist}" 64; }
+usage() { fail "usage: wp-sys.sh {info|svc|fpm-safe-restart|logins|access|deny|undeny|denylist|disk-usage}" 64; }
 [ $# -ge 1 ] || usage
 action="$1"; shift
-require_root
+# Fixture tests remap host paths via WP_DISK_USAGE_* and skip the root check.
+if [ "$action" != "disk-usage" ] || [ -z "${WP_DISK_USAGE_FIXTURE:-}" ]; then
+    require_root
+fi
 
 # PGDG (AL8 install.sh) uses postgresql-16; AlmaLinux 10 system PG uses postgresql
 pg_unit() {
@@ -544,6 +552,279 @@ if [ "$action" = "deny" ] || [ "$action" = "undeny" ]; then
     systemctl reload nginx >/dev/null 2>&1 || fail "failed to reload nginx"
 
     printf '{"ok":true,"action":"%s","ip":"%s"}\n' "$action" "$ip"
+    exit 0
+fi
+
+# Disk usage breakdown for the dashboard widget.
+# total = sum of the 9 category byte counts (not df used on /). Categories are
+# disjoint path groups so the header total matches the left-hand list.
+# Largest directories are a separate top-N listing and may overlap categories.
+if [ "$action" = "disk-usage" ]; then
+    if is_dry_run; then
+        cat <<'JSON'
+{"ok":true,"total":"18.4 GB","categories":[{"name":"Files in home directory","size":"4.25 MB","icon":"home"},{"name":"Files in hidden subdirectories","size":"1.58 GB","icon":"hidden"},{"name":"Databases","size":"315.48 MB","icon":"database"},{"name":"Mailing Lists","size":"0 B","icon":"mailing"},{"name":"Email","size":"127.41 MB","icon":"email"},{"name":"Website Files","size":"3.16 GB","icon":"globe"},{"name":"Logs","size":"227.3 MB","icon":"doc"},{"name":"Temporary Files","size":"780.64 MB","icon":"clock"},{"name":"Other","size":"5.29 GB","icon":"dots"}],"largest_dirs":[{"name":"application_backups","size":"9.28 GB"},{"name":"public_html","size":"3.16 GB"},{"name":"support-local","size":"2.75 GB"},{"name":"zmerch","size":"1.6 GB"},{"name":"Email","size":"1.58 GB"},{"name":".trash","size":"1.58 GB"},{"name":"tmp","size":"780.64 MB"},{"name":"nuki","size":"631.88 MB"},{"name":"old","size":"306.1 MB"},{"name":"catalog","size":"304.07 MB"},{"name":"logs","size":"227.3 MB"}]}
+JSON
+        exit 0
+    fi
+
+    # Global budget: keep dashboard refresh snappy even on large trees.
+    disk_deadline=$((SECONDS + 8))
+
+    du_run() {
+        local remain=$((disk_deadline - SECONDS))
+        [ "$remain" -gt 8 ] && remain=2
+        [ "$remain" -lt 1 ] && return 1
+        [ "$remain" -gt 3 ] && remain=3
+        if command -v timeout >/dev/null 2>&1; then
+            timeout "$remain" "$@"
+        else
+            "$@"
+        fi
+    }
+
+    # Bytes of one path. Skip missing paths, remote /mnt/backup, and over-budget.
+    du_bytes() {
+        local path="$1" out
+        [ -n "$path" ] || { echo 0; return; }
+        [ -e "$path" ] || { echo 0; return; }
+        case "$path" in
+            /mnt/backup|/mnt/backup/*)
+                echo 0
+                return
+                ;;
+        esac
+        [ $((disk_deadline - SECONDS)) -lt 1 ] && { echo 0; return; }
+        out="$(du_run du -sbx "$path" 2>/dev/null | awk '{print $1; exit}')"
+        [[ "${out:-}" =~ ^[0-9]+$ ]] && echo "$out" || echo 0
+    }
+
+    sum_bytes() {
+        local t=0 p n
+        for p in "$@"; do
+            n="$(du_bytes "$p")"
+            t=$((t + n))
+        done
+        echo "$t"
+    }
+
+    # Human-readable like dry-run / cPanel: "3.16 GB", "780.64 MB", "4.25 KB", "0 B".
+    human_bytes() {
+        awk -v b="${1:-0}" 'BEGIN{
+            if (b < 1) { print "0 B"; exit }
+            if (b < 1024) { printf "%d B\n", b; exit }
+            split("KB MB GB TB", u, " ")
+            n = b + 0
+            i = 0
+            while (n >= 1024 && i < 4) { n /= 1024; i++ }
+            s = sprintf("%.2f", n)
+            sub(/0+$/, "", s)
+            sub(/\.$/, "", s)
+            printf "%s %s\n", s, u[i]
+        }'
+    }
+
+    is_hidden_name() {
+        case "$1" in
+            .* ) return 0 ;;
+            *) return 1 ;;
+        esac
+    }
+
+    # Depth-1 hidden directories (skip . and ..).
+    sum_hidden_dirs() {
+        local root="$1" t=0 d base
+        [ -d "$root" ] || { echo 0; return; }
+        shopt -s nullglob dotglob
+        for d in "$root"/.*; do
+            base="$(basename "$d")"
+            [ "$base" = "." ] || [ "$base" = ".." ] && continue
+            is_hidden_name "$base" || continue
+            [ -d "$d" ] || continue
+            [ -L "$d" ] && continue
+            t=$((t + $(du_bytes "$d")))
+        done
+        shopt -u nullglob dotglob
+        echo "$t"
+    }
+
+    # Depth-1 children for the largest-dir list: "bytes<TAB>basename".
+    list_child_dirs() {
+        local root="$1" bytes path name
+        [ -d "$root" ] || return
+        [ $((disk_deadline - SECONDS)) -lt 1 ] && return
+        while read -r bytes path; do
+            [ -n "${path:-}" ] || continue
+            [ "$path" = "$root" ] && continue
+            [ -d "$path" ] || continue
+            [[ "$bytes" =~ ^[0-9]+$ ]] || continue
+            [ "$bytes" -gt 0 ] || continue
+            name="$(basename "$path")"
+            [ "$name" = "." ] || [ "$name" = ".." ] && continue
+            printf '%s\t%s\n' "$bytes" "$name"
+        done < <(du_run du -bx --max-depth=1 "$root" 2>/dev/null)
+    }
+
+    add_largest() {
+        local path="$1" bytes name
+        [ -e "$path" ] || return
+        name="$(basename "$path")"
+        [ -n "$name" ] || return
+        bytes="$(du_bytes "$path")"
+        [ "$bytes" -gt 0 ] || return
+        printf '%s\t%s\n' "$bytes" "$name"
+    }
+
+    first_existing_dir() {
+        local p
+        for p in "$@"; do
+            [ -n "$p" ] && [ -d "$p" ] && { printf '%s' "$p"; return 0; }
+        done
+        return 1
+    }
+
+    www_root="${WWW_ROOT:-/www}"
+    web_root="${WEB_ROOT:-/www/wwwroot}"
+    log_root="${LOG_ROOT:-/www/wwwlogs}"
+    backup_root="${BACKUP_ROOT:-/www/server/backup}"
+    panel_home="${WP_HOME_DIR:-/www/server/panel}"
+
+    mysql_dir="${WP_MYSQL_DATADIR:-}"
+    if [ -z "$mysql_dir" ]; then
+        mysql_dir="$(first_existing_dir /www/server/data /var/lib/mysql || true)"
+    fi
+    pg_dir="${WP_PG_DATADIR:-}"
+    if [ -z "$pg_dir" ]; then
+        pg_dir="$(first_existing_dir \
+            /var/lib/pgsql/16/data \
+            /var/lib/pgsql/data \
+            /var/lib/postgresql \
+            /www/server/pgsql \
+            || true)"
+    fi
+
+    IFS=':' read -r -a tmp_dirs <<< "${WP_TMP_DIRS:-/tmp:/www/server/tmp}"
+    IFS=':' read -r -a mail_dirs <<< "${WP_MAIL_DIRS:-/var/mail:/var/spool/mail}"
+    IFS=':' read -r -a extra_log_dirs <<< "${WP_VAR_LOG_DIRS:-/var/log/nginx:/var/log/httpd:/var/log/mysql:/var/log/mysqld:/var/log/mariadb:/var/log/php-fpm:/var/log/atop}"
+
+    web_total="$(du_bytes "$web_root")"
+    web_hidden="$(sum_hidden_dirs "$web_root")"
+    website_bytes=$((web_total - web_hidden))
+    [ "$website_bytes" -lt 0 ] && website_bytes=0
+
+    hidden_bytes="$web_hidden"
+    hidden_bytes=$((hidden_bytes + $(sum_hidden_dirs "$www_root")))
+    hidden_bytes=$((hidden_bytes + $(sum_hidden_dirs "$www_root/server")))
+    if [ -z "${WP_DISK_USAGE_FIXTURE:-}" ] && [ -d /home ]; then
+        shopt -s nullglob
+        for d in /home/*; do
+            [ -d "$d" ] || continue
+            hidden_bytes=$((hidden_bytes + $(sum_hidden_dirs "$d")))
+        done
+        shopt -u nullglob
+    fi
+
+    home_bytes="$(du_bytes "$panel_home")"
+    if [ -z "${WP_DISK_USAGE_FIXTURE:-}" ] && [ -d /home ]; then
+        shopt -s nullglob
+        for d in /home/*; do
+            [ -d "$d" ] || continue
+            # Non-hidden children only; hidden already counted above.
+            for c in "$d"/*; do
+                [ -e "$c" ] || continue
+                home_bytes=$((home_bytes + $(du_bytes "$c")))
+            done
+        done
+        shopt -u nullglob
+    fi
+
+    db_bytes=0
+    [ -n "$mysql_dir" ] && db_bytes=$((db_bytes + $(du_bytes "$mysql_dir")))
+    [ -n "$pg_dir" ] && db_bytes=$((db_bytes + $(du_bytes "$pg_dir")))
+
+    mail_bytes="$(sum_bytes "${mail_dirs[@]}")"
+    mailing_bytes=0
+
+    log_bytes="$(du_bytes "$log_root")"
+    for d in "${extra_log_dirs[@]}"; do
+        [ -e "$d" ] || continue
+        log_bytes=$((log_bytes + $(du_bytes "$d")))
+    done
+    # Cheap file sizes for common host logs (no tree walk).
+    for f in /var/log/messages /var/log/secure /var/log/cron; do
+        [ -f "$f" ] || continue
+        n="$(stat -c '%s' "$f" 2>/dev/null || echo 0)"
+        [[ "$n" =~ ^[0-9]+$ ]] && log_bytes=$((log_bytes + n))
+    done
+
+    tmp_bytes="$(sum_bytes "${tmp_dirs[@]}")"
+
+    other_bytes=0
+    other_paths=(
+        "$backup_root"
+        "$www_root/backup"
+        "$www_root/application_backups"
+        "$www_root/server/application_backups"
+        "$www_root/server/certs"
+        "$www_root/server/acme.sh"
+    )
+    if [ -d "$www_root" ]; then
+        shopt -s nullglob
+        for d in "$www_root"/*; do
+            [ -d "$d" ] || continue
+            base="$(basename "$d")"
+            case "$base" in
+                wwwroot|wwwlogs|server|backup|application_backups) continue ;;
+            esac
+            other_paths+=("$d")
+        done
+        shopt -u nullglob
+    fi
+    other_bytes="$(sum_bytes "${other_paths[@]}")"
+
+    total_bytes=$((home_bytes + hidden_bytes + db_bytes + mailing_bytes + mail_bytes + website_bytes + log_bytes + tmp_bytes + other_bytes))
+
+    largest_tmp="$(mktemp)"
+    {
+        list_child_dirs "$web_root"
+        list_child_dirs "$backup_root"
+        list_child_dirs "$www_root/backup"
+        add_largest "$www_root/application_backups"
+        add_largest "$www_root/server/application_backups"
+        add_largest "$www_root/.trash"
+        add_largest "$web_root/.trash"
+        for d in "${tmp_dirs[@]}"; do
+            add_largest "$d"
+        done
+        add_largest "$log_root"
+        add_largest "$mysql_dir"
+        # Named leftovers that often show up in cPanel-style lists.
+        add_largest "$www_root/server/backup"
+    } > "$largest_tmp"
+
+    largest_json="["
+    largest_sep=""
+    while IFS=$'\t' read -r bytes name; do
+        [ -n "${name:-}" ] || continue
+        largest_json+="${largest_sep}$(printf '{"name":"%s","size":"%s"}' "$(jesc "$name")" "$(jesc "$(human_bytes "$bytes")")")"
+        largest_sep=","
+    done < <(sort -nr -k1,1 "$largest_tmp" | awk -F '\t' '!seen[$2]++ {print}' | head -n 10)
+    largest_json+="]"
+    rm -f "$largest_tmp"
+
+    cat_json="["
+    cat_json+="$(printf '{"name":"%s","size":"%s","icon":"%s"}' "Files in home directory" "$(jesc "$(human_bytes "$home_bytes")")" "home"),"
+    cat_json+="$(printf '{"name":"%s","size":"%s","icon":"%s"}' "Files in hidden subdirectories" "$(jesc "$(human_bytes "$hidden_bytes")")" "hidden"),"
+    cat_json+="$(printf '{"name":"%s","size":"%s","icon":"%s"}' "Databases" "$(jesc "$(human_bytes "$db_bytes")")" "database"),"
+    cat_json+="$(printf '{"name":"%s","size":"%s","icon":"%s"}' "Mailing Lists" "$(jesc "$(human_bytes "$mailing_bytes")")" "mailing"),"
+    cat_json+="$(printf '{"name":"%s","size":"%s","icon":"%s"}' "Email" "$(jesc "$(human_bytes "$mail_bytes")")" "email"),"
+    cat_json+="$(printf '{"name":"%s","size":"%s","icon":"%s"}' "Website Files" "$(jesc "$(human_bytes "$website_bytes")")" "globe"),"
+    cat_json+="$(printf '{"name":"%s","size":"%s","icon":"%s"}' "Logs" "$(jesc "$(human_bytes "$log_bytes")")" "doc"),"
+    cat_json+="$(printf '{"name":"%s","size":"%s","icon":"%s"}' "Temporary Files" "$(jesc "$(human_bytes "$tmp_bytes")")" "clock"),"
+    cat_json+="$(printf '{"name":"%s","size":"%s","icon":"%s"}' "Other" "$(jesc "$(human_bytes "$other_bytes")")" "dots")"
+    cat_json+="]"
+
+    printf '{"ok":true,"total":"%s","categories":%s,"largest_dirs":%s}\n' \
+        "$(jesc "$(human_bytes "$total_bytes")")" "$cat_json" "$largest_json"
     exit 0
 fi
 usage

@@ -994,13 +994,20 @@ body.wp-dash-editing #dashGrid .grid-stack-item > .grid-stack-item-content {
 .wp-diskusage-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 24px;
+    gap: 16px;
+}
+.wp-diskusage-col {
+    background: var(--wp-surface-soft);
+    border: 1px solid var(--wp-border);
+    border-radius: 12px;
+    padding: 16px 18px 10px;
+    min-width: 0;
 }
 .wp-diskusage-col-title {
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 650;
     color: var(--wp-text);
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 .wp-diskusage-list {
     list-style: none;
@@ -1011,17 +1018,39 @@ body.wp-dash-editing #dashGrid .grid-stack-item > .grid-stack-item-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 6px 0;
+    gap: 12px;
+    padding: 8px 0;
     font-size: 13px;
     color: var(--wp-text-secondary);
-    border-bottom: 1px solid rgba(128, 128, 128, 0.15);
+    border-bottom: 1px solid var(--wp-border);
 }
 .wp-diskusage-list li:last-child { border-bottom: none; }
+.wp-diskusage-list .wp-du-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    flex: 1;
+}
+.wp-diskusage-list .wp-du-icon {
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+    color: var(--wp-text-muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.wp-diskusage-list .wp-du-icon svg {
+    width: 16px;
+    height: 16px;
+    display: block;
+}
 .wp-diskusage-list .wp-du-name {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    margin-right: 12px;
+    min-width: 0;
 }
 .wp-diskusage-list .wp-du-size {
     flex-shrink: 0;
@@ -1032,9 +1061,18 @@ body.wp-dash-editing #dashGrid .grid-stack-item > .grid-stack-item-content {
     text-align: center;
     color: var(--wp-text-muted);
     padding: 20px 0;
+    border-bottom: none !important;
+    justify-content: center;
 }
 @media (max-width: 700px) {
     .wp-diskusage-grid { grid-template-columns: 1fr; }
+}
+html[data-theme="dark"] .wp-diskusage-col {
+    background: rgba(8, 10, 14, 0.62);
+    border-color: rgba(255, 255, 255, 0.07);
+}
+html[data-theme="dark"] .wp-diskusage-list .wp-du-icon {
+    color: rgba(232, 234, 237, 0.55);
 }
 
 .wp-ring-wrap {
