@@ -177,6 +177,35 @@ final class Shell
                     'skipped' => ['php80-php-fpm', 'php81-php-fpm', 'php82-php-fpm'],
                     'failed' => [],
                 ], 'error' => ''],
+            str_starts_with($script, 'wp-sys') && $a === 'disk-usage'
+                => ['ok' => true, 'data' => [
+                    'ok' => true,
+                    'total' => '18.4 GB',
+                    'categories' => [
+                        ['name' => 'Files in home directory', 'size' => '4.25 MB'],
+                        ['name' => 'Files in hidden subdirectories', 'size' => '1.58 GB'],
+                        ['name' => 'Databases', 'size' => '315.48 MB'],
+                        ['name' => 'Mailing Lists', 'size' => '0 B'],
+                        ['name' => 'Email', 'size' => '127.41 MB'],
+                        ['name' => 'Website Files', 'size' => '3.16 GB'],
+                        ['name' => 'Logs', 'size' => '227.3 MB'],
+                        ['name' => 'Temporary Files', 'size' => '780.64 MB'],
+                        ['name' => 'Other', 'size' => '5.29 GB'],
+                    ],
+                    'largest_dirs' => [
+                        ['name' => 'application_backups', 'size' => '9.28 GB'],
+                        ['name' => 'public_html', 'size' => '3.16 GB'],
+                        ['name' => 'support-local', 'size' => '2.75 GB'],
+                        ['name' => 'zmerch', 'size' => '1.6 GB'],
+                        ['name' => 'Email', 'size' => '1.58 GB'],
+                        ['name' => '.trash', 'size' => '1.58 GB'],
+                        ['name' => 'tmp', 'size' => '780.64 MB'],
+                        ['name' => 'nuki', 'size' => '631.88 MB'],
+                        ['name' => 'old', 'size' => '306.1 MB'],
+                        ['name' => 'catalog', 'size' => '304.07 MB'],
+                        ['name' => 'logs', 'size' => '227.3 MB'],
+                    ],
+                ], 'error' => ''],
             str_starts_with($script, 'wp-wp')
                 => ['ok' => true, 'data' => ['ok' => true, 'domain' => $args[2] ?? 'demo', 'admin' => $args[6] ?? 'admin', 'url' => 'http://demo/wp-admin/'], 'error' => ''],
             str_starts_with($script, 'wp-pma') && $a === 'status'

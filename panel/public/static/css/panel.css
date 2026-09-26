@@ -975,6 +975,60 @@ body.wp-dash-editing #dashGrid .grid-stack-item > .grid-stack-item-content {
 .wp-store-card.is-warn .wp-drive-led { background: #f5a623; fill: #f5a623; }
 .wp-store-card.is-crit .wp-store-bar-fill,
 .wp-store-card.is-crit .wp-drive-led { background: #e85d3a; fill: #e85d3a; }
+
+/* Disk usage detail widget (Usage by Category + Largest Directories) */
+.wp-diskusage-card .wp-diskusage-total {
+    font-size: 13px;
+    color: var(--wp-text-secondary);
+    margin-left: 10px;
+    font-weight: 400;
+}
+.wp-diskusage-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+.wp-diskusage-col-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--wp-text);
+    margin-bottom: 12px;
+}
+.wp-diskusage-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.wp-diskusage-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 13px;
+    color: var(--wp-text-secondary);
+    border-bottom: 1px solid rgba(128, 128, 128, 0.15);
+}
+.wp-diskusage-list li:last-child { border-bottom: none; }
+.wp-diskusage-list .wp-du-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: 12px;
+}
+.wp-diskusage-list .wp-du-size {
+    flex-shrink: 0;
+    color: var(--wp-text);
+    font-weight: 500;
+}
+.wp-diskusage-empty {
+    text-align: center;
+    color: var(--wp-text-muted);
+    padding: 20px 0;
+}
+@media (max-width: 700px) {
+    .wp-diskusage-grid { grid-template-columns: 1fr; }
+}
+
 .wp-ring-wrap {
     flex: 0 0 auto;
     text-align: center;
@@ -1552,6 +1606,13 @@ html[data-theme="dark"] .layui-layer-title {
 html[data-theme="dark"] .layui-layer-content { color: rgba(244, 247, 251, 0.9); }
 html[data-theme="dark"] .layui-layer-btn { border-top-color: rgba(255, 255, 255, 0.08); }
 html[data-theme="dark"] .layui-layer-btn .layui-layer-btn0 { background: var(--wp-accent); border-color: var(--wp-accent); color: #111; }
+html[data-theme="dark"] .layui-layer-input {
+    background: rgba(0, 0, 0, 0.35);
+    border-color: rgba(255, 255, 255, 0.16);
+    color: #fff;
+}
+html[data-theme="dark"] .layui-layer-input:focus { border-color: var(--wp-accent); }
+html[data-theme="dark"] .layui-layer-content .layui-form-label { color: rgba(244, 247, 251, 0.9); }
 
 /* File manager: keep usable on glass without rewriting its layout. */
 html[data-theme="dark"] .fm-split {

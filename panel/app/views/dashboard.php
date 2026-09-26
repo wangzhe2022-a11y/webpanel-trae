@@ -346,6 +346,35 @@ $renderStoreCard = static function (
         </div>
         </div>
     </div>
+    <div class="wp-dash-widget grid-stack-item" data-widget="disk-usage" gs-x="0" gs-w="12" gs-min-w="6" gs-size-to-content="true">
+        <div class="grid-stack-item-content">
+        <div class="panel-card wp-diskusage-card">
+            <h3>
+                磁盘使用详情
+                <span class="wp-diskusage-total" id="diskUsageTotal">—</span>
+                <span class="wp-svc-head-actions">
+                    <button type="button" class="layui-btn layui-btn-sm layui-btn-primary" id="btnDiskUsageRefresh">
+                        <span class="layui-icon layui-icon-refresh"></span> 刷新
+                    </button>
+                </span>
+            </h3>
+            <div class="wp-diskusage-grid">
+                <div class="wp-diskusage-col">
+                    <div class="wp-diskusage-col-title">Usage by Category</div>
+                    <ul class="wp-diskusage-list" id="diskUsageCats">
+                        <li class="wp-diskusage-empty">加载中…</li>
+                    </ul>
+                </div>
+                <div class="wp-diskusage-col">
+                    <div class="wp-diskusage-col-title">Largest Directories</div>
+                    <ul class="wp-diskusage-list" id="diskUsageDirs">
+                        <li class="wp-diskusage-empty">加载中…</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
     <div class="wp-dash-widget grid-stack-item" data-widget="login" gs-x="4" gs-w="8" gs-min-w="4" gs-size-to-content="true">
         <div class="grid-stack-item-content">
         <div class="panel-card wp-login-card">
@@ -1232,7 +1261,7 @@ layui.use(['element', 'layer'], function () {
 <script>
 /* 仪表盘卡片自由排列：基于 GridStack（磁吸补位 + 宽度可调），布局存 localStorage */
 layui.use(['layer'], function () {
-    var layer = layui.layer;
+    var layer = layui.layer, $ = layui.$;
     var STORAGE_KEY = 'wp.dash.grid';
     var grid = null;
 
@@ -1296,6 +1325,55 @@ layui.use(['layer'], function () {
             grid.on('resizestop', saveLayout);
             grid.on('dropped', saveLayout);
         } catch (e) { /* GridStack 初始化失败时回退为静态 3 列布局 */ }
+
+        // ---- Disk usage detail widget -----------------------------------------
+        function loadDiskUsage() {
+            var $cats = $('#diskUsageCats');
+            var $dirs = $('#diskUsageDirs');
+            $cats.html('<li class="wp-diskusage-empty">加载中…</li>');
+            $dirs.html('<li class="wp-diskusage-empty">加载中…</li>');
+            fetch('/sys/disk-usage', { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+                .then(function (r) { return r.json(); })
+                .then(function (res) {
+                    if (!res || !res.ok) {
+                        $cats.html('<li class="wp-diskusage-empty">暂无数据</li>');
+                        $dirs.html('<li class="wp-diskusage-empty">暂无数据</li>');
+                        return;
+                    }
+                    $('#diskUsageTotal').text(res.total || '');
+                    var cats = res.categories || [];
+                    if (cats.length) {
+                        $cats.empty();
+                        cats.forEach(function (c) {
+                            $cats.append('<li><span class="wp-du-name"></span><span class="wp-du-size mono"></span></li>');
+                            var $li = $cats.find('li:last');
+                            $li.find('.wp-du-name').text(c.name);
+                            $li.find('.wp-du-size').text(c.size);
+                        });
+                    } else {
+                        $cats.html('<li class="wp-diskusage-empty">暂无数据</li>');
+                    }
+                    var dirs = res.largest_dirs || [];
+                    if (dirs.length) {
+                        $dirs.empty();
+                        dirs.forEach(function (d) {
+                            $dirs.append('<li><span class="wp-du-name mono"></span><span class="wp-du-size mono"></span></li>');
+                            var $li = $dirs.find('li:last');
+                            $li.find('.wp-du-name').text(d.name);
+                            $li.find('.wp-du-size').text(d.size);
+                        });
+                    } else {
+                        $dirs.html('<li class="wp-diskusage-empty">暂无数据</li>');
+                    }
+                    fitGridItemDeferred(document.querySelector('[data-widget="disk-usage"]'));
+                })
+                .catch(function () {
+                    $cats.html('<li class="wp-diskusage-empty">加载失败</li>');
+                    $dirs.html('<li class="wp-diskusage-empty">加载失败</li>');
+                });
+        }
+        $('#btnDiskUsageRefresh').on('click', loadDiskUsage);
+        loadDiskUsage();
 
         document.getElementById('btnDashEdit').addEventListener('click', function () { setEdit(true); });
         document.getElementById('btnDashDone').addEventListener('click', function () {

@@ -258,4 +258,29 @@ class ServiceController extends Controller
         }
         $this->ok(['denied' => $r['data']['denied'] ?? []]);
     }
+
+    /**
+     * Disk usage breakdown by category + largest directories.
+     * GET /sys/disk-usage
+     */
+    public function diskUsage(): void
+    {
+        $this->requireLogin();
+
+        $r = Shell::sudo('wp-sys.sh', ['disk-usage']);
+        if (!$r['ok']) {
+            $this->ok([
+                'categories' => [],
+                'largest_dirs' => [],
+                'total' => '0 B',
+            ]);
+            return;
+        }
+        $d = $r['data'];
+        $this->ok([
+            'categories' => $d['categories'] ?? [],
+            'largest_dirs' => $d['largest_dirs'] ?? [],
+            'total' => $d['total'] ?? '0 B',
+        ]);
+    }
 }
