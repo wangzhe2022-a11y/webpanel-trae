@@ -6,8 +6,8 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
 ?>
 <style>
     .fm-card { display: flex; flex-direction: column; min-height: calc(100vh - 92px); padding-bottom: 12px; width: 100%; box-sizing: border-box; min-width: 0; max-width: 100%; overflow: hidden; }
-    .fm-card > h3 { margin-bottom: 8px; }
-    .fm-site-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 13px; }
+    .fm-topbar { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; flex-wrap: wrap; }
+    .fm-site-row { display: flex; align-items: center; gap: 6px; margin-bottom: 0; font-size: 13px; }
     .fm-site-row label { font-size: 12px; color: var(--wp-text-secondary); white-space: nowrap; }
     .fm-site-row select { height: 28px; max-width: 320px; box-sizing: border-box; border: 1px solid var(--wp-border); border-radius: 2px; background: var(--wp-surface); color: var(--wp-text); font-size: 12.5px; }
     .fm-toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
@@ -15,12 +15,12 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-nav .layui-btn { margin: 0; }
     .fm-pathbox { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 220px; }
     .fm-pathbox input { flex: 1; height: 30px; line-height: 30px; border: 1px solid var(--wp-border); border-radius: 2px; padding: 0 8px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
-    .fm-crumb { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; font-size: 13px; color: var(--wp-text-secondary); }
+    .fm-crumb { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 0; font-size: 13px; color: var(--wp-text-secondary); }
     .fm-crumb a { color: var(--wp-accent); }
     .fm-crumb .sep { color: var(--wp-text-muted); margin: 0 2px; }
     .fm-crumb-path { min-width: 0; }
     .fm-split { flex: 1; display: flex; min-height: 380px; border: 1px solid var(--wp-border); border-radius: 4px; overflow: hidden; background: var(--wp-surface); min-width: 0; }
-    .fm-tree { width: 260px; min-width: 0; flex: 0 0 260px; background: var(--wp-surface-soft); display: flex; flex-direction: column; overflow: hidden; }
+    .fm-tree { width: 260px; min-width: 0; flex: 0 0 260px; background: #ffffff; display: flex; flex-direction: column; overflow: hidden; }
     .fm-splitter {
         display: block; align-self: stretch; width: 6px; flex: 0 0 6px;
         margin: 0; padding: 0; border: 0; height: auto; min-height: 0;
@@ -30,7 +30,7 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     }
     .fm-splitter:hover, .fm-splitter:focus-visible, body.fm-resizing .fm-splitter { background: var(--wp-accent); }
     body.fm-resizing, body.fm-resizing * { cursor: col-resize !important; user-select: none !important; }
-    .fm-tree-head { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-bottom: 1px solid var(--wp-border); font-size: 12px; color: var(--wp-text-secondary); background: var(--wp-surface-soft); }
+    .fm-tree-head { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-bottom: 1px solid var(--wp-border); font-size: 12px; color: var(--wp-text-secondary); background: #ffffff; }
     .fm-tree-body { flex: 1; overflow: auto; padding: 6px 0 12px; }
     .fm-tree-ul { list-style: none; margin: 0; padding: 0 0 0 14px; }
     .fm-tree-ul.root { padding-left: 6px; }
@@ -49,13 +49,21 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-table thead th { position: sticky; top: 0; background: var(--wp-surface-soft); z-index: 1; white-space: nowrap; }
     .fm-table td, .fm-table th { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .fm-table td:last-child, .fm-table th:last-child { white-space: normal; overflow: visible; }
-    .fm-table tbody tr:hover { background: #ecfccb !important; box-shadow: inset 3px 0 0 #90BA1E !important; }
+    .fm-table tbody tr:hover { background: #dbeafe !important; box-shadow: inset 3px 0 0 #3b82f6 !important; }
     .fm-table tbody tr:hover td { background: transparent !important; }
     .fm-empty { text-align: center; color: var(--wp-text-secondary); padding: 72px 20px; }
     .fm-empty .layui-icon { font-size: 42px; color: var(--wp-text-muted); display: block; margin-bottom: 12px; }
     .fm-root-hint { color: var(--wp-text-muted); font-size: 12px; margin-left: 4px; }
-    .fm-icon-dir { color: var(--wp-accent); }
-    .fm-name-link { cursor: pointer; color: var(--wp-accent); }
+    .fm-icon-dir { display: inline-block; vertical-align: middle; }
+    .fm-ico { font-size: 16px; vertical-align: middle; }
+    .fm-ico-img { color: #16a34a; }
+    .fm-ico-arc { color: #ea580c; }
+    .fm-ico-php { color: #7c3aed; }
+    .fm-ico-code { color: #0891b2; }
+    .fm-ico-txt { color: #64748b; }
+    .fm-ico-av { color: #db2777; }
+    .fm-ico-file { color: #94a3b8; }
+    .fm-name-link { cursor: pointer; color: var(--wp-text); }
     .fm-vdb-banner {
         margin: 0 0 8px; padding: 8px 12px; border-radius: 4px;
         background: #fff7e6; border: 1px solid #ffe58f; color: #8c6d1f; font-size: 12.5px;
@@ -104,14 +112,14 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         color: #1e293b !important;
     }
     .fm-tree, .fm-tree-head {
-        background: #f5f7fb !important;
+        background: #ffffff !important;
         border-color: #e2e8f0 !important;
         color: #475569 !important;
     }
-    .fm-tree-row:hover { background: #dcedc8 !important; color: #33691e !important; }
+    .fm-tree-row:hover { background: #dcedc8 !important; color: #1e293b !important; }
     .fm-tree-row.active {
         background: #c5e1a5 !important;
-        color: #33691e !important;
+        color: #1e293b !important;
         font-weight: 600;
     }
     .fm-twist { color: #94a3b8 !important; }
@@ -134,7 +142,7 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         color: #1e293b !important;
     }
     .fm-search-ico { color: #94a3b8 !important; }
-    .fm-name-link, .fm-crumb a { color: #6b8e1a !important; }
+    .fm-name-link, .fm-crumb a { color: #1e293b !important; }
     /* 暗色主题下文件管理器仍为浅色背景，这两处必须强制可见颜色 */
     .fm-crumb .sep { color: #94a3b8 !important; }
     .fm-vdb-banner {
@@ -236,8 +244,7 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         user-select: none;
     }
 
-    /* 文件夹图标：cPanel 风格金黄色 */
-    .fm-icon-dir { color: #f5b841 !important; }
+    /* 文件夹图标：内联 SVG 实心金黄色，fill 已在 SVG path 中设定 */
 
     /* 表格：浅灰表头 + 斑马纹行（cPanel 风格交替底色） */
     .fm-table { background: #ffffff !important; color: #1e293b !important; }
@@ -247,15 +254,15 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         border-bottom: 1px solid #e2e8f0 !important;
     }
     .fm-table td, .fm-table th {
-        border-color: #f1f5f9 !important;
+        border-color: #c1c6cb !important;
         color: #1e293b !important;
     }
     .fm-table tbody tr:nth-child(odd) td { background: #ffffff !important; }
-    .fm-table tbody tr:nth-child(even) td { background: #f5f5f5 !important; }
-    .fm-table tbody tr:hover td { background: #ecfccb !important; }
-    .fm-table tbody tr:hover { box-shadow: inset 3px 0 0 #90BA1E !important; }
-    .fm-table tbody tr.fm-hit td { background: #d9f99d !important; }
-    .fm-table tbody tr.fm-hit { box-shadow: inset 3px 0 0 #90BA1E !important; }
+    .fm-table tbody tr:nth-child(even) td { background: #eaeaea !important; }
+    .fm-table tbody tr:hover td { background: #dbeafe !important; }
+    .fm-table tbody tr:hover { box-shadow: inset 3px 0 0 #3b82f6 !important; }
+    .fm-table tbody tr.fm-hit td { background: #bfdbfe !important; }
+    .fm-table tbody tr.fm-hit { box-shadow: inset 3px 0 0 #3b82f6 !important; }
 
     /* 搜索下拉 */
     .fm-search-drop {
@@ -317,22 +324,21 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
 </style>
 
 <div class="panel-card fm-card<?= $vdbSelected ? ' fm-vdb' : '' ?>">
-    <h3>文件管理</h3>
-
-    <div class="fm-site-row">
-        <label for="siteSelect">位置</label>
-        <select id="siteSelect" lay-ignore title="切换浏览位置">
-            <?php foreach ($sites as $s): ?>
-            <option value="<?= (int) $s['id'] ?>" <?= (!$vdbSelected && $siteId === (int) $s['id']) ? 'selected' : '' ?>>
-                <?= e($s['domain']) ?>（<?= e($s['sysuser']) ?>）
-            </option>
-            <?php endforeach; ?>
-            <option value="vdb" <?= $vdbSelected ? 'selected' : '' ?>>vdb (/mnt/backup)</option>
-        </select>
-    </div>
-
-    <div class="fm-crumb">
-        <span class="fm-crumb-path">当前目录：<span id="crumb"></span><span class="fm-root-hint mono" id="rootHint"></span></span>
+    <div class="fm-topbar">
+        <div class="fm-site-row">
+            <label for="siteSelect">位置</label>
+            <select id="siteSelect" lay-ignore title="切换浏览位置">
+                <?php foreach ($sites as $s): ?>
+                <option value="<?= (int) $s['id'] ?>" <?= (!$vdbSelected && $siteId === (int) $s['id']) ? 'selected' : '' ?>>
+                    <?= e($s['domain']) ?>（<?= e($s['sysuser']) ?>）
+                </option>
+                <?php endforeach; ?>
+                <option value="vdb" <?= $vdbSelected ? 'selected' : '' ?>>vdb (/mnt/backup)</option>
+            </select>
+        </div>
+        <div class="fm-crumb">
+            <span class="fm-crumb-path">当前目录：<span id="crumb"></span><span class="fm-root-hint mono" id="rootHint"></span></span>
+        </div>
     </div>
 
     <div class="fm-vdb-banner" id="vdbBanner"<?= $vdbSelected ? '' : ' hidden' ?>>
@@ -694,12 +700,22 @@ layui.use(['layer', 'upload'], function () {
         histIdx = hist.length - 1;
     }
 
+    // 实心黄色文件夹图标（cPanel 风格），统一用于表格与目录树
+    function folderSvg() {
+        return '<svg class="fm-icon-dir" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">'
+             + '<path fill="#f5b841" d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>'
+             + '</svg>';
+    }
     function iconOf(t, n) {
-        if (t === 'dir') return '<span class="layui-icon layui-icon-folder fm-icon-dir" style="font-size:18px"></span>';
-        if (/\.(jpg|jpeg|png|gif|webp|svg|ico)$/i.test(n)) return '<span class="layui-icon layui-icon-picture" style="color:#16baaa;font-size:16px"></span>';
-        if (/\.(zip|tar\.gz|tgz|gz)$/i.test(n)) return '<span class="layui-icon layui-icon-file-b" style="color:#ff5722;font-size:16px"></span>';
-        if (/\.(php|html?|js|css|json)$/i.test(n)) return '<span class="layui-icon layui-icon-file" style="color:#16baaa;font-size:16px"></span>';
-        return '<span class="layui-icon layui-icon-file" style="font-size:16px"></span>';
+        if (t === 'dir') return folderSvg();
+        if (/\.(jpg|jpeg|png|gif|webp|bmp|svg|ico)$/i.test(n)) return '<span class="layui-icon layui-icon-picture fm-ico fm-ico-img"></span>';
+        if (/\.(zip|tar|gz|tgz|bz2|rar|7z|xz)$/i.test(n)) return '<span class="layui-icon layui-icon-file-b fm-ico fm-ico-arc"></span>';
+        if (/\.php$/i.test(n)) return '<span class="layui-icon layui-icon-file fm-ico fm-ico-php"></span>';
+        if (/\.(html?|htm|js|css|json|xml|ya?ml)$/i.test(n)) return '<span class="layui-icon layui-icon-file fm-ico fm-ico-code"></span>';
+        if (/\.(txt|log|md|ini|conf|cfg|env)$/i.test(n)) return '<span class="layui-icon layui-icon-file fm-ico fm-ico-txt"></span>';
+        if (/\.(mp3|wav|flac|aac|ogg|m4a)$/i.test(n)) return '<span class="layui-icon layui-icon-speaker fm-ico fm-ico-av"></span>';
+        if (/\.(mp4|mkv|avi|mov|webm|flv)$/i.test(n)) return '<span class="layui-icon layui-icon-video fm-ico fm-ico-av"></span>';
+        return '<span class="layui-icon layui-icon-file fm-ico fm-ico-file"></span>';
     }
     function typeLabel(t) {
         if (t === 'dir') return '文件夹';
@@ -814,9 +830,7 @@ layui.use(['layer', 'upload'], function () {
         var html = '<li data-path="' + esc(path) + '">';
         html += '<div class="fm-tree-row' + (path === curPath ? ' active' : '') + '" data-path="' + esc(path) + '">';
         html += twistHtml(path);
-        html += expanded[path]
-            ? '<span class="layui-icon layui-icon-folder-open fm-icon-dir"></span>'
-            : '<span class="layui-icon layui-icon-folder fm-icon-dir"></span>';
+        html += folderSvg();
         html += '<span class="fm-tname">' + esc(name) + '</span></div>';
         html += '<ul class="fm-tree-ul"' + (open ? '' : ' style="display:none"') + '>';
         if (open && kids) {
@@ -833,7 +847,7 @@ layui.use(['layer', 'upload'], function () {
         var rootKids = treeKids['/'] || [];
         var html = '<li data-path="/"><div class="fm-tree-row' + (curPath === '/' ? ' active' : '') + '" data-path="/">';
         html += twistHtml('/');
-        html += '<span class="layui-icon fm-icon-dir">&#xe68e;</span>';
+        html += folderSvg();
         html += '<span class="fm-tname">' + esc(treeLabel()) + '</span></div>';
         html += '<ul class="fm-tree-ul"' + (expanded['/'] ? '' : ' style="display:none"') + '>';
         if (expanded['/']) {

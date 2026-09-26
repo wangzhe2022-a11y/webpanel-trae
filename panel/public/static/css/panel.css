@@ -249,7 +249,9 @@ html.wp-side-collapsed .layui-layout-admin .layui-body {
 }
 
 /* 文件管理页：固定高度，左侧目录树与右侧内容区各自独立滚动 */
+.wp-page-files .layui-layout-admin .layui-header { display: none; }
 .wp-page-files .layui-layout-admin .layui-body {
+    top: 0;
     display: flex;
     flex-direction: column;
     gap: 20px;
@@ -262,9 +264,7 @@ html.wp-side-collapsed .layui-layout-admin .layui-body {
     flex-direction: column;
     min-height: 0;
 }
-.wp-page-files .fm-card > h3,
-.wp-page-files .fm-card > .fm-site-row,
-.wp-page-files .fm-card > .fm-crumb,
+.wp-page-files .fm-card > .fm-topbar,
 .wp-page-files .fm-card > .fm-vdb-banner { flex: 0 0 auto; }
 .wp-page-files .fm-card > .fm-split {
     flex: 1 1 auto;
