@@ -6,8 +6,8 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
 ?>
 <style>
     .fm-card { display: flex; flex-direction: column; min-height: calc(100vh - 92px); padding-bottom: 12px; width: 100%; box-sizing: border-box; min-width: 0; max-width: 100%; overflow: hidden; }
-    .fm-card > h3 { margin-bottom: 8px; }
-    .fm-site-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 13px; }
+    .fm-topbar { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; flex-wrap: wrap; }
+    .fm-site-row { display: flex; align-items: center; gap: 6px; margin-bottom: 0; font-size: 13px; }
     .fm-site-row label { font-size: 12px; color: var(--wp-text-secondary); white-space: nowrap; }
     .fm-site-row select { height: 28px; max-width: 320px; box-sizing: border-box; border: 1px solid var(--wp-border); border-radius: 2px; background: var(--wp-surface); color: var(--wp-text); font-size: 12.5px; }
     .fm-toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
@@ -15,12 +15,12 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-nav .layui-btn { margin: 0; }
     .fm-pathbox { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 220px; }
     .fm-pathbox input { flex: 1; height: 30px; line-height: 30px; border: 1px solid var(--wp-border); border-radius: 2px; padding: 0 8px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
-    .fm-crumb { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; font-size: 13px; color: var(--wp-text-secondary); }
+    .fm-crumb { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 0; font-size: 13px; color: var(--wp-text-secondary); }
     .fm-crumb a { color: var(--wp-accent); }
     .fm-crumb .sep { color: var(--wp-text-muted); margin: 0 2px; }
     .fm-crumb-path { min-width: 0; }
     .fm-split { flex: 1; display: flex; min-height: 380px; border: 1px solid var(--wp-border); border-radius: 4px; overflow: hidden; background: var(--wp-surface); min-width: 0; }
-    .fm-tree { width: 260px; min-width: 0; flex: 0 0 260px; background: var(--wp-surface-soft); display: flex; flex-direction: column; overflow: hidden; }
+    .fm-tree { width: 260px; min-width: 0; flex: 0 0 260px; background: #ffffff; display: flex; flex-direction: column; overflow: hidden; }
     .fm-splitter {
         display: block; align-self: stretch; width: 6px; flex: 0 0 6px;
         margin: 0; padding: 0; border: 0; height: auto; min-height: 0;
@@ -30,7 +30,7 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     }
     .fm-splitter:hover, .fm-splitter:focus-visible, body.fm-resizing .fm-splitter { background: var(--wp-accent); }
     body.fm-resizing, body.fm-resizing * { cursor: col-resize !important; user-select: none !important; }
-    .fm-tree-head { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-bottom: 1px solid var(--wp-border); font-size: 12px; color: var(--wp-text-secondary); background: var(--wp-surface-soft); }
+    .fm-tree-head { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-bottom: 1px solid var(--wp-border); font-size: 12px; color: var(--wp-text-secondary); background: #ffffff; }
     .fm-tree-body { flex: 1; overflow: auto; padding: 6px 0 12px; }
     .fm-tree-ul { list-style: none; margin: 0; padding: 0 0 0 14px; }
     .fm-tree-ul.root { padding-left: 6px; }
@@ -49,7 +49,7 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-table thead th { position: sticky; top: 0; background: var(--wp-surface-soft); z-index: 1; white-space: nowrap; }
     .fm-table td, .fm-table th { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .fm-table td:last-child, .fm-table th:last-child { white-space: normal; overflow: visible; }
-    .fm-table tbody tr:hover { background: #ecfccb !important; box-shadow: inset 3px 0 0 #90BA1E !important; }
+    .fm-table tbody tr:hover { background: #dbeafe !important; box-shadow: inset 3px 0 0 #3b82f6 !important; }
     .fm-table tbody tr:hover td { background: transparent !important; }
     .fm-empty { text-align: center; color: var(--wp-text-secondary); padding: 72px 20px; }
     .fm-empty .layui-icon { font-size: 42px; color: var(--wp-text-muted); display: block; margin-bottom: 12px; }
@@ -112,7 +112,7 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         color: #1e293b !important;
     }
     .fm-tree, .fm-tree-head {
-        background: #f5f7fb !important;
+        background: #ffffff !important;
         border-color: #e2e8f0 !important;
         color: #475569 !important;
     }
@@ -254,15 +254,15 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         border-bottom: 1px solid #e2e8f0 !important;
     }
     .fm-table td, .fm-table th {
-        border-color: #f1f5f9 !important;
+        border-color: #c1c6cb !important;
         color: #1e293b !important;
     }
     .fm-table tbody tr:nth-child(odd) td { background: #ffffff !important; }
-    .fm-table tbody tr:nth-child(even) td { background: #f5f5f5 !important; }
-    .fm-table tbody tr:hover td { background: #ecfccb !important; }
-    .fm-table tbody tr:hover { box-shadow: inset 3px 0 0 #90BA1E !important; }
-    .fm-table tbody tr.fm-hit td { background: #d9f99d !important; }
-    .fm-table tbody tr.fm-hit { box-shadow: inset 3px 0 0 #90BA1E !important; }
+    .fm-table tbody tr:nth-child(even) td { background: #eaeaea !important; }
+    .fm-table tbody tr:hover td { background: #dbeafe !important; }
+    .fm-table tbody tr:hover { box-shadow: inset 3px 0 0 #3b82f6 !important; }
+    .fm-table tbody tr.fm-hit td { background: #bfdbfe !important; }
+    .fm-table tbody tr.fm-hit { box-shadow: inset 3px 0 0 #3b82f6 !important; }
 
     /* 搜索下拉 */
     .fm-search-drop {
@@ -324,22 +324,21 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
 </style>
 
 <div class="panel-card fm-card<?= $vdbSelected ? ' fm-vdb' : '' ?>">
-    <h3>文件管理</h3>
-
-    <div class="fm-site-row">
-        <label for="siteSelect">位置</label>
-        <select id="siteSelect" lay-ignore title="切换浏览位置">
-            <?php foreach ($sites as $s): ?>
-            <option value="<?= (int) $s['id'] ?>" <?= (!$vdbSelected && $siteId === (int) $s['id']) ? 'selected' : '' ?>>
-                <?= e($s['domain']) ?>（<?= e($s['sysuser']) ?>）
-            </option>
-            <?php endforeach; ?>
-            <option value="vdb" <?= $vdbSelected ? 'selected' : '' ?>>vdb (/mnt/backup)</option>
-        </select>
-    </div>
-
-    <div class="fm-crumb">
-        <span class="fm-crumb-path">当前目录：<span id="crumb"></span><span class="fm-root-hint mono" id="rootHint"></span></span>
+    <div class="fm-topbar">
+        <div class="fm-site-row">
+            <label for="siteSelect">位置</label>
+            <select id="siteSelect" lay-ignore title="切换浏览位置">
+                <?php foreach ($sites as $s): ?>
+                <option value="<?= (int) $s['id'] ?>" <?= (!$vdbSelected && $siteId === (int) $s['id']) ? 'selected' : '' ?>>
+                    <?= e($s['domain']) ?>（<?= e($s['sysuser']) ?>）
+                </option>
+                <?php endforeach; ?>
+                <option value="vdb" <?= $vdbSelected ? 'selected' : '' ?>>vdb (/mnt/backup)</option>
+            </select>
+        </div>
+        <div class="fm-crumb">
+            <span class="fm-crumb-path">当前目录：<span id="crumb"></span><span class="fm-root-hint mono" id="rootHint"></span></span>
+        </div>
     </div>
 
     <div class="fm-vdb-banner" id="vdbBanner"<?= $vdbSelected ? '' : ' hidden' ?>>
