@@ -48,11 +48,15 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-table { margin: 0 !important; min-width: 100% !important; width: auto !important; table-layout: auto; }
     .fm-table thead th { position: sticky; top: 0; background: var(--wp-surface-soft); z-index: 1; white-space: nowrap; }
     .fm-table td, .fm-table th { font-size: 13px; font-family: inherit; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    /* Beat cached 12px/11px and .layui-layout-admin .layui-table 15px. Same face as 名称/类型:
-       mono was removed from size/perms/mtime so they match optically at 13px. */
+    /* Beat cached 12px/11px and .layui-layout-admin .layui-table 15px.
+       Size/perms/mtime stay 13px inherit; 名称/类型 are 14px via .fm-col-*. */
     .wp-page-files .fm-table td,
     .wp-page-files .fm-table th,
     .wp-page-files .fm-table td.mono { font-size: 13px; font-family: inherit; }
+    .wp-page-files .fm-table td.fm-col-name,
+    .wp-page-files .fm-table th.fm-col-name,
+    .wp-page-files .fm-table td.fm-col-type,
+    .wp-page-files .fm-table th.fm-col-type { font-size: 14px; }
     .fm-table td:last-child, .fm-table th:last-child { white-space: normal; overflow: visible; }
     .fm-table tbody tr:hover { background: #dbeafe !important; box-shadow: inset 3px 0 0 #3b82f6 !important; }
     .fm-table tbody tr:hover td { background: transparent !important; }
@@ -414,8 +418,8 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
                 <tr>
                     <th width="36"><input type="checkbox" id="selAll" title="全选"></th>
                     <th width="36"></th>
-                    <th>名称</th>
-                    <th width="80">类型</th>
+                    <th class="fm-col-name">名称</th>
+                    <th class="fm-col-type" width="80">类型</th>
                     <th width="110">大小</th>
                     <th width="90">权限</th>
                     <th width="160">修改时间</th>
@@ -766,8 +770,8 @@ layui.use(['layer', 'upload'], function () {
         $('#selAll').prop('checked', false);
         if (curPath !== '/') {
             rows += '<tr class="is-dir" data-name=".."><td></td><td></td>'
-                 + '<td class="fm-name-link">..</td>'
-                 + '<td></td><td></td><td></td><td></td><td></td></tr>';
+                 + '<td class="fm-col-name fm-name-link">..</td>'
+                 + '<td class="fm-col-type"></td><td></td><td></td><td></td><td></td></tr>';
         }
         lastEntries.forEach(function (f) {
             var p = joinPath(curPath, f.name);
@@ -795,8 +799,8 @@ layui.use(['layer', 'upload'], function () {
             rows += '<tr data-path="' + esc(p) + '" data-name="' + esc(f.name) + '" data-type="' + f.type + '">'
                  +  '<td><input type="checkbox" class="sel"></td>'
                  +  '<td>' + iconOf(f.type, f.name) + '</td>'
-                 +  '<td>' + nameHtml + '</td>'
-                 +  '<td>' + typeLabel(f.type) + '</td>'
+                 +  '<td class="fm-col-name">' + nameHtml + '</td>'
+                 +  '<td class="fm-col-type">' + typeLabel(f.type) + '</td>'
                  +  '<td>' + size + '</td>'
                  +  '<td class="fm-perms">' + esc(f.perms) + '</td>'
                  +  '<td>' + esc(f.mtime) + '</td>'

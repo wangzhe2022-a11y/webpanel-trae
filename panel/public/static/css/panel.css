@@ -320,14 +320,20 @@ body.wp-page-pma .pma-frame {
 }
 .wp-page-files .fm-tree-head { font-size: 11px; }
 .wp-page-files .fm-twist { font-size: 14px; }
-/* files table: same face as 名称/类型 at 13px. mono was removed from
-   size/perms/mtime so those columns match optically (monospace looks smaller
-   at the same px). Leftover td.mono is forced to inherit the body face. */
+/* files table: size/perms/mtime stay 13px inherit. 名称/类型 are 14px via
+   .fm-col-name / .fm-col-type (more specific than the 13px rule). Leftover
+   td.mono is forced to inherit the body face. */
 .wp-page-files .fm-table td,
 .wp-page-files .fm-table th,
 .wp-page-files .fm-table td.mono {
     font-size: 13px;
     font-family: inherit;
+}
+.wp-page-files .fm-table td.fm-col-name,
+.wp-page-files .fm-table th.fm-col-name,
+.wp-page-files .fm-table td.fm-col-type,
+.wp-page-files .fm-table th.fm-col-type {
+    font-size: 14px;
 }
 
 /* ---- header user area ---------------------------------------------------- */
