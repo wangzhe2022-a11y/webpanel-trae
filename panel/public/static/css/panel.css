@@ -438,6 +438,26 @@ body.wp-page-pma .pma-frame {
 }
 .panel-card h3 .layui-btn { margin-top: -2px; }
 
+/* Sites / Databases / SSL / Backup pages: 2/3 width, centered */
+body.wp-page-sites .layui-body > .panel-card,
+body.wp-page-databases .layui-body > .panel-card,
+body.wp-page-backup .layui-body > .panel-card,
+body.wp-page-ssl .layui-body > .layui-card,
+body.wp-page-ssl .layui-body > .panel-card {
+    max-width: 66.666%;
+    margin-left: auto;
+    margin-right: auto;
+}
+@media (max-width: 1100px) {
+    body.wp-page-sites .layui-body > .panel-card,
+    body.wp-page-databases .layui-body > .panel-card,
+    body.wp-page-backup .layui-body > .panel-card,
+    body.wp-page-ssl .layui-body > .layui-card,
+    body.wp-page-ssl .layui-body > .panel-card {
+        max-width: 100%;
+    }
+}
+
 /* Former separate atop row removed — atop now stacks in the middle mon-band column. */
 .wp-atop-sample {
     display: flex;
@@ -1713,14 +1733,25 @@ html[data-theme="dark"] .fm-table thead th { background: var(--wp-surface-soft);
 html[data-theme="dark"] .fm-site-switch,
 html[data-theme="dark"] .fm-crumb,
 html[data-theme="dark"] .fm-empty { color: var(--wp-text-secondary); }
-/* files page custom site picker stays on the light files UI */
+html[data-theme="dark"] .fm-site-switch { background: var(--wp-surface); }
 html[data-theme="dark"] .wp-page-files .fm-site-switch .fm-site-dd-btn,
 html[data-theme="dark"] .wp-page-files .fm-site-switch .fm-site-dd-menu {
-    background: #ffffff;
-    border-color: #e2e8f0;
-    color: #1e293b;
+    background: #14161b;
+    border-color: #2a2e38;
+    color: #ffffff;
+    color-scheme: dark;
 }
-html[data-theme="dark"] .wp-page-files .fm-site-switch .fm-site-dd-option { color: #1e293b; }
+html[data-theme="dark"] .wp-page-files .fm-site-switch .fm-site-dd-btn:hover {
+    border-color: var(--wp-accent);
+    background: #1a1d24;
+}
+html[data-theme="dark"] .wp-page-files .fm-site-switch .fm-site-dd-option { color: #ffffff; }
+html[data-theme="dark"] .wp-page-files .fm-site-switch .fm-site-dd-option:hover,
+html[data-theme="dark"] .wp-page-files .fm-site-switch .fm-site-dd-option.is-active,
+html[data-theme="dark"] .wp-page-files .fm-site-switch .fm-site-dd-option[aria-selected="true"] {
+    background: #2f3542;
+    color: #ffffff;
+}
 html[data-theme="dark"] .fm-crumb a,
 html[data-theme="dark"] .fm-name-link { color: var(--wp-accent); }
 html[data-theme="dark"] .fm-empty .layui-icon { color: var(--wp-text-muted); }

@@ -43,7 +43,7 @@ $panelCssHref = '/static/css/panel.css' . ($panelCssVer ? ('?v=' . (int) $panelC
 ?>
 <link rel="stylesheet" href="<?= e($panelCssHref) ?>">
 </head>
-<body class="layui-layout-body<?= $uri === '/' ? ' wp-page-dashboard' : '' ?><?= ($uri === '/phpmyadmin' || $uri === '/phpmyadmin/') ? ' wp-page-pma' : '' ?><?= $uri === '/files' ? ' wp-page-files' : '' ?>">
+<body class="layui-layout-body<?= $uri === '/' ? ' wp-page-dashboard' : '' ?><?= ($uri === '/phpmyadmin' || $uri === '/phpmyadmin/') ? ' wp-page-pma' : '' ?><?= $uri === '/files' ? ' wp-page-files' : '' ?><?= strpos($uri, '/sites') === 0 ? ' wp-page-sites' : '' ?><?= strpos($uri, '/databases') === 0 ? ' wp-page-databases' : '' ?><?= strpos($uri, '/ssl') === 0 ? ' wp-page-ssl' : '' ?><?= strpos($uri, '/backup') === 0 ? ' wp-page-backup' : '' ?>">
 <script src="/static/layui/layui.js"></script>
 <script>
 /* Shared helpers for every panel page - loaded BEFORE view scripts so inline

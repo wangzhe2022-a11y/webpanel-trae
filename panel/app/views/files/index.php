@@ -43,11 +43,12 @@ if (!$vdbSelected) {
     .fm-site-dd-btn {
         display: flex; align-items: center; position: relative;
         width: 100%; max-width: 100%; min-width: 0;
-        height: 34px; box-sizing: border-box; padding: 0 32px 0 10px;
-        border: 1px solid #e2e8f0; border-radius: 8px;
-        background: #ffffff; color: #1e293b; font-size: 12.5px; line-height: 1.3;
+        height: 34px; box-sizing: border-box; padding: 0 32px 0 12px;
+        border: 1px solid #2a2e38; border-radius: 8px;
+        background: #14161b; color: #ffffff; font-size: 13px; line-height: 1.3;
         cursor: pointer; text-align: left; font-family: inherit;
-        transition: border-color .12s ease, box-shadow .12s ease, background-color .12s ease;
+        color-scheme: dark;
+        transition: border-color .2s, box-shadow .2s, background-color .2s;
     }
     .fm-site-dd-label {
         display: block; min-width: 0; flex: 1 1 auto;
@@ -55,40 +56,41 @@ if (!$vdbSelected) {
     }
     .fm-site-dd-caret {
         position: absolute; right: 10px; top: 50%; width: 12px; height: 12px;
-        margin-top: -6px; color: #64748b; pointer-events: none; flex: 0 0 auto;
+        margin-top: -6px; color: #ffffff; pointer-events: none; flex: 0 0 auto;
         transition: transform .15s ease;
     }
     .fm-site-dd.open .fm-site-dd-caret { transform: rotate(180deg); }
-    .fm-site-dd-btn:hover { border-color: #cbd5e1; background: #f8fafc; }
+    .fm-site-dd-btn:hover { border-color: var(--wp-accent); background: #1a1d24; }
     .fm-site-dd-btn:focus { outline: none; }
     .fm-site-dd-btn:focus-visible,
     .fm-site-dd.open .fm-site-dd-btn {
-        border-color: #90BA1E;
-        box-shadow: 0 0 0 2px rgba(144,186,30,.18), 0 1px 2px rgba(15,23,42,.06);
-        background: #ffffff;
+        border-color: var(--wp-accent);
+        box-shadow: 0 0 0 3px rgba(144,186,30,.25);
+        background: #1a1d24;
     }
     .fm-site-dd-menu {
         display: none; position: fixed; z-index: 400; margin: 0; padding: 6px 0;
         list-style: none; box-sizing: border-box;
-        background: #ffffff; color: #1e293b;
-        border: 1px solid #e2e8f0; border-radius: 8px;
-        box-shadow: 0 10px 28px rgba(15,23,42,.12), 0 2px 8px rgba(15,23,42,.06);
+        background: #23272f; color: #ffffff;
+        border: 1px solid #2a2e38; border-radius: 8px;
+        box-shadow: 0 10px 28px rgba(15,23,42,.28), 0 2px 8px rgba(15,23,42,.18);
         max-height: min(320px, calc(100vh - 16px)); overflow: auto;
+        color-scheme: dark;
     }
     .fm-site-dd.open .fm-site-dd-menu { display: block; }
     .fm-site-dd-option {
         display: block; width: 100%; box-sizing: border-box;
         padding: 9px 14px; border: 0; background: transparent;
-        color: #1e293b; font-size: 13px; line-height: 1.35; text-align: left;
+        color: #ffffff; font-size: 13px; line-height: 1.35; text-align: left;
         cursor: pointer; font-family: inherit; white-space: nowrap;
     }
     .fm-site-dd-option:hover,
-    .fm-site-dd-option.is-active { background: #f1f5f9; color: #0f172a; }
+    .fm-site-dd-option.is-active { background: #2f3542; color: #ffffff; }
     .fm-site-dd-option[aria-selected="true"] {
-        background: #dcedc8; color: #1e293b; font-weight: 600;
+        background: #2f3542; color: #ffffff; font-weight: 600;
     }
     .fm-site-dd-option[aria-selected="true"]:hover,
-    .fm-site-dd-option[aria-selected="true"].is-active { background: #c5e1a5; }
+    .fm-site-dd-option[aria-selected="true"].is-active { background: #3a4150; }
     .fm-split { flex: 1; display: flex; min-height: 380px; border: 1px solid var(--wp-border); border-radius: 4px; overflow: hidden; background: var(--wp-surface); min-width: 0; }
     .fm-tree { width: 260px; min-width: 0; flex: 0 0 260px; background: #ffffff; display: flex; flex-direction: column; overflow: hidden; }
     .fm-splitter {
@@ -216,29 +218,29 @@ if (!$vdbSelected) {
         color-scheme: light;
     }
     .fm-site-dd-btn {
-        background: #ffffff !important;
-        border-color: #e2e8f0 !important;
-        color: #1e293b !important;
-        color-scheme: light;
+        background: #14161b !important;
+        border-color: #2a2e38 !important;
+        color: #ffffff !important;
+        color-scheme: dark;
     }
-    .fm-site-dd-btn:hover { background: #f8fafc !important; border-color: #cbd5e1 !important; }
+    .fm-site-dd-btn:hover { background: #1a1d24 !important; border-color: var(--wp-accent) !important; }
     .fm-site-dd-btn:focus-visible,
     .fm-site-dd.open .fm-site-dd-btn {
-        border-color: #90BA1E !important;
-        background: #ffffff !important;
+        border-color: var(--wp-accent) !important;
+        background: #1a1d24 !important;
     }
     .fm-site-dd-menu {
-        background: #ffffff !important;
-        border-color: #e2e8f0 !important;
-        color: #1e293b !important;
-        color-scheme: light;
+        background: #23272f !important;
+        border-color: #2a2e38 !important;
+        color: #ffffff !important;
+        color-scheme: dark;
     }
-    .fm-site-dd-option { color: #1e293b !important; background: transparent !important; }
+    .fm-site-dd-option { color: #ffffff !important; background: transparent !important; }
     .fm-site-dd-option:hover,
-    .fm-site-dd-option.is-active { background: #f1f5f9 !important; color: #0f172a !important; }
-    .fm-site-dd-option[aria-selected="true"] { background: #dcedc8 !important; color: #1e293b !important; }
+    .fm-site-dd-option.is-active { background: #2f3542 !important; color: #ffffff !important; }
+    .fm-site-dd-option[aria-selected="true"] { background: #2f3542 !important; color: #ffffff !important; }
     .fm-site-dd-option[aria-selected="true"]:hover,
-    .fm-site-dd-option[aria-selected="true"].is-active { background: #c5e1a5 !important; }
+    .fm-site-dd-option[aria-selected="true"].is-active { background: #3a4150 !important; }
     .fm-search-ico { color: #94a3b8 !important; }
     .fm-name-link { color: #1e293b !important; }
     .fm-vdb-banner {
