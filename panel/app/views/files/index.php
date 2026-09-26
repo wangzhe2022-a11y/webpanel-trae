@@ -6,19 +6,27 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
 ?>
 <style>
     .fm-card { display: flex; flex-direction: column; min-height: calc(100vh - 92px); padding-bottom: 12px; width: 100%; box-sizing: border-box; min-width: 0; max-width: 100%; overflow: hidden; }
-    .fm-topbar { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; flex-wrap: wrap; }
-    .fm-site-row { display: flex; align-items: center; gap: 6px; margin-bottom: 0; font-size: 13px; }
-    .fm-site-row label { font-size: 12px; color: var(--wp-text-secondary); white-space: nowrap; }
-    .fm-site-row select { height: 28px; max-width: 320px; box-sizing: border-box; border: 1px solid var(--wp-border); border-radius: 2px; background: var(--wp-surface); color: var(--wp-text); font-size: 12.5px; }
-    .fm-toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+    .fm-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; }
     .fm-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 13px; }
     .fm-nav .layui-btn { margin: 0; }
     .fm-pathbox { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 220px; }
     .fm-pathbox input { flex: 1; height: 30px; line-height: 30px; border: 1px solid var(--wp-border); border-radius: 2px; padding: 0 8px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
-    .fm-crumb { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 0; font-size: 13px; color: var(--wp-text-secondary); }
-    .fm-crumb a { color: var(--wp-accent); }
-    .fm-crumb .sep { color: var(--wp-text-muted); margin: 0 2px; }
-    .fm-crumb-path { min-width: 0; }
+    .fm-site-switch { flex: 0 0 auto; min-width: 0; padding: 8px 10px; border-bottom: 1px solid var(--wp-border); background: #ffffff; }
+    .fm-site-switch label {
+        display: block; margin: 0 0 5px; font-size: 11px; line-height: 1; color: var(--wp-text-secondary);
+        letter-spacing: 0.02em;
+    }
+    .fm-site-switch select {
+        display: block; width: 100%; max-width: 100%; min-width: 0; height: 32px; box-sizing: border-box;
+        padding: 0 28px 0 10px; border: 1px solid var(--wp-border); border-radius: 6px;
+        background-color: #f8fafc; color: var(--wp-text); font-size: 12.5px; line-height: 30px;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;
+        appearance: none; -webkit-appearance: none; -moz-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 8px center; background-size: 12px;
+    }
+    .fm-site-switch select:hover { border-color: #cbd5e1; background-color: #ffffff; }
+    .fm-site-switch select:focus { outline: none; border-color: #90BA1E; box-shadow: 0 0 0 2px rgba(144,186,30,.18); }
     .fm-split { flex: 1; display: flex; min-height: 380px; border: 1px solid var(--wp-border); border-radius: 4px; overflow: hidden; background: var(--wp-surface); min-width: 0; }
     .fm-tree { width: 260px; min-width: 0; flex: 0 0 260px; background: #ffffff; display: flex; flex-direction: column; overflow: hidden; }
     .fm-splitter {
@@ -57,7 +65,6 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-table tbody tr:hover td { background: transparent !important; }
     .fm-empty { text-align: center; color: var(--wp-text-secondary); padding: 72px 20px; }
     .fm-empty .layui-icon { font-size: 42px; color: var(--wp-text-muted); display: block; margin-bottom: 12px; }
-    .fm-root-hint { color: var(--wp-text-muted); font-size: 12px; margin-left: 4px; }
     .fm-icon-dir { display: inline-block; vertical-align: middle; }
     .fm-ico { font-size: 16px; vertical-align: middle; }
     .fm-ico-img { color: #16a34a; }
@@ -115,7 +122,7 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         border: 1px solid #e2e8f0 !important;
         color: #1e293b !important;
     }
-    .fm-tree, .fm-tree-head {
+    .fm-tree, .fm-tree-head, .fm-site-switch {
         background: #ffffff !important;
         border-color: #e2e8f0 !important;
         color: #475569 !important;
@@ -134,21 +141,21 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         background: #ffffff !important;
         border-bottom: 1px solid #e2e8f0 !important;
     }
-    .fm-site-row label, .fm-crumb, .fm-root-hint { color: #64748b !important; }
-    .fm-site-row select, .fm-pathbox input, .fm-search input {
-        background: #ffffff !important;
+    .fm-site-switch label { color: #64748b !important; }
+    .fm-site-switch select, .fm-pathbox input, .fm-search input {
+        background-color: #f8fafc !important;
         border: 1px solid #e2e8f0 !important;
         color: #1e293b !important;
         color-scheme: light;
     }
-    .fm-site-row select option {
+    .fm-site-switch select { background-color: #f8fafc !important; }
+    .fm-site-switch select:hover { background-color: #ffffff !important; border-color: #cbd5e1 !important; }
+    .fm-site-switch select option {
         background: #ffffff !important;
         color: #1e293b !important;
     }
     .fm-search-ico { color: #94a3b8 !important; }
-    .fm-name-link, .fm-crumb a { color: #1e293b !important; }
-    /* 暗色主题下文件管理器仍为浅色背景，这两处必须强制可见颜色 */
-    .fm-crumb .sep { color: #94a3b8 !important; }
+    .fm-name-link { color: #1e293b !important; }
     .fm-vdb-banner {
         background: #fff7e6 !important;
         border: 1px solid #ffe58f !important;
@@ -328,29 +335,23 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
 </style>
 
 <div class="panel-card fm-card<?= $vdbSelected ? ' fm-vdb' : '' ?>">
-    <div class="fm-topbar">
-        <div class="fm-site-row">
-            <label for="siteSelect">位置</label>
-            <select id="siteSelect" lay-ignore title="切换浏览位置">
-                <?php foreach ($sites as $s): ?>
-                <option value="<?= (int) $s['id'] ?>" <?= (!$vdbSelected && $siteId === (int) $s['id']) ? 'selected' : '' ?>>
-                    <?= e($s['domain']) ?>（<?= e($s['sysuser']) ?>）
-                </option>
-                <?php endforeach; ?>
-                <option value="vdb" <?= $vdbSelected ? 'selected' : '' ?>>vdb (/mnt/backup)</option>
-            </select>
-        </div>
-        <div class="fm-crumb">
-            <span class="fm-crumb-path">当前目录：<span id="crumb"></span><span class="fm-root-hint mono" id="rootHint"></span></span>
-        </div>
-    </div>
-
     <div class="fm-vdb-banner" id="vdbBanner"<?= $vdbSelected ? '' : ' hidden' ?>>
         只读浏览 CVM 备份盘 <span class="mono">/mnt/backup</span>：可列表、搜索、下载、解压；不可上传、编辑、新建、重命名、改权限、删除或压缩。
     </div>
 
     <div class="fm-split">
         <aside class="fm-tree">
+            <div class="fm-site-switch">
+                <label for="siteSelect">位置</label>
+                <select id="siteSelect" lay-ignore title="切换浏览位置">
+                    <?php foreach ($sites as $s): ?>
+                    <option value="<?= (int) $s['id'] ?>" <?= (!$vdbSelected && $siteId === (int) $s['id']) ? 'selected' : '' ?>>
+                        <?= e($s['domain']) ?>（<?= e($s['sysuser']) ?>）
+                    </option>
+                    <?php endforeach; ?>
+                    <option value="vdb" <?= $vdbSelected ? 'selected' : '' ?>>vdb (/mnt/backup)</option>
+                </select>
+            </div>
             <div class="fm-tree-head">
                 <span>目录</span>
                 <button class="layui-btn layui-btn-xs layui-btn-primary" id="btnCollapseAll">折叠全部</button>
@@ -365,6 +366,34 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         <div class="fm-main">
             <div class="fm-main-bar">
                 <div class="fm-toolbar">
+                    <button type="button" class="fm-tb-btn" id="btnHome" title="<?= $vdbSelected ? '备份盘根目录' : '站点根目录' ?>">
+                        <span class="layui-icon layui-icon-home"></span> <span class="fm-tb-label"><?= $vdbSelected ? '备份盘根目录' : '站点根目录' ?></span>
+                    </button>
+                    <span class="fm-tb-sep">|</span>
+                    <button type="button" class="fm-tb-btn" id="btnUp" title="上一级">
+                        <span class="layui-icon layui-icon-up"></span> 上一级
+                    </button>
+                    <span class="fm-tb-sep">|</span>
+                    <button type="button" class="fm-tb-btn" id="btnBack" title="后退">
+                        <span class="layui-icon layui-icon-left"></span> 后退
+                    </button>
+                    <span class="fm-tb-sep">|</span>
+                    <button type="button" class="fm-tb-btn" id="btnFwd" title="前进">
+                        <span class="layui-icon layui-icon-right"></span> 前进
+                    </button>
+                    <span class="fm-tb-sep">|</span>
+                    <button type="button" class="fm-tb-btn" id="btnRefresh" title="刷新当前目录">
+                        <span class="layui-icon layui-icon-refresh"></span> 刷新
+                    </button>
+                    <span class="fm-tb-sep">|</span>
+                    <button type="button" class="fm-tb-btn" id="btnSelAllNav" title="全选">
+                        <span class="layui-icon layui-icon-ok"></span> 全选
+                    </button>
+                    <span class="fm-tb-sep">|</span>
+                    <button type="button" class="fm-tb-btn" id="btnUnselAll" title="取消全选">
+                        <span class="layui-icon layui-icon-close"></span> 取消全选
+                    </button>
+                    <span class="fm-tb-sep">|</span>
                     <button type="button" class="fm-tb-btn fm-write" id="btnUpload"><span class="layui-icon layui-icon-upload"></span> 上传</button>
                     <span class="fm-tb-sep">|</span>
                     <button type="button" class="fm-tb-btn fm-write" id="btnNewFile"><span class="layui-icon layui-icon-file"></span> 新建文件</button>
@@ -382,8 +411,6 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
                     <button type="button" class="fm-tb-btn fm-tb-danger fm-write" id="btnDelSel" title="删除勾选的项目">
                         <span class="layui-icon layui-icon-delete"></span> 删除
                     </button>
-                    <span class="fm-tb-sep">|</span>
-                    <button type="button" class="fm-tb-btn" id="btnRefresh"><span class="layui-icon layui-icon-refresh"></span> 刷新</button>
                     <div class="fm-search">
                         <input id="fmSearch" type="search" spellcheck="false" autocomplete="off"
                                placeholder="搜索当前目录及子目录…" title="按文件名搜索当前目录及子目录，支持部分匹配">
@@ -394,13 +421,6 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
                 </div>
 
                 <div class="fm-nav">
-                    <button class="layui-btn layui-btn-xs layui-btn-primary" id="btnHome" title="<?= $vdbSelected ? '备份盘根目录' : '站点根目录' ?>"><?= $vdbSelected ? '备份盘根目录' : '站点根目录' ?></button>
-                    <button class="layui-btn layui-btn-xs layui-btn-primary" id="btnUp" title="上一级">上一级</button>
-                    <button class="layui-btn layui-btn-xs layui-btn-primary" id="btnBack" title="后退">后退</button>
-                    <button class="layui-btn layui-btn-xs layui-btn-primary" id="btnFwd" title="前进">前进</button>
-                    <button class="layui-btn layui-btn-xs layui-btn-primary" id="btnReloadNav" title="刷新当前目录">刷新</button>
-                    <button class="layui-btn layui-btn-xs layui-btn-primary" id="btnSelAllNav">全选</button>
-                    <button class="layui-btn layui-btn-xs layui-btn-primary" id="btnUnselAll">取消全选</button>
                     <div class="fm-pathbox">
                         <input id="pathInput" spellcheck="false" autocomplete="off" title="当前路径">
                         <button class="layui-btn layui-btn-xs" id="btnGo">转到</button>
@@ -506,8 +526,8 @@ layui.use(['layer', 'upload'], function () {
         $('.fm-write').prop('disabled', vdb);
         if (vdb) $('#vdbBanner').removeAttr('hidden');
         else $('#vdbBanner').attr('hidden', 'hidden');
-        $('#btnHome').text(vdb ? '备份盘根目录' : '站点根目录')
-            .attr('title', vdb ? '备份盘根目录 /mnt/backup' : '站点根目录');
+        $('#btnHome .fm-tb-label').text(vdb ? '备份盘根目录' : '站点根目录');
+        $('#btnHome').attr('title', vdb ? '备份盘根目录 /mnt/backup' : '站点根目录');
     }
     function esc(s) { return layui.util.escape(String(s == null ? '' : s)); }
     function joinPath(dir, name) {
