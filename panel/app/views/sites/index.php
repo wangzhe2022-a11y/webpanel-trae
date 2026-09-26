@@ -187,6 +187,72 @@
 }
 .wp-sites-ops-popup button:hover { background: var(--wp-surface-soft); }
 .wp-sites-ops-popup button.danger { color: #dc2626; }
+
+/* Create-site: PHP / Node.js type tabs */
+.wp-site-type-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--wp-border);
+    margin: 4px 0 18px;
+    gap: 4px;
+}
+.wp-site-type-tabs .wp-tab {
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--wp-text-muted);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color .2s, border-color .2s;
+    user-select: none;
+}
+.wp-site-type-tabs .wp-tab:hover { color: var(--wp-text-secondary); }
+.wp-site-type-tabs .wp-tab.active {
+    color: var(--wp-accent);
+    border-bottom-color: var(--wp-accent);
+}
+
+/* Create-site: Node.js fields (no overflow, theme-aware) */
+#nodeFields {
+    background: var(--wp-surface-soft);
+    border: 1px solid var(--wp-border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    box-sizing: border-box;
+    max-width: 100%;
+}
+.wp-node-row {
+    display: flex;
+    gap: 14px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+.wp-node-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.wp-node-field:first-child { flex: 0 0 120px; }
+.wp-node-field.wp-node-flex { flex: 1 1 200px; min-width: 160px; }
+.wp-node-label {
+    font-size: 13px;
+    color: var(--wp-text-secondary);
+    font-weight: 500;
+}
+.wp-node-field .layui-input { width: 100%; box-sizing: border-box; }
+.wp-node-hint {
+    margin-top: 12px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--wp-text-muted);
+}
+.wp-node-hint .mono { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--wp-text-secondary); }
+
+html[data-theme="dark"] #nodeFields {
+    background: rgba(144, 186, 30, 0.06);
+    border-color: rgba(144, 186, 30, 0.2);
+}
 </style>
 <div class="panel-card wp-sites-wrap">
     <div class="wp-sites-toolbar">
@@ -348,15 +414,11 @@
             <input name="aliases" class="layui-input" placeholder="多个用逗号分隔，例如 www.shop.example.com">
         </div>
     </div>
-    <div class="layui-form-item">
-        <label class="layui-form-label">站点类型</label>
-        <div class="layui-input-block" style="padding-top:8px">
-            <input type="radio" name="type" value="php" checked lay-ignore id="tPhp" style="vertical-align:middle">
-            <label for="tPhp">PHP 网站（WordPress / WooCommerce）</label>
-            <input type="radio" name="type" value="node" lay-ignore id="tNode" style="vertical-align:middle;margin-left:18px">
-            <label for="tNode">Node.js 应用（反向代理）</label>
-        </div>
+    <div class="wp-site-type-tabs">
+        <div class="wp-tab active" data-type="php">PHP 网站</div>
+        <div class="wp-tab" data-type="node">Node.js 应用</div>
     </div>
+    <input type="hidden" name="type" value="php" id="siteTypeInput">
     <div id="phpFields">
         <div class="layui-form-item">
             <label class="layui-form-label">PHP 版本</label>
@@ -373,20 +435,20 @@
             </div>
         </div>
     </div>
-    <div id="nodeFields" style="display:none;background:#f0f9ff;padding:12px;border-radius:6px;margin-bottom:12px">
-        <div class="layui-form-item">
-            <label class="layui-form-label">应用端口</label>
-            <div class="layui-input-inline" style="width:120px">
+    <div id="nodeFields" style="display:none">
+        <div class="wp-node-row">
+            <div class="wp-node-field">
+                <label class="wp-node-label">应用端口</label>
                 <input name="app_port" class="layui-input" value="3000" placeholder="3000">
             </div>
-            <label class="layui-form-label" style="width:auto;padding:9px 8px">启动命令</label>
-            <div class="layui-input-inline" style="width:220px">
+            <div class="wp-node-field wp-node-flex">
+                <label class="wp-node-label">启动命令</label>
                 <input name="start_cmd" class="layui-input" value="npm start" placeholder="npm start">
             </div>
         </div>
-        <div style="color:#666;font-size:12px;padding-left:110px">
-            代码放在 /www/wwwroot/&lt;站点用户&gt;/app（创建后用「文件」上传，或先上传 package.json 再点 npm i）；
-            应用只需监听 127.0.0.1:&lt;端口&gt;，Nginx 自动反代并支持 WebSocket。
+        <div class="wp-node-hint">
+            代码放在 <span class="mono">/www/wwwroot/&lt;站点用户&gt;/app</span>（创建后用「文件」上传，或先上传 package.json 再点 npm i）；
+            应用只需监听 <span class="mono">127.0.0.1:&lt;端口&gt;</span>，Nginx 自动反代并支持 WebSocket。
         </div>
     </div>
     <div class="layui-form-item">
@@ -473,16 +535,19 @@ layui.use(['layer', 'form'], function () {
                 $(document).off('change.wpdb').on('change.wpdb', '#withDbChk', function () {
                     $('#dbFields').toggle(this.checked);
                 });
-                $(document).off('change.wptype').on('change.wptype', 'input[name=type]', function () {
-                    var isNode = this.value === 'node';
-                    if (this.checked) {
-                        $('#phpFields').toggle(!isNode);
-                        $('#nodeFields').toggle(isNode);
-                    }
+                $(document).off('click.wptype').on('click.wptype', '.wp-site-type-tabs .wp-tab', function () {
+                    var $tab = $(this);
+                    if ($tab.hasClass('active')) return;
+                    $tab.addClass('active').siblings('.wp-tab').removeClass('active');
+                    var type = $tab.data('type');
+                    $('#siteTypeInput').val(type);
+                    var isNode = type === 'node';
+                    $('#phpFields').toggle(!isNode);
+                    $('#nodeFields').toggle(isNode);
                 });
                 $('#btnDoCreate').on('click', function () {
                     var f = $('#createForm')[0];
-                    var type = $('input[name=type]:checked').val();
+                    var type = $('#siteTypeInput').val();
                     var data = {
                         type: type,
                         domain: f.domain.value.trim(),
