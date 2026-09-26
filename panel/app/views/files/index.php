@@ -3,6 +3,19 @@
 $vdbSelected = !empty($vdbSelected);
 $siteId = $vdbSelected ? 'vdb' : (int) ($selected['id'] ?? 0);
 $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
+$triggerLabel = 'vdb (/mnt/backup)';
+if (!$vdbSelected) {
+    $triggerLabel = '';
+    foreach ($sites as $s) {
+        if ($siteId === (int) $s['id']) {
+            $triggerLabel = $s['domain'] . '（' . $s['sysuser'] . '）';
+            break;
+        }
+    }
+    if ($triggerLabel === '' && !empty($sites[0])) {
+        $triggerLabel = $sites[0]['domain'] . '（' . $sites[0]['sysuser'] . '）';
+    }
+}
 ?>
 <style>
     .fm-card { display: flex; flex-direction: column; min-height: calc(100vh - 92px); padding-bottom: 12px; width: 100%; box-sizing: border-box; min-width: 0; max-width: 100%; overflow: hidden; }
@@ -12,22 +25,70 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     /* ~1/3 of the former full-bleed path row; left-aligned under the toolbar. */
     .fm-pathbox { display: flex; align-items: center; gap: 6px; flex: 0 1 33%; width: 33%; max-width: 33%; min-width: 180px; box-sizing: border-box; }
     .fm-pathbox input { flex: 1 1 auto; min-width: 0; height: 30px; line-height: 30px; border: 1px solid var(--wp-border); border-radius: 2px; padding: 0 8px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
-    .fm-site-switch { flex: 0 0 auto; min-width: 0; padding: 8px 10px; border-bottom: 1px solid var(--wp-border); background: #ffffff; }
+    .fm-site-switch { flex: 0 0 auto; min-width: 0; padding: 8px 10px; border-bottom: 1px solid var(--wp-border); background: #ffffff; overflow: visible; position: relative; z-index: 5; }
     .fm-site-switch label {
         display: block; margin: 0 0 5px; font-size: 11px; line-height: 1; color: var(--wp-text-secondary);
         letter-spacing: 0.02em;
     }
-    .fm-site-switch select {
-        display: block; width: 100%; max-width: 100%; min-width: 0; height: 32px; box-sizing: border-box;
-        padding: 0 28px 0 10px; border: 1px solid var(--wp-border); border-radius: 6px;
-        background-color: #f8fafc; color: var(--wp-text); font-size: 12.5px; line-height: 30px;
-        overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;
-        appearance: none; -webkit-appearance: none; -moz-appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-        background-repeat: no-repeat; background-position: right 8px center; background-size: 12px;
+    /* Native select stays in the DOM for existing $('#siteSelect') change/val sync. */
+    .fm-site-switch .fm-site-select-native {
+        position: absolute !important; width: 1px !important; height: 1px !important;
+        padding: 0 !important; margin: -1px !important; overflow: hidden !important;
+        clip: rect(0, 0, 0, 0) !important; clip-path: inset(50%) !important;
+        border: 0 !important; white-space: nowrap !important;
+        appearance: auto; -webkit-appearance: auto; -moz-appearance: auto;
+        background: transparent !important; pointer-events: none;
     }
-    .fm-site-switch select:hover { border-color: #cbd5e1; background-color: #ffffff; }
-    .fm-site-switch select:focus { outline: none; border-color: #90BA1E; box-shadow: 0 0 0 2px rgba(144,186,30,.18); }
+    .fm-site-dd { position: relative; min-width: 0; }
+    .fm-site-dd-btn {
+        display: flex; align-items: center; position: relative;
+        width: 100%; max-width: 100%; min-width: 0;
+        height: 34px; box-sizing: border-box; padding: 0 32px 0 10px;
+        border: 1px solid #e2e8f0; border-radius: 8px;
+        background: #ffffff; color: #1e293b; font-size: 12.5px; line-height: 1.3;
+        cursor: pointer; text-align: left; font-family: inherit;
+        transition: border-color .12s ease, box-shadow .12s ease, background-color .12s ease;
+    }
+    .fm-site-dd-label {
+        display: block; min-width: 0; flex: 1 1 auto;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .fm-site-dd-caret {
+        position: absolute; right: 10px; top: 50%; width: 12px; height: 12px;
+        margin-top: -6px; color: #64748b; pointer-events: none; flex: 0 0 auto;
+        transition: transform .15s ease;
+    }
+    .fm-site-dd.open .fm-site-dd-caret { transform: rotate(180deg); }
+    .fm-site-dd-btn:hover { border-color: #cbd5e1; background: #f8fafc; }
+    .fm-site-dd-btn:focus { outline: none; }
+    .fm-site-dd-btn:focus-visible,
+    .fm-site-dd.open .fm-site-dd-btn {
+        border-color: #90BA1E;
+        box-shadow: 0 0 0 2px rgba(144,186,30,.18), 0 1px 2px rgba(15,23,42,.06);
+        background: #ffffff;
+    }
+    .fm-site-dd-menu {
+        display: none; position: fixed; z-index: 400; margin: 0; padding: 6px 0;
+        list-style: none; box-sizing: border-box;
+        background: #ffffff; color: #1e293b;
+        border: 1px solid #e2e8f0; border-radius: 8px;
+        box-shadow: 0 10px 28px rgba(15,23,42,.12), 0 2px 8px rgba(15,23,42,.06);
+        max-height: min(320px, calc(100vh - 16px)); overflow: auto;
+    }
+    .fm-site-dd.open .fm-site-dd-menu { display: block; }
+    .fm-site-dd-option {
+        display: block; width: 100%; box-sizing: border-box;
+        padding: 9px 14px; border: 0; background: transparent;
+        color: #1e293b; font-size: 13px; line-height: 1.35; text-align: left;
+        cursor: pointer; font-family: inherit; white-space: nowrap;
+    }
+    .fm-site-dd-option:hover,
+    .fm-site-dd-option.is-active { background: #f1f5f9; color: #0f172a; }
+    .fm-site-dd-option[aria-selected="true"] {
+        background: #dcedc8; color: #1e293b; font-weight: 600;
+    }
+    .fm-site-dd-option[aria-selected="true"]:hover,
+    .fm-site-dd-option[aria-selected="true"].is-active { background: #c5e1a5; }
     .fm-split { flex: 1; display: flex; min-height: 380px; border: 1px solid var(--wp-border); border-radius: 4px; overflow: hidden; background: var(--wp-surface); min-width: 0; }
     .fm-tree { width: 260px; min-width: 0; flex: 0 0 260px; background: #ffffff; display: flex; flex-direction: column; overflow: hidden; }
     .fm-splitter {
@@ -148,18 +209,36 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         border-bottom: 1px solid #e2e8f0 !important;
     }
     .fm-site-switch label { color: #64748b !important; }
-    .fm-site-switch select, .fm-pathbox input, .fm-search input {
+    .fm-pathbox input, .fm-search input {
         background-color: #f8fafc !important;
         border: 1px solid #e2e8f0 !important;
         color: #1e293b !important;
         color-scheme: light;
     }
-    .fm-site-switch select { background-color: #f8fafc !important; }
-    .fm-site-switch select:hover { background-color: #ffffff !important; border-color: #cbd5e1 !important; }
-    .fm-site-switch select option {
+    .fm-site-dd-btn {
         background: #ffffff !important;
+        border-color: #e2e8f0 !important;
         color: #1e293b !important;
+        color-scheme: light;
     }
+    .fm-site-dd-btn:hover { background: #f8fafc !important; border-color: #cbd5e1 !important; }
+    .fm-site-dd-btn:focus-visible,
+    .fm-site-dd.open .fm-site-dd-btn {
+        border-color: #90BA1E !important;
+        background: #ffffff !important;
+    }
+    .fm-site-dd-menu {
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+        color: #1e293b !important;
+        color-scheme: light;
+    }
+    .fm-site-dd-option { color: #1e293b !important; background: transparent !important; }
+    .fm-site-dd-option:hover,
+    .fm-site-dd-option.is-active { background: #f1f5f9 !important; color: #0f172a !important; }
+    .fm-site-dd-option[aria-selected="true"] { background: #dcedc8 !important; color: #1e293b !important; }
+    .fm-site-dd-option[aria-selected="true"]:hover,
+    .fm-site-dd-option[aria-selected="true"].is-active { background: #c5e1a5 !important; }
     .fm-search-ico { color: #94a3b8 !important; }
     .fm-name-link { color: #1e293b !important; }
     .fm-vdb-banner {
@@ -435,8 +514,8 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     <div class="fm-split">
         <aside class="fm-tree">
             <div class="fm-site-switch">
-                <label for="siteSelect">位置</label>
-                <select id="siteSelect" lay-ignore title="切换浏览位置">
+                <label id="siteSelectLabel" for="siteSelectTrigger">位置</label>
+                <select id="siteSelect" class="fm-site-select-native" lay-ignore tabindex="-1" aria-hidden="true" title="切换浏览位置">
                     <?php foreach ($sites as $s): ?>
                     <option value="<?= (int) $s['id'] ?>" <?= (!$vdbSelected && $siteId === (int) $s['id']) ? 'selected' : '' ?>>
                         <?= e($s['domain']) ?>（<?= e($s['sysuser']) ?>）
@@ -444,6 +523,18 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
                     <?php endforeach; ?>
                     <option value="vdb" <?= $vdbSelected ? 'selected' : '' ?>>vdb (/mnt/backup)</option>
                 </select>
+                <div class="fm-site-dd" id="siteSelectDd">
+                    <button type="button" class="fm-site-dd-btn" id="siteSelectTrigger"
+                            aria-haspopup="listbox" aria-expanded="false"
+                            aria-controls="siteSelectMenu" aria-labelledby="siteSelectLabel"
+                            title="切换浏览位置">
+                        <span class="fm-site-dd-label" id="siteSelectTriggerText"><?= e($triggerLabel) ?></span>
+                        <svg class="fm-site-dd-caret" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </button>
+                    <ul class="fm-site-dd-menu" id="siteSelectMenu" role="listbox" aria-labelledby="siteSelectLabel" hidden></ul>
+                </div>
             </div>
             <div class="fm-tree-head">
                 <span>目录</span>
@@ -1642,6 +1733,182 @@ layui.use(['layer', 'upload'], function () {
         if (!s || String(s.id) === String(SITE)) return;
         switchSite(s.id);
     });
+
+    /* Custom site dropdown: visible trigger + menu, hidden #siteSelect stays source of truth. */
+    (function initSiteDropdown() {
+        var $select = $('#siteSelect');
+        var $dd = $('#siteSelectDd');
+        var $btn = $('#siteSelectTrigger');
+        var $text = $('#siteSelectTriggerText');
+        var $menu = $('#siteSelectMenu');
+        var open = false;
+        var activeIdx = -1;
+
+        function optionEls() { return $menu.children('[role="option"]'); }
+
+        function currentValue() { return String($select.val() || ''); }
+
+        function paintTrigger() {
+            var val = currentValue();
+            var $opt = $select.find('option').filter(function () { return String(this.value) === val; }).first();
+            $text.text($opt.length ? $.trim($opt.text()) : val);
+            optionEls().each(function () {
+                var selected = String($(this).attr('data-value')) === val;
+                $(this).attr('aria-selected', selected ? 'true' : 'false');
+            });
+        }
+
+        function buildMenu() {
+            $menu.empty();
+            $select.find('option').each(function (i) {
+                var value = String(this.value);
+                var label = $.trim($(this).text());
+                $('<li role="option" class="fm-site-dd-option"></li>')
+                    .attr('id', 'siteSelectOpt-' + i)
+                    .attr('data-value', value)
+                    .attr('aria-selected', value === currentValue() ? 'true' : 'false')
+                    .text(label)
+                    .appendTo($menu);
+            });
+            paintTrigger();
+        }
+
+        function setActive(idx) {
+            var $opts = optionEls();
+            if (!$opts.length) return;
+            if (idx < 0) idx = $opts.length - 1;
+            if (idx >= $opts.length) idx = 0;
+            activeIdx = idx;
+            $opts.removeClass('is-active');
+            var $cur = $opts.eq(idx).addClass('is-active');
+            $btn.attr('aria-activedescendant', $cur.attr('id'));
+            if ($cur[0] && $cur[0].scrollIntoView) $cur[0].scrollIntoView({ block: 'nearest' });
+        }
+
+        function placeMenu() {
+            var el = $btn[0];
+            if (!el) return;
+            var r = el.getBoundingClientRect();
+            var width = Math.max(r.width, 180);
+            var left = r.left;
+            var top = r.bottom + 4;
+            $menu.css({
+                width: 'auto',
+                minWidth: width + 'px',
+                maxWidth: Math.min(480, window.innerWidth - 16) + 'px',
+                left: left + 'px',
+                top: top + 'px',
+                visibility: 'hidden'
+            });
+            var mh = $menu.outerHeight() || 0;
+            if (top + mh > window.innerHeight - 8 && r.top > mh + 8) {
+                top = r.top - mh - 4;
+            }
+            if (left + width > window.innerWidth - 8) {
+                left = Math.max(8, window.innerWidth - width - 8);
+            }
+            if (left < 8) left = 8;
+            $menu.css({ left: left + 'px', top: top + 'px', visibility: 'visible' });
+        }
+
+        function openMenu() {
+            if (open) return;
+            open = true;
+            $dd.addClass('open');
+            $btn.attr('aria-expanded', 'true');
+            $menu.removeAttr('hidden');
+            placeMenu();
+            var val = currentValue();
+            var $opts = optionEls();
+            var idx = -1;
+            $opts.each(function (i) {
+                if (String($(this).attr('data-value')) === val) idx = i;
+            });
+            setActive(idx >= 0 ? idx : 0);
+        }
+
+        function closeMenu(focusBtn) {
+            if (!open) return;
+            open = false;
+            $dd.removeClass('open');
+            $btn.attr('aria-expanded', 'false').removeAttr('aria-activedescendant');
+            $menu.attr('hidden', '');
+            optionEls().removeClass('is-active');
+            if (focusBtn) $btn.trigger('focus');
+        }
+
+        function choose(value) {
+            closeMenu(true);
+            if (String($select.val()) === String(value)) {
+                paintTrigger();
+                return;
+            }
+            $select.val(String(value)).trigger('change');
+            paintTrigger();
+        }
+
+        $btn.on('click', function (e) {
+            e.preventDefault();
+            if (open) closeMenu();
+            else openMenu();
+        });
+
+        $btn.on('keydown', function (e) {
+            var key = e.key;
+            if (key === 'ArrowDown' || key === 'ArrowUp') {
+                e.preventDefault();
+                if (!open) openMenu();
+                else setActive(key === 'ArrowDown' ? activeIdx + 1 : activeIdx - 1);
+                return;
+            }
+            if (key === 'Home' && open) { e.preventDefault(); setActive(0); return; }
+            if (key === 'End' && open) { e.preventDefault(); setActive(optionEls().length - 1); return; }
+            if ((key === 'Enter' || key === ' ') && open) {
+                e.preventDefault();
+                var $cur = optionEls().eq(activeIdx);
+                if ($cur.length) choose($cur.attr('data-value'));
+                return;
+            }
+            if ((key === 'Enter' || key === ' ') && !open) {
+                e.preventDefault();
+                openMenu();
+                return;
+            }
+            if (key === 'Escape' && open) {
+                e.preventDefault();
+                closeMenu();
+                return;
+            }
+            if (key === 'Tab' && open) closeMenu();
+        });
+
+        $menu.on('mousedown', '[role="option"]', function (e) {
+            e.preventDefault();
+            choose($(this).attr('data-value'));
+        });
+        $menu.on('mousemove', '[role="option"]', function () {
+            setActive($(this).index());
+        });
+
+        $(document).on('mousedown', function (e) {
+            if (!$(e.target).closest('#siteSelectDd').length) closeMenu();
+        });
+        $(window).on('resize', function () { if (open) placeMenu(); });
+        document.addEventListener('scroll', function () { if (open) placeMenu(); }, true);
+
+        var selectHook = $.valHooks.select || {};
+        var origSet = selectHook.set;
+        $.valHooks.select = $.extend({}, selectHook, {
+            set: function (elem, value) {
+                var ret = origSet ? origSet.call(this, elem, value) : value;
+                if (elem && elem.id === 'siteSelect') paintTrigger();
+                return ret;
+            }
+        });
+
+        $select.on('change', paintTrigger);
+        buildMenu();
+    })();
 
     function switchSite(id) {
         var s = siteOf(id);
