@@ -281,6 +281,8 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     }
     .fm-table td, .fm-table th {
         border-color: #c1c6cb !important;
+        border-left: none !important;
+        border-right: none !important;
         color: #1e293b !important;
     }
     .fm-table tbody tr:nth-child(odd) td { background: #ffffff !important; }

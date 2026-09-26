@@ -335,6 +335,13 @@ body.wp-page-pma .pma-frame {
 .wp-page-files .fm-table th.fm-col-type {
     font-size: 14px;
 }
+/* files table: keep row dividers, drop vertical column rules */
+.wp-page-files .fm-table,
+.wp-page-files .fm-table td,
+.wp-page-files .fm-table th {
+    border-left: none;
+    border-right: none;
+}
 
 /* ---- header user area ---------------------------------------------------- */
 .header-right {
