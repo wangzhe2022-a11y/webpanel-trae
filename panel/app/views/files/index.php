@@ -47,11 +47,12 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-main-scroll { flex: 1; overflow: auto; min-height: 0; min-width: 0; }
     .fm-table { margin: 0 !important; min-width: 100% !important; width: auto !important; table-layout: auto; }
     .fm-table thead th { position: sticky; top: 0; background: var(--wp-surface-soft); z-index: 1; white-space: nowrap; }
-    .fm-table td, .fm-table th { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    /* Beat cached .wp-page-files 12px / td.mono 11px and .layui-layout-admin .layui-table 15px */
+    .fm-table td, .fm-table th { font-size: 13px; font-family: inherit; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* Beat cached 12px/11px and .layui-layout-admin .layui-table 15px. Same face as 名称/类型:
+       mono was removed from size/perms/mtime so they match optically at 13px. */
     .wp-page-files .fm-table td,
     .wp-page-files .fm-table th,
-    .wp-page-files .fm-table td.mono { font-size: 13px; }
+    .wp-page-files .fm-table td.mono { font-size: 13px; font-family: inherit; }
     .fm-table td:last-child, .fm-table th:last-child { white-space: normal; overflow: visible; }
     .fm-table tbody tr:hover { background: #dbeafe !important; box-shadow: inset 3px 0 0 #3b82f6 !important; }
     .fm-table tbody tr:hover td { background: transparent !important; }
@@ -796,9 +797,9 @@ layui.use(['layer', 'upload'], function () {
                  +  '<td>' + iconOf(f.type, f.name) + '</td>'
                  +  '<td>' + nameHtml + '</td>'
                  +  '<td>' + typeLabel(f.type) + '</td>'
-                 +  '<td class="mono">' + size + '</td>'
-                 +  '<td class="mono fm-perms">' + esc(f.perms) + '</td>'
-                 +  '<td class="mono">' + esc(f.mtime) + '</td>'
+                 +  '<td>' + size + '</td>'
+                 +  '<td class="fm-perms">' + esc(f.perms) + '</td>'
+                 +  '<td>' + esc(f.mtime) + '</td>'
                  +  '<td>' + acts + '</td></tr>';
         });
         if (!rows) rows = '<tr><td colspan="8" style="text-align:center;color:#999;padding:30px">空目录</td></tr>';

@@ -36,7 +36,12 @@ $logoSrc = panel_logo_src();
 })();
 </script>
 <link rel="stylesheet" href="/static/layui/css/layui.css">
-<link rel="stylesheet" href="/static/css/panel.css">
+<?php
+$panelCssPath = PANEL_BASE . '/public/static/css/panel.css';
+$panelCssVer = @filemtime($panelCssPath);
+$panelCssHref = '/static/css/panel.css' . ($panelCssVer ? ('?v=' . (int) $panelCssVer) : '');
+?>
+<link rel="stylesheet" href="<?= e($panelCssHref) ?>">
 </head>
 <body class="layui-layout-body<?= $uri === '/' ? ' wp-page-dashboard' : '' ?><?= ($uri === '/phpmyadmin' || $uri === '/phpmyadmin/') ? ' wp-page-pma' : '' ?><?= $uri === '/files' ? ' wp-page-files' : '' ?>">
 <script src="/static/layui/layui.js"></script>
