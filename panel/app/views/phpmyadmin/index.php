@@ -82,15 +82,15 @@
     </div>
 </div>
 <?php else: ?>
-<div class="panel-card">
+<div class="panel-card pma-browser-card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <h3 style="margin:0">SQL 浏览器</h3>
         <a class="wp-link" href="<?= e($pmaUrl) ?>" target="_blank" rel="noopener" style="font-size:13px">
             <span class="layui-icon layui-icon-link"></span> 新窗口打开
         </a>
     </div>
-    <iframe id="pmaFrame" title="phpMyAdmin" src="<?= e($pmaUrl) ?>"
-        style="width:100%;height:720px;border:1px solid #e6e6e6;border-radius:6px;background:#fff"></iframe>
+    <iframe id="pmaFrame" class="pma-frame" title="phpMyAdmin" src="<?= e($pmaUrl) ?>"
+        style="width:100%;border:1px solid #e6e6e6;border-radius:6px;background:#fff"></iframe>
     <p style="color:#999;font-size:12px;margin:10px 0 0">
         已通过面板会话进入，使用专用账号连接本机 MySQL（无需再输入数据库密码）。
         导入大 SQL 文件建议新窗口打开。
