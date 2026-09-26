@@ -254,6 +254,61 @@ html[data-theme="dark"] #nodeFields {
     border-color: rgba(144, 186, 30, 0.2);
 }
 
+/* Create-site: "同时创建数据库" checkbox */
+.wp-db-chk-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0 12px;
+    cursor: pointer;
+}
+.wp-db-chk {
+    display: inline-block !important;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--wp-accent);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.wp-db-chk-label {
+    font-size: 13px;
+    color: var(--wp-text-secondary);
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Create-site: database fields panel — theme-aware */
+#dbFields {
+    background: var(--wp-surface-soft);
+    border: 1px solid var(--wp-border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+}
+#dbFields .layui-form-label {
+    color: var(--wp-text-secondary);
+    font-size: 13px;
+}
+#dbFields .layui-input {
+    background: var(--wp-surface);
+    border-color: var(--wp-border);
+    color: var(--wp-text);
+}
+#dbFields .wp-db-hint {
+    color: var(--wp-text-muted);
+    font-size: 12px;
+    padding-left: 110px;
+}
+html[data-theme="dark"] #dbFields {
+    background: rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+html[data-theme="dark"] #dbFields .layui-input {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #fff;
+}
+
 /* PHP version select — modern dark-theme dropdown */
 .phpsel {
     appearance: none;
@@ -338,7 +393,9 @@ html[data-theme="dark"] .layui-layer-content select {
         <?php foreach ($sites as $s): ?>
         <?php
             $isNode = ($s['type'] ?? 'php') === 'node';
-            $aliases = array_filter(array_map('trim', explode(',', (string) $s['aliases'])));
+            $aliases = array_filter(array_map('trim', explode(',', (string) $s['aliases'])), function ($a) {
+                return strpos($a, 'www.') !== 0;
+            });
             $phpLabel = $phpVersions[(string) $s['php_version']] ?? ($isNode ? 'Node' : 'PHP');
             $sslOn = (int) $s['ssl'] === 1;
             $folderSvg = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="#64748b" d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>';
@@ -492,15 +549,15 @@ html[data-theme="dark"] .layui-layer-content select {
             应用只需监听 <span class="mono">127.0.0.1:&lt;端口&gt;</span>，Nginx 自动反代并支持 WebSocket。
         </div>
     </div>
-    <div class="layui-form-item">
-        <input type="checkbox" name="with_db" value="1" lay-ignore id="withDbChk" style="vertical-align:middle">
-        <label for="withDbChk">同时创建数据库（部署 WordPress 建议勾选）</label>
+    <div class="wp-db-chk-row">
+        <input type="checkbox" name="with_db" value="1" lay-ignore id="withDbChk" class="wp-db-chk">
+        <label for="withDbChk" class="wp-db-chk-label">同时创建数据库（部署 WordPress 建议勾选）</label>
     </div>
-    <div id="dbFields" style="display:none;background:#fafafa;padding:12px;border-radius:6px;margin-bottom:12px">
+    <div id="dbFields" style="display:none">
         <div class="layui-form-item">
             <label class="layui-form-label">数据库引擎</label>
             <div class="layui-input-block">
-                <select name="db_engine" lay-ignore class="layui-input" style="width:220px">
+                <select name="db_engine" lay-ignore class="phpsel" style="width:220px;height:38px;font-size:13px">
                     <option value="mysql">MySQL 8（WordPress 默认）</option>
                     <option value="postgres">PostgreSQL 16</option>
                 </select>
@@ -514,7 +571,7 @@ html[data-theme="dark"] .layui-layer-content select {
             <label class="layui-form-label">数据库用户</label>
             <div class="layui-input-block"><input name="db_user" class="layui-input" placeholder="例如 wp_shop_user"></div>
         </div>
-        <div style="color:#999;font-size:12px;padding-left:110px">密码将自动生成并仅显示一次</div>
+        <div class="wp-db-hint">密码将自动生成并仅显示一次</div>
     </div>
     <div class="layui-form-item" style="text-align:right">
         <button type="button" class="layui-btn" id="btnDoCreate">创建</button>
@@ -585,6 +642,7 @@ layui.use(['layer', 'form'], function () {
                     var isNode = type === 'node';
                     $('#phpFields').toggle(!isNode);
                     $('#nodeFields').toggle(isNode);
+                    $('#createForm select[name="db_engine"]').val(isNode ? 'postgres' : 'mysql');
                 });
                 $('#btnDoCreate').on('click', function () {
                     var f = $('#createForm')[0];
@@ -673,7 +731,8 @@ layui.use(['layer', 'form'], function () {
 
     $(document).on('click', '.btn-manage', function (e) {
         e.stopPropagation();
-        openManagePopup(this);
+        var id = $(this).data('id');
+        if (id) window.location.href = '/files?site=' + id;
     });
     $(document).on('click', function (e) {
         if (!$(e.target).closest('#siteOpsPopup, .btn-manage').length) closeManagePopup();
