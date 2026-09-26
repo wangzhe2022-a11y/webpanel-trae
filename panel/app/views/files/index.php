@@ -38,7 +38,7 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-tree-row .fm-tree-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
     .fm-tree-row:hover { background: var(--wp-accent-soft); }
     .fm-tree-row.active { background: var(--wp-accent-soft); color: var(--wp-accent); font-weight: 600; }
-    .fm-twist { width: 16px; color: var(--wp-text-muted); font-size: 12px; text-align: center; flex-shrink: 0; }
+    .fm-twist { width: 16px; color: var(--wp-text-muted); font-size: 15px; font-weight: 700; line-height: 1; text-align: center; flex-shrink: 0; }
     .fm-twist.empty { visibility: hidden; }
     .fm-main { flex: 1; overflow: hidden; min-width: 0; display: flex; flex-direction: column; }
     .fm-main-bar { flex: 0 0 auto; padding: 8px 10px 6px; border-bottom: 1px solid var(--wp-border); background: var(--wp-surface-soft); }
@@ -236,10 +236,10 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         user-select: none;
     }
 
-    /* 文件夹图标改为橙色 */
-    .fm-icon-dir { color: #e8a33d !important; }
+    /* 文件夹图标：cPanel 风格金黄色 */
+    .fm-icon-dir { color: #f5b841 !important; }
 
-    /* 表格：浅灰表头 + 白色行 */
+    /* 表格：浅灰表头 + 斑马纹行（cPanel 风格交替底色） */
     .fm-table { background: #ffffff !important; color: #1e293b !important; }
     .fm-table thead th {
         background: #f8fafc !important;
@@ -249,13 +249,13 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-table td, .fm-table th {
         border-color: #f1f5f9 !important;
         color: #1e293b !important;
-        background: #ffffff !important;
     }
-    .fm-table tbody tr:hover { background: #ecfccb !important; box-shadow: inset 3px 0 0 #90BA1E !important; }
-    .fm-table tbody tr.fm-hit {
-        background: #d9f99d !important;
-        box-shadow: inset 3px 0 0 #90BA1E !important;
-    }
+    .fm-table tbody tr:nth-child(odd) td { background: #ffffff !important; }
+    .fm-table tbody tr:nth-child(even) td { background: #f5f5f5 !important; }
+    .fm-table tbody tr:hover td { background: #ecfccb !important; }
+    .fm-table tbody tr:hover { box-shadow: inset 3px 0 0 #90BA1E !important; }
+    .fm-table tbody tr.fm-hit td { background: #d9f99d !important; }
+    .fm-table tbody tr.fm-hit { box-shadow: inset 3px 0 0 #90BA1E !important; }
 
     /* 搜索下拉 */
     .fm-search-drop {
@@ -806,8 +806,8 @@ layui.use(['layer', 'upload'], function () {
     }
     function twistHtml(path) {
         return expanded[path]
-            ? '<span class="fm-twist layui-icon layui-icon-down"></span>'
-            : '<span class="fm-twist layui-icon layui-icon-right"></span>';
+            ? '<span class="fm-twist">−</span>'
+            : '<span class="fm-twist">+</span>';
     }
     function renderTreeNode(path, name, kids) {
         var open = !!expanded[path];
