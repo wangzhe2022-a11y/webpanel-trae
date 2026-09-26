@@ -114,8 +114,8 @@ if (!$vdbSelected) {
     .fm-twist.empty { visibility: hidden; }
     .fm-main { flex: 1; overflow: hidden; min-width: 0; display: flex; flex-direction: column; }
     .fm-main-bar { flex: 0 0 auto; padding: 8px 10px 6px; border-bottom: 1px solid var(--wp-border); background: var(--wp-surface-soft); }
-    .fm-main-bar .fm-toolbar { margin-bottom: 6px; }
-    .fm-main-bar .fm-nav { margin-bottom: 0; }
+    .fm-main-bar .fm-nav { margin-bottom: 6px; }
+    .fm-main-bar .fm-toolbar { margin-bottom: 0; }
     .fm-main-scroll { flex: 1; overflow: auto; min-height: 0; min-width: 0; }
     .fm-table { margin: 0 !important; min-width: 100% !important; width: auto !important; table-layout: auto; }
     .fm-table thead th { position: sticky; top: 0; background: var(--wp-surface-soft); z-index: 1; white-space: nowrap; }
@@ -153,7 +153,7 @@ if (!$vdbSelected) {
         opacity: .5 !important;
         cursor: not-allowed !important;
     }
-    .fm-search { position: relative; margin-left: auto; flex: 1 1 240px; min-width: 200px; max-width: 420px; }
+    .fm-search { position: relative; margin-left: 12px; flex: 1 1 240px; min-width: 200px; max-width: 420px; }
     .fm-search input {
         width: 100%; height: 30px; line-height: 30px; box-sizing: border-box;
         border: 1px solid var(--wp-border); border-radius: 2px; padding: 0 28px 0 8px;
@@ -556,6 +556,19 @@ if (!$vdbSelected) {
                 aria-label="拖动调整目录栏宽度" title="拖动调整目录栏宽度"></button>
         <div class="fm-main">
             <div class="fm-main-bar">
+                <div class="fm-nav">
+                    <div class="fm-pathbox">
+                        <input id="pathInput" spellcheck="false" autocomplete="off" title="当前路径">
+                        <button class="layui-btn layui-btn-xs" id="btnGo" title="转到" aria-label="转到">转到</button>
+                    </div>
+                    <div class="fm-search">
+                        <input id="fmSearch" type="search" spellcheck="false" autocomplete="off"
+                               placeholder="搜索当前目录及子目录…" title="按文件名搜索当前目录及子目录，支持部分匹配">
+                        <span class="layui-icon layui-icon-search fm-search-ico"></span>
+                        <div class="fm-search-drop" id="fmSearchDrop"></div>
+                    </div>
+                </div>
+
                 <div class="fm-toolbar">
                     <button type="button" class="fm-tb-btn fm-tb-nav" id="btnHome" title="<?= $vdbSelected ? '备份盘根目录' : '站点根目录' ?>">
                         <span class="layui-icon layui-icon-home"></span> <span class="fm-tb-label"><?= $vdbSelected ? '备份盘根目录' : '站点根目录' ?></span>
@@ -609,19 +622,6 @@ if (!$vdbSelected) {
                     <button type="button" class="fm-tb-btn fm-tb-danger fm-write" id="btnDelSel" title="删除勾选的项目">
                         <span class="layui-icon layui-icon-delete"></span> 删除
                     </button>
-                    <div class="fm-search">
-                        <input id="fmSearch" type="search" spellcheck="false" autocomplete="off"
-                               placeholder="搜索当前目录及子目录…" title="按文件名搜索当前目录及子目录，支持部分匹配">
-                        <span class="layui-icon layui-icon-search fm-search-ico"></span>
-                        <div class="fm-search-drop" id="fmSearchDrop"></div>
-                    </div>
-                </div>
-
-                <div class="fm-nav">
-                    <div class="fm-pathbox">
-                        <input id="pathInput" spellcheck="false" autocomplete="off" title="当前路径">
-                        <button class="layui-btn layui-btn-xs" id="btnGo" title="转到" aria-label="转到">转到</button>
-                    </div>
                 </div>
             </div>
             <div class="fm-main-scroll">
