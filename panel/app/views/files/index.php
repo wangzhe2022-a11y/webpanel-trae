@@ -54,8 +54,16 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-empty { text-align: center; color: var(--wp-text-secondary); padding: 72px 20px; }
     .fm-empty .layui-icon { font-size: 42px; color: var(--wp-text-muted); display: block; margin-bottom: 12px; }
     .fm-root-hint { color: var(--wp-text-muted); font-size: 12px; margin-left: 4px; }
-    .fm-icon-dir { color: var(--wp-accent); }
-    .fm-name-link { cursor: pointer; color: var(--wp-accent); }
+    .fm-icon-dir { display: inline-block; vertical-align: middle; }
+    .fm-ico { font-size: 16px; vertical-align: middle; }
+    .fm-ico-img { color: #16a34a; }
+    .fm-ico-arc { color: #ea580c; }
+    .fm-ico-php { color: #7c3aed; }
+    .fm-ico-code { color: #0891b2; }
+    .fm-ico-txt { color: #64748b; }
+    .fm-ico-av { color: #db2777; }
+    .fm-ico-file { color: #94a3b8; }
+    .fm-name-link { cursor: pointer; color: var(--wp-text); }
     .fm-vdb-banner {
         margin: 0 0 8px; padding: 8px 12px; border-radius: 4px;
         background: #fff7e6; border: 1px solid #ffe58f; color: #8c6d1f; font-size: 12.5px;
@@ -108,10 +116,10 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         border-color: #e2e8f0 !important;
         color: #475569 !important;
     }
-    .fm-tree-row:hover { background: #dcedc8 !important; color: #33691e !important; }
+    .fm-tree-row:hover { background: #dcedc8 !important; color: #1e293b !important; }
     .fm-tree-row.active {
         background: #c5e1a5 !important;
-        color: #33691e !important;
+        color: #1e293b !important;
         font-weight: 600;
     }
     .fm-twist { color: #94a3b8 !important; }
@@ -134,7 +142,7 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         color: #1e293b !important;
     }
     .fm-search-ico { color: #94a3b8 !important; }
-    .fm-name-link, .fm-crumb a { color: #6b8e1a !important; }
+    .fm-name-link, .fm-crumb a { color: #1e293b !important; }
     /* 暗色主题下文件管理器仍为浅色背景，这两处必须强制可见颜色 */
     .fm-crumb .sep { color: #94a3b8 !important; }
     .fm-vdb-banner {
@@ -236,8 +244,7 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
         user-select: none;
     }
 
-    /* 文件夹图标：cPanel 风格金黄色 */
-    .fm-icon-dir { color: #f5b841 !important; }
+    /* 文件夹图标：内联 SVG 实心金黄色，fill 已在 SVG path 中设定 */
 
     /* 表格：浅灰表头 + 斑马纹行（cPanel 风格交替底色） */
     .fm-table { background: #ffffff !important; color: #1e293b !important; }
@@ -694,12 +701,22 @@ layui.use(['layer', 'upload'], function () {
         histIdx = hist.length - 1;
     }
 
+    // 实心黄色文件夹图标（cPanel 风格），统一用于表格与目录树
+    function folderSvg() {
+        return '<svg class="fm-icon-dir" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">'
+             + '<path fill="#f5b841" d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>'
+             + '</svg>';
+    }
     function iconOf(t, n) {
-        if (t === 'dir') return '<span class="layui-icon layui-icon-folder fm-icon-dir" style="font-size:18px"></span>';
-        if (/\.(jpg|jpeg|png|gif|webp|svg|ico)$/i.test(n)) return '<span class="layui-icon layui-icon-picture" style="color:#16baaa;font-size:16px"></span>';
-        if (/\.(zip|tar\.gz|tgz|gz)$/i.test(n)) return '<span class="layui-icon layui-icon-file-b" style="color:#ff5722;font-size:16px"></span>';
-        if (/\.(php|html?|js|css|json)$/i.test(n)) return '<span class="layui-icon layui-icon-file" style="color:#16baaa;font-size:16px"></span>';
-        return '<span class="layui-icon layui-icon-file" style="font-size:16px"></span>';
+        if (t === 'dir') return folderSvg();
+        if (/\.(jpg|jpeg|png|gif|webp|bmp|svg|ico)$/i.test(n)) return '<span class="layui-icon layui-icon-picture fm-ico fm-ico-img"></span>';
+        if (/\.(zip|tar|gz|tgz|bz2|rar|7z|xz)$/i.test(n)) return '<span class="layui-icon layui-icon-file-b fm-ico fm-ico-arc"></span>';
+        if (/\.php$/i.test(n)) return '<span class="layui-icon layui-icon-file fm-ico fm-ico-php"></span>';
+        if (/\.(html?|htm|js|css|json|xml|ya?ml)$/i.test(n)) return '<span class="layui-icon layui-icon-file fm-ico fm-ico-code"></span>';
+        if (/\.(txt|log|md|ini|conf|cfg|env)$/i.test(n)) return '<span class="layui-icon layui-icon-file fm-ico fm-ico-txt"></span>';
+        if (/\.(mp3|wav|flac|aac|ogg|m4a)$/i.test(n)) return '<span class="layui-icon layui-icon-speaker fm-ico fm-ico-av"></span>';
+        if (/\.(mp4|mkv|avi|mov|webm|flv)$/i.test(n)) return '<span class="layui-icon layui-icon-video fm-ico fm-ico-av"></span>';
+        return '<span class="layui-icon layui-icon-file fm-ico fm-ico-file"></span>';
     }
     function typeLabel(t) {
         if (t === 'dir') return '文件夹';
@@ -814,9 +831,7 @@ layui.use(['layer', 'upload'], function () {
         var html = '<li data-path="' + esc(path) + '">';
         html += '<div class="fm-tree-row' + (path === curPath ? ' active' : '') + '" data-path="' + esc(path) + '">';
         html += twistHtml(path);
-        html += expanded[path]
-            ? '<span class="layui-icon layui-icon-folder-open fm-icon-dir"></span>'
-            : '<span class="layui-icon layui-icon-folder fm-icon-dir"></span>';
+        html += folderSvg();
         html += '<span class="fm-tname">' + esc(name) + '</span></div>';
         html += '<ul class="fm-tree-ul"' + (open ? '' : ' style="display:none"') + '>';
         if (open && kids) {
@@ -833,7 +848,7 @@ layui.use(['layer', 'upload'], function () {
         var rootKids = treeKids['/'] || [];
         var html = '<li data-path="/"><div class="fm-tree-row' + (curPath === '/' ? ' active' : '') + '" data-path="/">';
         html += twistHtml('/');
-        html += '<span class="layui-icon fm-icon-dir">&#xe68e;</span>';
+        html += folderSvg();
         html += '<span class="fm-tname">' + esc(treeLabel()) + '</span></div>';
         html += '<ul class="fm-tree-ul"' + (expanded['/'] ? '' : ' style="display:none"') + '>';
         if (expanded['/']) {
