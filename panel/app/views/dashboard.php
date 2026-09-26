@@ -1341,7 +1341,6 @@ layui.use(['layer'], function () {
                 folder: '<path d="M3.5 8.5V18A1.5 1.5 0 0 0 5 19.5h14a1.5 1.5 0 0 0 1.5-1.5V10A1.5 1.5 0 0 0 19 8.5h-7.2L9.5 6H5A1.5 1.5 0 0 0 3.5 7.5z"/>'
             };
             var d = paths[kind] || paths.dots;
-            var fill = (kind === 'dots') ? 'currentColor' : stroke;
             var extra = (kind === 'dots')
                 ? ' fill="currentColor"'
                 : ' fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"';
