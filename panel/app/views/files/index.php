@@ -65,9 +65,9 @@ $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS 
     .fm-root-hint { color: var(--wp-text-muted); font-size: 12px; margin-left: 4px; }
     .fm-icon-dir { display: inline-block; vertical-align: middle; }
     .fm-ico { font-size: 16px; vertical-align: middle; }
+    svg.fm-ico { display: inline-block; }
     .fm-ico-img { color: #16a34a; }
     .fm-ico-arc { color: #ea580c; }
-    .fm-ico-php { color: #7c3aed; }
     .fm-ico-code { color: #0891b2; }
     .fm-ico-txt { color: #64748b; }
     .fm-ico-av { color: #db2777; }
@@ -715,12 +715,34 @@ layui.use(['layer', 'upload'], function () {
              + '<path fill="#f5b841" d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>'
              + '</svg>';
     }
+    // 实心紫色折角文档 + 4 条白线（cPanel classic PHP）
+    function phpFileSvg() {
+        return '<svg class="fm-ico" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">'
+             + '<path fill="#7c3aed" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6z"/>'
+             + '<path fill="#a78bfa" d="M14 2v6h6"/>'
+             + '<rect fill="#fff" x="6.4" y="10.3" width="9.2" height="1.3" rx=".45"/>'
+             + '<rect fill="#fff" x="6.4" y="12.8" width="11" height="1.3" rx=".45"/>'
+             + '<rect fill="#fff" x="6.4" y="15.3" width="10.2" height="1.3" rx=".45"/>'
+             + '<rect fill="#fff" x="6.4" y="17.8" width="8.4" height="1.3" rx=".45"/>'
+             + '</svg>';
+    }
+    // 白底描边折角文档 + 蓝色 &lt;/&gt;（cPanel classic HTML/HTM）
+    function htmlFileSvg() {
+        return '<svg class="fm-ico" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">'
+             + '<path fill="#fff" stroke="#334155" stroke-width="1.25" stroke-linejoin="round" d="M14 2.7H6.3c-.9 0-1.6.7-1.6 1.6v15.4c0 .9.7 1.6 1.6 1.6h11.4c.9 0 1.6-.7 1.6-1.6V8.7L14 2.7z"/>'
+             + '<path fill="#e2e8f0" stroke="#334155" stroke-width="1.25" stroke-linejoin="round" d="M14 2.7v6h6"/>'
+             + '<path fill="none" stroke="#2563eb" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M9.2 10.6L6.7 13.5 9.2 16.4"/>'
+             + '<path fill="none" stroke="#2563eb" stroke-width="1.7" stroke-linecap="round" d="M12.8 10.2L10.8 16.8"/>'
+             + '<path fill="none" stroke="#2563eb" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M14.8 10.6L17.3 13.5 14.8 16.4"/>'
+             + '</svg>';
+    }
     function iconOf(t, n) {
         if (t === 'dir') return folderSvg();
         if (/\.(jpg|jpeg|png|gif|webp|bmp|svg|ico)$/i.test(n)) return '<span class="layui-icon layui-icon-picture fm-ico fm-ico-img"></span>';
         if (/\.(zip|tar|gz|tgz|bz2|rar|7z|xz)$/i.test(n)) return '<span class="layui-icon layui-icon-file-b fm-ico fm-ico-arc"></span>';
-        if (/\.php$/i.test(n)) return '<span class="layui-icon layui-icon-file fm-ico fm-ico-php"></span>';
-        if (/\.(html?|htm|js|css|json|xml|ya?ml)$/i.test(n)) return '<span class="layui-icon layui-icon-file fm-ico fm-ico-code"></span>';
+        if (/\.php$/i.test(n)) return phpFileSvg();
+        if (/\.html?$/i.test(n)) return htmlFileSvg();
+        if (/\.(js|css|json|xml|ya?ml)$/i.test(n)) return '<span class="layui-icon layui-icon-file fm-ico fm-ico-code"></span>';
         if (/\.(txt|log|md|ini|conf|cfg|env)$/i.test(n)) return '<span class="layui-icon layui-icon-file fm-ico fm-ico-txt"></span>';
         if (/\.(mp3|wav|flac|aac|ogg|m4a)$/i.test(n)) return '<span class="layui-icon layui-icon-speaker fm-ico fm-ico-av"></span>';
         if (/\.(mp4|mkv|avi|mov|webm|flv)$/i.test(n)) return '<span class="layui-icon layui-icon-video fm-ico fm-ico-av"></span>';
