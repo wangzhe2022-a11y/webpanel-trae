@@ -394,7 +394,7 @@ html[data-theme="dark"] .layui-layer-content select {
         <?php
             $isNode = ($s['type'] ?? 'php') === 'node';
             $aliases = array_filter(array_map('trim', explode(',', (string) $s['aliases'])), function ($a) {
-                return strpos($a, 'www.') !== 0;
+                return $a !== '' && stripos($a, 'www.') !== 0;
             });
             $phpLabel = $phpVersions[(string) $s['php_version']] ?? ($isNode ? 'Node' : 'PHP');
             $sslOn = (int) $s['ssl'] === 1;
