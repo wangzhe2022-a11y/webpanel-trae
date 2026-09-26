@@ -245,10 +245,12 @@ body.wp-page-pma .layui-layout-admin {
     padding: 10px 12px;
 }
 .wp-page-pma .layui-body > .panel-card { flex: 0 0 auto; margin-bottom: 0; }
-.wp-page-pma .pma-browser-card {
-    flex: 1 1 auto;
+/* Must beat `.layui-body > .panel-card { flex: 0 0 auto }` (same page, higher specificity). */
+.wp-page-pma .layui-body > .pma-browser-card {
+    flex: 1 1 0;
     display: flex;
     flex-direction: column;
+    box-sizing: border-box;
     min-height: 0;
     min-width: 0;
     width: 100%;
@@ -258,9 +260,10 @@ body.wp-page-pma .layui-layout-admin {
 .wp-page-pma .pma-browser-card > div:first-child,
 .wp-page-pma .pma-browser-card > p { flex: 0 0 auto; }
 .wp-page-pma .pma-frame {
-    flex: 1 1 auto;
+    flex: 1 1 0;
     align-self: stretch;
     display: block;
+    box-sizing: border-box;
     width: 100%;
     min-height: 0;
     height: 0; /* replaced iframe: let flex-grow set the used height */
